@@ -1,0 +1,212 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============ USERS & ORG ============
+
+model User {
+  id            String   @id @default(cuid())
+  feishuOpenId  String   @unique
+  feishuUnionId String?
+  name          String
+  email         String?
+  avatarUrl     String?
+  department    String   @default("")
+  jobTitle      String?
+  role          String   @default("EMPLOYEE") // EMPLOYEE, SUPERVISOR, HRBP, ADMIN
+  supervisorId  String?
+  supervisor    User?    @relation("Supervision", fields: [supervisorId], references: [id])
+  subordinates  User[]   @relation("Supervision")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  selfEvals            SelfEvaluation[]
+  peerReviewsGiven     PeerReview[]          @relation("Reviewer")
+  peerReviewsReceived  PeerReview[]          @relation("Reviewee")
+  supervisorEvals      SupervisorEval[]      @relation("Evaluator")
+  supervisorEvalsRecv  SupervisorEval[]      @relation("Evaluated")
+  nominationsGiven     ReviewerNomination[]  @relation("Nominator")
+  nominationsReceived  ReviewerNomination[]  @relation("Nominee")
+  meetingsAsEmployee   Meeting[]             @relation("MeetingEmployee")
+  meetingsAsSupervisor Meeting[]             @relation("MeetingSupervisor")
+  calibrationResults   CalibrationResult[]
+  appeals              Appeal[]
+}
+
+// ============ REVIEW CYCLE ============
+
+model ReviewCycle {
+  id               String   @id @default(cuid())
+  name             String
+  selfEvalStart    DateTime
+  selfEvalEnd      DateTime
+  peerReviewStart  DateTime
+  peerReviewEnd    DateTime
+  supervisorStart  DateTime
+  supervisorEnd    DateTime
+  calibrationStart DateTime
+  calibrationEnd   DateTime
+  meetingStart     DateTime
+  meetingEnd       DateTime
+  appealStart      DateTime?
+  appealEnd        DateTime?
+  status           String   @default("DRAFT") // DRAFT, SELF_EVAL, PEER_REVIEW, SUPERVISOR_EVAL, CALIBRATION, MEETING, APPEAL, ARCHIVED
+  createdAt        DateTime @default(now())
+
+  selfEvals       SelfEvaluation[]
+  peerReviews     PeerReview[]
+  supervisorEvals SupervisorEval[]
+  nominations     ReviewerNomination[]
+  meetings        Meeting[]
+  calibrations    CalibrationResult[]
+  appeals         Appeal[]
+}
+
+// ============ MODULE 1: SELF-EVALUATION ============
+
+model SelfEvaluation {
+  id              String    @id @default(cuid())
+  cycleId         String
+  cycle           ReviewCycle @relation(fields: [cycleId], references: [id])
+  userId          String
+  user            User      @relation(fields: [userId], references: [id])
+  importedContent String    @default("")
+  importedAt      DateTime?
+  sourceUrl       String?
+  status          String    @default("DRAFT") // DRAFT, SUBMITTED
+  submittedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([cycleId, userId])
+}
+
+// ============ MODULE 2: 360 PEER REVIEW ============
+
+model ReviewerNomination {
+  id               String   @id @default(cuid())
+  cycleId          String
+  cycle            ReviewCycle @relation(fields: [cycleId], references: [id])
+  nominatorId      String
+  nominator        User     @relation("Nominator", fields: [nominatorId], references: [id])
+  nomineeId        String
+  nominee          User     @relation("Nominee", fields: [nomineeId], references: [id])
+  supervisorStatus String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  nomineeStatus    String   @default("PENDING") // PENDING, ACCEPTED, DECLINED
+  declineReason    String   @default("")
+  createdAt        DateTime @default(now())
+
+  @@unique([cycleId, nominatorId, nomineeId])
+}
+
+model PeerReview {
+  id                  String    @id @default(cuid())
+  cycleId             String
+  cycle               ReviewCycle @relation(fields: [cycleId], references: [id])
+  reviewerId          String
+  reviewer            User      @relation("Reviewer", fields: [reviewerId], references: [id])
+  revieweeId          String
+  reviewee            User      @relation("Reviewee", fields: [revieweeId], references: [id])
+  outputScore         Int?      // 业绩产出质量 1-5
+  outputComment       String    @default("")
+  collaborationScore  Int?      // 协作配合度 1-5
+  collaborationComment String   @default("")
+  valuesScore         Int?      // 价值观践行 1-5
+  valuesComment       String    @default("")
+  innovationScore     Int?      // 可选
+  innovationComment   String    @default("")
+  declinedAt          DateTime?
+  declineReason       String    @default("")
+  status              String    @default("DRAFT") // DRAFT, SUBMITTED, DECLINED
+  submittedAt         DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@unique([cycleId, reviewerId, revieweeId])
+}
+
+// ============ MODULE 3: SUPERVISOR EVALUATION ============
+
+model SupervisorEval {
+  id                 String    @id @default(cuid())
+  cycleId            String
+  cycle              ReviewCycle @relation(fields: [cycleId], references: [id])
+  evaluatorId        String
+  evaluator          User      @relation("Evaluator", fields: [evaluatorId], references: [id])
+  employeeId         String
+  employee           User      @relation("Evaluated", fields: [employeeId], references: [id])
+  performanceStars   Int?      // 业绩产出50%，1-5星
+  performanceComment String    @default("")
+  abilityStars       Int?      // 个人能力30%，1-5星
+  abilityComment     String    @default("")
+  valuesStars        Int?      // 价值观20%，1-5星
+  valuesComment      String    @default("")
+  weightedScore      Float?    // 系统自动计算
+  status             String    @default("DRAFT") // DRAFT, SUBMITTED
+  submittedAt        DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@unique([cycleId, employeeId])
+}
+
+// ============ MODULE 4: CALIBRATION ============
+
+model CalibrationResult {
+  id            String    @id @default(cuid())
+  cycleId       String
+  cycle         ReviewCycle @relation(fields: [cycleId], references: [id])
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  proposedStars Float?
+  finalStars    Int?
+  adjustedBy    String?
+  adjustReason  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([cycleId, userId])
+}
+
+// ============ MODULE 5: 1-ON-1 MEETING ============
+
+model Meeting {
+  id           String    @id @default(cuid())
+  cycleId      String
+  cycle        ReviewCycle @relation(fields: [cycleId], references: [id])
+  employeeId   String
+  employee     User      @relation("MeetingEmployee", fields: [employeeId], references: [id])
+  supervisorId String
+  supervisor   User      @relation("MeetingSupervisor", fields: [supervisorId], references: [id])
+  meetingDate  DateTime?
+  notes        String    @default("")
+  employeeAck  Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([cycleId, employeeId])
+}
+
+// ============ MODULE 6: APPEAL ============
+
+model Appeal {
+  id         String    @id @default(cuid())
+  cycleId    String
+  cycle      ReviewCycle @relation(fields: [cycleId], references: [id])
+  userId     String
+  user       User      @relation(fields: [userId], references: [id])
+  reason     String    @default("")
+  status     String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  resolution String    @default("")
+  handledBy  String?
+  handledAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([cycleId, userId])
+}

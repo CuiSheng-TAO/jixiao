@@ -1,0 +1,39 @@
+"use client";
+
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { isPreviewMode, getPreviewRole, getPreviewData, PREVIEW_ROLE_LABELS } from "@/lib/preview";
+import type { PreviewRole } from "@/lib/preview";
+
+export function usePreview() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const preview = isPreviewMode(searchParams);
+  const previewRole = getPreviewRole(searchParams);
+  const previewRoleLabel = previewRole ? PREVIEW_ROLE_LABELS[previewRole] : null;
+
+  function enterPreview(role: PreviewRole) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("preview", role);
+    window.location.href = `${pathname}?${params.toString()}`;
+  }
+
+  function exitPreview() {
+    window.location.href = pathname;
+  }
+
+  function getData(page: string): Record<string, unknown> {
+    if (!previewRole) return {};
+    return getPreviewData(previewRole, page);
+  }
+
+  return {
+    preview,
+    previewRole,
+    previewRoleLabel,
+    enterPreview,
+    exitPreview,
+    getData,
+  };
+}

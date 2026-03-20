@@ -1,0 +1,142 @@
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
+import { getSessionUser, getActiveCycle } from "@/lib/session";
+import { sanitizeText, validateStars } from "@/lib/validate";
+
+// Get team evaluations for supervisor
+export async function GET() {
+  try {
+    const user = await getSessionUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!["SUPERVISOR", "HRBP", "ADMIN"].includes(user.role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const cycle = await prisma.reviewCycle.findFirst({
+      where: { status: { not: "ARCHIVED" } },
+      orderBy: { createdAt: "desc" },
+    });
+    if (!cycle) return NextResponse.json([]);
+
+    const subordinates = await prisma.user.findMany({
+      where: { supervisorId: user.id },
+      select: { id: true, name: true, department: true, jobTitle: true },
+    });
+
+    const evals = await Promise.all(
+      subordinates.map(async (sub) => {
+        const eval_ = await prisma.supervisorEval.findUnique({
+          where: { cycleId_employeeId: { cycleId: cycle.id, employeeId: sub.id } },
+        });
+
+        const selfEval = await prisma.selfEvaluation.findUnique({
+          where: { cycleId_userId: { cycleId: cycle.id, userId: sub.id } },
+        });
+
+        const peerReviews = await prisma.peerReview.findMany({
+          where: { cycleId: cycle.id, revieweeId: sub.id, status: "SUBMITTED" },
+        });
+
+        const avgPeer = peerReviews.length > 0
+          ? {
+              output: peerReviews.reduce((s, r) => s + (r.outputScore || 0), 0) / peerReviews.length,
+              collaboration: peerReviews.reduce((s, r) => s + (r.collaborationScore || 0), 0) / peerReviews.length,
+              values: peerReviews.reduce((s, r) => s + (r.valuesScore || 0), 0) / peerReviews.length,
+              count: peerReviews.length,
+            }
+          : null;
+
+        return {
+          employee: sub,
+          evaluation: eval_,
+          selfEval: selfEval ? { status: selfEval.status, importedContent: selfEval.importedContent } : null,
+          peerReviewSummary: avgPeer,
+        };
+      })
+    );
+
+    return NextResponse.json(evals);
+  } catch (error) {
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+  }
+}
+
+function computeWeightedScore(performanceStars: number | null, abilityStars: number | null, valuesStars: number | null): number | null {
+  if (performanceStars == null || abilityStars == null || valuesStars == null) return null;
+  return performanceStars * 0.5 + abilityStars * 0.3 + valuesStars * 0.2;
+}
+
+// Create or update supervisor evaluation
+export async function POST(req: NextRequest) {
+  try {
+    const user = await getSessionUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!["SUPERVISOR", "HRBP", "ADMIN"].includes(user.role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const body = await req.json();
+
+    const cycle = await getActiveCycle();
+    if (!cycle) {
+      return NextResponse.json({ error: "No active cycle" }, { status: 400 });
+    }
+
+    // 周期阶段验证（ADMIN豁免）
+    if (user.role !== "ADMIN" && cycle.status !== "SUPERVISOR_EVAL") {
+      return NextResponse.json({ error: "当前不在上级评估阶段，无法执行此操作" }, { status: 400 });
+    }
+
+    // 上下级关系验证（ADMIN豁免）
+    if (user.role !== "ADMIN") {
+      const employee = await prisma.user.findUnique({ where: { id: body.employeeId } });
+      if (!employee || employee.supervisorId !== user.id) {
+        return NextResponse.json({ error: "你不是该员工的直属上级" }, { status: 403 });
+      }
+    }
+
+    const isSubmit = body.action === "submit";
+
+    // Submission lock: prevent modifying already submitted eval
+    const existingEval = await prisma.supervisorEval.findUnique({
+      where: { cycleId_employeeId: { cycleId: cycle.id, employeeId: body.employeeId } },
+    });
+    if (existingEval?.status === "SUBMITTED") {
+      return NextResponse.json({ error: "已提交，无法修改" }, { status: 400 });
+    }
+
+    const performanceStars = validateStars(body.performanceStars);
+    const abilityStars = validateStars(body.abilityStars);
+    const valuesStars = validateStars(body.valuesStars);
+    const weightedScore = computeWeightedScore(performanceStars, abilityStars, valuesStars);
+
+    const eval_ = await prisma.supervisorEval.upsert({
+      where: {
+        cycleId_employeeId: { cycleId: cycle.id, employeeId: body.employeeId },
+      },
+      update: {
+        performanceStars,
+        performanceComment: sanitizeText(body.performanceComment),
+        abilityStars,
+        abilityComment: sanitizeText(body.abilityComment),
+        valuesStars,
+        valuesComment: sanitizeText(body.valuesComment),
+        weightedScore,
+        status: isSubmit ? "SUBMITTED" : "DRAFT",
+        submittedAt: isSubmit ? new Date() : undefined,
+      },
+      create: {
+        cycleId: cycle.id,
+        evaluatorId: user.id,
+        employeeId: body.employeeId,
+        performanceStars,
+        performanceComment: sanitizeText(body.performanceComment),
+        abilityStars,
+        abilityComment: sanitizeText(body.abilityComment),
+        valuesStars,
+        valuesComment: sanitizeText(body.valuesComment),
+        weightedScore,
+        status: isSubmit ? "SUBMITTED" : "DRAFT",
+        submittedAt: isSubmit ? new Date() : null,
+      },
+    });
+
+    return NextResponse.json(eval_);
+  } catch (error) {
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+  }
+}
