@@ -96,7 +96,7 @@ function buildSteps(cycle: CycleData | null): StepDef[] {
       key: "MEETING",
       title: "绩效申诉",
       date: formatDateRange(cycle?.meetingStart ?? null, cycle?.meetingEnd ?? null) || "3/30-4/2",
-      desc: "需提交书面申诉至HRBP",
+      desc: "需提交书面申诉至HRBP禹聪琪，逾期默认绩效结果确认并归档",
       icon: Megaphone,
     },
     {
