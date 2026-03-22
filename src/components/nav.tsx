@@ -43,8 +43,8 @@ const navItems = [
   { href: "/peer-review", label: "360环评", icon: Users, roles: ["EMPLOYEE", "SUPERVISOR", "HRBP", "ADMIN"] },
   { href: "/team", label: "团队评估", icon: UserCheck, roles: ["SUPERVISOR", "HRBP", "ADMIN"] },
   { href: "/calibration", label: "绩效校准", icon: BarChart3, roles: ["HRBP", "ADMIN"] },
-  { href: "/meetings", label: "面谈记录", icon: MessageSquare, roles: ["SUPERVISOR", "HRBP", "ADMIN"] },
-  { href: "/appeal", label: "绩效申诉", icon: MessageSquareWarning, roles: ["EMPLOYEE", "SUPERVISOR", "HRBP", "ADMIN"] },
+  { href: "/meetings", label: "面谈记录", icon: MessageSquare, roles: ["SUPERVISOR", "HRBP", "ADMIN"], availableFrom: "2026-03-30T00:00:00" },
+  { href: "/appeal", label: "绩效申诉", icon: MessageSquareWarning, roles: ["EMPLOYEE", "SUPERVISOR", "HRBP", "ADMIN"], availableFrom: "2026-03-30T00:00:00" },
   { href: "/admin", label: "系统管理", icon: Settings, roles: ["ADMIN"] },
 ];
 
@@ -60,7 +60,14 @@ export function Nav({ user }: NavProps) {
 
   // 预览模式下用预览角色过滤菜单，否则用真实角色
   const activeRole = previewRole ?? user.role;
-  const visibleItems = navItems.filter((item) => item.roles.includes(activeRole));
+  const visibleItems = navItems.filter((item) => {
+    if (!item.roles.includes(activeRole)) return false;
+    // 时间限制：ADMIN 不受限制
+    if (item.availableFrom && activeRole !== "ADMIN") {
+      if (new Date() < new Date(item.availableFrom)) return false;
+    }
+    return true;
+  });
 
   // 构造带preview参数的链接
   function buildHref(href: string): string {
