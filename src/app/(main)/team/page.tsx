@@ -293,10 +293,11 @@ function TeamContent() {
                           onChange={(v) => updateField("performanceStars", v)}
                           disabled={!!isSubmitted}
                         />
+                        <p className="text-[11px] text-muted-foreground/70 leading-relaxed">请结合员工工作总结自评 + 周期内实际产出结果 + OKR完成度 + 团队内贡献度综合评定，需提供数据/案例作证和描述</p>
                         <Textarea
                           value={formData[selected!]?.performanceComment || ""}
                           onChange={(e) => updateField("performanceComment", e.target.value)}
-                          placeholder="请结合员工工作总结自评 + 周期内实际产出结果 + OKR完成度 + 团队内贡献度综合评定，需提供数据/案例作证和描述"
+                          placeholder="请输入评语..."
                           rows={3}
                           disabled={!!isSubmitted}
                         />
@@ -333,7 +334,7 @@ function TeamContent() {
                         <Textarea
                           value={formData[selected!]?.abilityComment || ""}
                           onChange={(e) => updateField("abilityComment", e.target.value)}
-                          placeholder="请结合员工综合能力 + 学习能力 + 适应能力，综合评定，需提供数据/案例作证和描述"
+                          placeholder="请输入评语..."
                           rows={3}
                           disabled={!!isSubmitted}
                         />
@@ -345,9 +346,7 @@ function TeamContent() {
                           <h3 className="text-sm font-semibold">价值观</h3>
                           <span className="text-xs text-muted-foreground">权重20%</span>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                          ROOT = Ownership、独立思考与快速学习、结果导向、Always Day 1
-                        </p>
+                        <p className="text-[11px] text-muted-foreground/70 leading-relaxed">请针对价值观更新：从「始终创业」到「ROOT」的组织导向升级4条进行评估，需提供数据/案例作证和描述。ROOT = Ownership、独立思考与快速学习、结果导向、Always Day 1</p>
                         <StarRating
                           value={formData[selected!]?.valuesStars}
                           onChange={(v) => updateField("valuesStars", v)}
@@ -356,7 +355,7 @@ function TeamContent() {
                         <Textarea
                           value={formData[selected!]?.valuesComment || ""}
                           onChange={(e) => updateField("valuesComment", e.target.value)}
-                          placeholder='请针对价值观更新：从「始终创业」到「ROOT」的组织导向升级4条进行评估，需提供数据/案例作证和描述'
+                          placeholder="请输入评语..."
                           rows={3}
                           disabled={!!isSubmitted}
                         />

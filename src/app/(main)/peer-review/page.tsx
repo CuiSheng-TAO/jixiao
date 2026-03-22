@@ -387,7 +387,7 @@ function PeerReviewContent() {
                             <Textarea
                               value={review.valuesComment}
                               onChange={(e) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, valuesComment: e.target.value } : r))}
-                              placeholder="请选取ROOT 4条中的至少2条进行说明..."
+                              placeholder="请输入评语..."
                               rows={2}
                               className="mt-2"
                               disabled={isDisabled}
@@ -420,7 +420,7 @@ function PeerReviewContent() {
                             <Textarea
                               value={review.innovationComment}
                               onChange={(e) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, innovationComment: e.target.value } : r))}
-                              placeholder="请围绕你所勾选的维度进行评定..."
+                              placeholder="请输入评语..."
                               rows={2}
                               className="mt-2"
                               disabled={isDisabled}
