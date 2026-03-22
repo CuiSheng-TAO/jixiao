@@ -99,10 +99,10 @@ function LoginContent() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <Card className="w-80">
-          <CardContent className="flex flex-col items-center py-8">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary/[0.04] via-background to-primary/[0.02]">
+        <Card className="w-80 shadow-lg">
+          <CardContent className="flex flex-col items-center py-10">
+            <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-primary/20 border-t-primary" />
             <p className="mt-4 text-sm text-muted-foreground">正在登录...</p>
           </CardContent>
         </Card>
@@ -114,7 +114,7 @@ function LoginContent() {
     ADMIN: <Shield className="h-4 w-4 text-red-500" />,
     SUPERVISOR: <UserCheck className="h-4 w-4 text-orange-500" />,
     HRBP: <Shield className="h-4 w-4 text-purple-500" />,
-    EMPLOYEE: <Users className="h-4 w-4 text-primary" />,
+    EMPLOYEE: <Users className="h-4 w-4 text-blue-500" />,
   };
 
   const roleLabels: Record<string, string> = {
@@ -125,20 +125,26 @@ function LoginContent() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <Card className="w-96">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-lg bg-primary">
+    <div className="relative flex min-h-screen items-center justify-center bg-gradient-to-br from-primary/[0.04] via-background to-primary/[0.02]">
+      {/* Decorative elements */}
+      <div className="absolute left-1/4 top-1/4 h-64 w-64 rounded-full bg-primary/[0.03] blur-3xl" />
+      <div className="absolute bottom-1/4 right-1/4 h-48 w-48 rounded-full bg-primary/[0.04] blur-3xl" />
+
+      <Card className="relative w-[400px] shadow-xl">
+        <CardHeader className="pb-2 text-center">
+          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/80 shadow-lg shadow-primary/20">
             <BarChart3 className="h-7 w-7 text-white" />
           </div>
-          <CardTitle className="text-xl">绩效考核系统</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-xl font-semibold">绩效考核系统</CardTitle>
+          <CardDescription className="mt-1">
             {showDemo ? "选择角色体验系统" : "使用飞书账号登录"}
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-3 pt-2">
           {error && (
-            <p className="text-center text-sm text-red-500">{error}</p>
+            <div className="rounded-lg bg-destructive/[0.06] px-3 py-2 text-center text-sm text-destructive">
+              {error}
+            </div>
           )}
 
           {!showDemo ? (
@@ -152,26 +158,27 @@ function LoginContent() {
                   <button
                     key={u.id}
                     onClick={() => devLogin(u.id)}
-                    className="flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors hover:bg-muted"
+                    className="group flex w-full items-center gap-3 rounded-xl border border-border/50 p-3.5 text-left transition-all duration-[var(--transition-base)] hover:border-border hover:bg-muted/40 hover:shadow-xs"
                   >
                     {roleIcons[u.role] || roleIcons.EMPLOYEE}
                     <div className="flex-1">
                       <p className="text-sm font-medium">{u.name}</p>
                       <p className="text-xs text-muted-foreground">{u.department}</p>
                     </div>
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                    <span className="rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
                       {roleLabels[u.role] || u.role}
                     </span>
                   </button>
                 ))
               ) : (
-                <p className="text-center text-sm text-muted-foreground">
-                  正在加载用户列表...
-                </p>
+                <div className="flex items-center justify-center py-4">
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
+                  <span className="ml-2 text-sm text-muted-foreground">加载中...</span>
+                </div>
               )}
               <button
                 onClick={() => setShowDemo(false)}
-                className="w-full text-center text-xs text-muted-foreground hover:text-foreground"
+                className="w-full pt-1 text-center text-xs text-muted-foreground transition-colors hover:text-foreground"
               >
                 返回飞书登录
               </button>

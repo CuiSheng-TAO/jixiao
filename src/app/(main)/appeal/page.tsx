@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
+import { FormPageSkeleton } from "@/components/page-skeleton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
+import { PageHeader } from "@/components/page-header";
 import { Star, AlertCircle, CheckCircle2, XCircle, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { usePreview } from "@/hooks/use-preview";
@@ -161,17 +163,13 @@ function AppealContent() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20 text-muted-foreground">
-        加载中...
-      </div>
-    );
+    return <FormPageSkeleton />;
   }
 
   if (!cycle) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-semibold">绩效申诉</h1>
+        <PageHeader title="绩效申诉" />
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
             暂无进行中的考核周期
@@ -188,10 +186,7 @@ function AppealContent() {
 
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold">绩效申诉管理</h1>
-          <p className="mt-1 text-muted-foreground">当前周期：{cycle.name}</p>
-        </div>
+        <PageHeader title="绩效申诉管理" description={`当前周期：${cycle.name}`} />
 
         {/* 待处理申诉 */}
         <div>
@@ -337,10 +332,7 @@ function AppealContent() {
   // ============ 员工视角 ============
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">绩效申诉</h1>
-        <p className="mt-1 text-muted-foreground">当前周期：{cycle.name}</p>
-      </div>
+      <PageHeader title="绩效申诉" description={`当前周期：${cycle.name}`} />
 
       {/* 绩效结果 */}
       <Card>
@@ -443,7 +435,7 @@ function AppealContent() {
 
 export default function AppealPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center py-20 text-muted-foreground">加载中...</div>}>
+    <Suspense fallback={<FormPageSkeleton />}>
       <AppealContent />
     </Suspense>
   );

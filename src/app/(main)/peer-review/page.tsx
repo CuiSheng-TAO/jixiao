@@ -1,18 +1,16 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
+import { FormPageSkeleton } from "@/components/page-skeleton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { PageHeader } from "@/components/page-header";
 import { toast } from "sonner";
 import { usePreview } from "@/hooks/use-preview";
-import { evalStatusConfig } from "@/lib/status";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Inbox } from "lucide-react";
 
 type PeerReview = {
   id: string;
@@ -45,15 +43,17 @@ type User = {
 
 function ScoreSelector({ value, onChange, disabled }: { value: number | null; onChange: (v: number) => void; disabled: boolean }) {
   return (
-    <div className="flex gap-1">
+    <div className="flex gap-1.5">
       {[1, 2, 3, 4, 5].map((n) => (
         <button
           key={n}
           onClick={() => !disabled && onChange(n)}
           disabled={disabled}
-          className={`h-8 w-8 rounded-md border text-sm font-medium transition-colors ${
-            value === n ? "border-primary bg-primary text-white" : "border-border hover:border-primary/30"
-          } ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
+          className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold transition-all duration-[var(--transition-fast)] ${
+            value === n
+              ? "bg-primary text-primary-foreground shadow-md shadow-primary/25 scale-105"
+              : "border border-border/60 bg-background text-muted-foreground hover:border-primary/40 hover:text-primary hover:bg-primary/5"
+          } ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer active:scale-95"}`}
         >
           {n}
         </button>
@@ -62,26 +62,17 @@ function ScoreSelector({ value, onChange, disabled }: { value: number | null; on
   );
 }
 
-const nominationSupervisorConfig: Record<string, { label: string; variant: string }> = {
-  APPROVED: { label: "上级已确认", variant: evalStatusConfig.APPROVED.variant },
-  REJECTED: { label: "上级已拒绝", variant: evalStatusConfig.DECLINED.variant },
-  PENDING: { label: "上级待确认", variant: evalStatusConfig.PENDING.variant },
-};
-
-const nominationNomineeConfig: Record<string, { label: string; variant: string }> = {
-  ACCEPTED: { label: "已接受", variant: evalStatusConfig.CONFIRMED.variant },
-  DECLINED: { label: "已拒绝", variant: evalStatusConfig.DECLINED.variant },
-  PENDING: { label: "待接受", variant: evalStatusConfig.PENDING.variant },
-};
-
 function NominationStatusBadges({ nomination }: { nomination: Nomination }) {
-  const supervisor = nominationSupervisorConfig[nomination.supervisorStatus] || nominationSupervisorConfig.PENDING;
-  const nominee = nominationNomineeConfig[nomination.nomineeStatus] || nominationNomineeConfig.PENDING;
+  const supervisorLabel = nomination.supervisorStatus === "APPROVED" ? "上级已确认" : nomination.supervisorStatus === "REJECTED" ? "上级已拒绝" : "上级待确认";
+  const supervisorVariant = nomination.supervisorStatus === "APPROVED" ? "default" as const : nomination.supervisorStatus === "REJECTED" ? "destructive" as const : "secondary" as const;
+
+  const nomineeLabel = nomination.nomineeStatus === "ACCEPTED" ? "已接受" : nomination.nomineeStatus === "DECLINED" ? "已拒绝" : "待接受";
+  const nomineeVariant = nomination.nomineeStatus === "ACCEPTED" ? "default" as const : nomination.nomineeStatus === "DECLINED" ? "destructive" as const : "secondary" as const;
 
   return (
     <div className="flex gap-1.5">
-      <Badge variant={supervisor.variant as any}>{supervisor.label}</Badge>
-      <Badge variant={nominee.variant as any}>{nominee.label}</Badge>
+      <Badge variant={supervisorVariant}>{supervisorLabel}</Badge>
+      <Badge variant={nomineeVariant}>{nomineeLabel}</Badge>
     </div>
   );
 }
@@ -210,36 +201,36 @@ function PeerReviewContent() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <h1 className="text-2xl font-semibold">360环评</h1>
+      <PageHeader title="360环评" description="邀请协作方参与互评，提交对同事的评估" />
 
       {/* 环评原则/导向说明区 */}
       <Card>
         <CardHeader className="cursor-pointer pb-2" onClick={() => setGuideOpen(!guideOpen)}>
           <div className="flex items-center justify-between">
             <CardTitle className="text-base">环评说明与原则</CardTitle>
-            <span className="text-sm text-muted-foreground">{guideOpen ? "收起" : "展开"}</span>
+            <span className="text-sm text-gray-400">{guideOpen ? "收起" : "展开"}</span>
           </div>
         </CardHeader>
         {guideOpen && (
-          <CardContent className="space-y-3 text-sm text-muted-foreground">
+          <CardContent className="space-y-3 text-sm text-gray-600">
             <div>
-              <p className="font-medium text-foreground">环评原则</p>
-              <p>员工自主邀请协作密切的相关方参与评估，需覆盖上级、平级、跨团队协作方。</p>
+              <p className="font-medium text-gray-800">环评原则</p>
+              <p>员工自主邀请协作密切的相关方参与评估，需覆盖上级、平级、跨团队协作方。邀请人数不高于5人，重要/核心岗可邀请多于5人，确保评估维度全面。评估人可拒绝评估邀请，但说明拒绝原因，确保评估的真实性与有效性。360环评采用匿名模式。</p>
             </div>
             <div>
-              <p className="font-medium text-foreground">环评导向</p>
-              <p>360环评仅作为绩效考评参考依据，不直接换算为绩效。</p>
+              <p className="font-medium text-gray-800">环评导向</p>
+              <p>360环评仅作为绩效考评参考依据，不直接换算为绩效，核心是为管理者提供多视角的员工画像，避免单一视角的评价偏差。</p>
             </div>
             <div>
-              <p className="font-medium text-foreground">环评维度</p>
+              <p className="font-medium text-gray-800">环评维度</p>
               <ul className="ml-4 list-disc space-y-1">
-                <li>业绩产出质量 -- 结合实际产出和对合作结果的贡献度</li>
-                <li>协作配合度 -- 协作沟通与配合表现</li>
-                <li>价值观践行 -- ROOT 4条中至少2条评估</li>
-                <li>创新能力/解决问题/组织贡献（可选）</li>
+                <li>业绩产出质量 -- 请结合员工周期内实际产出和对合作结果的贡献度综合评定，需提供数据/案例作证和描述</li>
+                <li>协作配合度 -- 请结合员工周期内协作配合度综合评定，需提供数据/案例作证和描述</li>
+                <li>价值观践行 -- 选取价值观更新：从「始终创业」到「ROOT」的组织导向升级4条中的至少2条，进行评估，需提供数据/案例作证和描述</li>
+                <li>创新能力、解决问题能力、组织贡献（可选） -- 请围绕你所勾选的维度，进行综合评定，需提供数据/案例作证和描述</li>
               </ul>
             </div>
-            <div className="rounded-md bg-primary/10 px-3 py-2 text-primary">
+            <div className="rounded-md bg-blue-50 px-3 py-2 text-blue-700">
               360环评采用匿名模式
             </div>
           </CardContent>
@@ -257,7 +248,7 @@ function PeerReviewContent() {
             <CardHeader>
               <CardTitle>选择360评估人</CardTitle>
               <CardDescription>
-                邀请人数不高于5人，重要/核心岗可邀请多于5人。需覆盖上级、平级、跨团队协作方。提交后由上级确认。
+                邀请人数不少于3人、不高于5人，重要/核心岗可邀请多于5人。需覆盖上级、平级、跨团队协作方。提交后由上级确认。
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -270,7 +261,7 @@ function PeerReviewContent() {
                       {user.name}
                       <button
                         onClick={() => !preview && setSelectedUsers((prev) => prev.filter((id) => id !== uid))}
-                        className="ml-1 text-muted-foreground hover:text-muted-foreground"
+                        className="ml-1 text-gray-400 hover:text-gray-600"
                         disabled={preview}
                       >
                         x
@@ -281,16 +272,17 @@ function PeerReviewContent() {
               </div>
 
               {!preview && (
-                <Input
+                <input
                   type="text"
                   placeholder="搜索同事姓名或部门..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  className="h-9 w-full rounded-lg border border-border/60 bg-background px-3 py-1.5 text-sm shadow-xs transition-all duration-[var(--transition-base)] hover:border-border focus:border-ring focus:shadow-sm focus:outline-none focus:ring-3 focus:ring-ring/20"
                 />
               )}
 
               {searchQuery && !preview && (
-                <div className="max-h-48 overflow-y-auto rounded-md border">
+                <div className="max-h-48 overflow-y-auto rounded-lg border border-border/60 shadow-md">
                   {filteredUsers.slice(0, 10).map((u) => (
                     <button
                       key={u.id}
@@ -298,10 +290,10 @@ function PeerReviewContent() {
                         setSelectedUsers((prev) => [...prev, u.id]);
                         setSearchQuery("");
                       }}
-                      className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-muted"
+                      className="flex w-full items-center justify-between px-3 py-2.5 text-left text-sm transition-colors hover:bg-muted/50"
                     >
-                      <span>{u.name}</span>
-                      <span className="text-muted-foreground">{u.department}</span>
+                      <span className="font-medium">{u.name}</span>
+                      <span className="text-xs text-muted-foreground">{u.department}</span>
                     </button>
                   ))}
                 </div>
@@ -335,8 +327,7 @@ function PeerReviewContent() {
         <TabsContent value="review" className="space-y-4">
           {reviews.length === 0 ? (
             <Card>
-              <CardContent className="flex flex-col items-center gap-3 py-8 text-muted-foreground">
-                <Inbox className="h-10 w-10 text-muted-foreground/50" />
+              <CardContent className="py-8 text-center text-gray-500">
                 暂无待完成的环评任务
               </CardContent>
             </Card>
@@ -352,12 +343,12 @@ function PeerReviewContent() {
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-base">
                         评估 {review.reviewee.name}
-                        <span className="ml-2 text-sm font-normal text-muted-foreground">
+                        <span className="ml-2 text-sm font-normal text-gray-400">
                           {review.reviewee.department}
                         </span>
                       </CardTitle>
-                      <Badge variant={evalStatusConfig[review.status]?.variant as any ?? "secondary"}>
-                        {evalStatusConfig[review.status]?.label || "待完成"}
+                      <Badge variant={review.status === "SUBMITTED" ? "default" : isDeclined ? "destructive" : "secondary"}>
+                        {review.status === "SUBMITTED" ? "已提交" : isDeclined ? "已拒评" : "待完成"}
                       </Badge>
                     </div>
                   </CardHeader>
@@ -371,7 +362,7 @@ function PeerReviewContent() {
                         <div className="space-y-4">
                           <div>
                             <label className="mb-1 block text-sm font-medium">业绩产出质量 <span className="text-red-500">*</span></label>
-                            <p className="mb-2 text-xs text-muted-foreground">请结合员工周期内实际产出和对合作结果的贡献度综合评定，需提供数据/案例作证和描述</p>
+                            <p className="mb-2 text-xs text-gray-400">请结合员工周期内实际产出和对合作结果的贡献度综合评定，需提供数据/案例作证和描述</p>
                             <ScoreSelector
                               value={review.outputScore}
                               onChange={(v) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, outputScore: v } : r))}
@@ -389,7 +380,7 @@ function PeerReviewContent() {
 
                           <div>
                             <label className="mb-1 block text-sm font-medium">协作配合度 <span className="text-red-500">*</span></label>
-                            <p className="mb-2 text-xs text-muted-foreground">请结合员工周期内协作配合度综合评定，需提供数据/案例作证和描述</p>
+                            <p className="mb-2 text-xs text-gray-400">请结合员工周期内协作配合度综合评定，需提供数据/案例作证和描述</p>
                             <ScoreSelector
                               value={review.collaborationScore}
                               onChange={(v) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, collaborationScore: v } : r))}
@@ -407,7 +398,7 @@ function PeerReviewContent() {
 
                           <div>
                             <label className="mb-1 block text-sm font-medium">价值观践行 <span className="text-red-500">*</span></label>
-                            <p className="mb-2 text-xs text-muted-foreground">请结合员工周期内价值观践行综合评定，选取ROOT 4条中的至少2条进行评估</p>
+                            <p className="mb-2 text-xs text-gray-400">请结合员工周期内价值观践行综合评定，选取价值观更新：从「始终创业」到「ROOT」的组织导向升级4条中的至少2条，进行评估，需提供数据/案例作证和描述</p>
                             <ScoreSelector
                               value={review.valuesScore}
                               onChange={(v) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, valuesScore: v } : r))}
@@ -425,10 +416,22 @@ function PeerReviewContent() {
 
                           <div>
                             <label className="mb-1 block text-sm font-medium">
-                              创新能力/解决问题/组织贡献
-                              <span className="ml-1.5 rounded bg-muted px-1.5 py-0.5 text-xs font-normal text-muted-foreground">可选</span>
+                              创新能力、解决问题能力、组织贡献
+                              <span className="ml-1.5 rounded bg-gray-100 px-1.5 py-0.5 text-xs font-normal text-gray-500">可选</span>
                             </label>
-                            <p className="mb-2 text-xs text-muted-foreground">请围绕你所选择的维度，进行综合评定</p>
+                            <p className="mb-2 text-xs text-gray-400">请勾选你要评估的维度，然后进行综合评定，需提供数据/案例作证和描述</p>
+                            <div className="mb-2 flex flex-wrap gap-3">
+                              {["创新能力", "解决问题能力", "组织贡献"].map((dim) => (
+                                <label key={dim} className="flex items-center gap-1.5 text-sm cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    className="h-3.5 w-3.5 rounded border-gray-300"
+                                    disabled={isDisabled}
+                                  />
+                                  {dim}
+                                </label>
+                              ))}
+                            </div>
                             <ScoreSelector
                               value={review.innovationScore}
                               onChange={(v) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, innovationScore: v } : r))}
@@ -437,7 +440,7 @@ function PeerReviewContent() {
                             <Textarea
                               value={review.innovationComment}
                               onChange={(e) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, innovationComment: e.target.value } : r))}
-                              placeholder="评语（选填）..."
+                              placeholder="请围绕你所勾选的维度进行评定..."
                               rows={2}
                               className="mt-2"
                               disabled={isDisabled}
@@ -483,7 +486,7 @@ function PeerReviewContent() {
             <DialogTitle>拒绝评估 {declineDialog.revieweeName}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">拒绝后将无法恢复，请确认并填写拒绝原因。</p>
+            <p className="text-sm text-gray-500">拒绝后将无法恢复，请确认并填写拒绝原因。</p>
             <Textarea
               value={declineReason}
               onChange={(e) => setDeclineReason(e.target.value)}
@@ -507,7 +510,7 @@ function PeerReviewContent() {
 
 export default function PeerReviewPage() {
   return (
-    <Suspense fallback={<div className="mx-auto max-w-3xl space-y-6"><Skeleton className="h-8 w-40" /><Skeleton className="h-32 w-full" /><Skeleton className="h-48 w-full" /></div>}>
+    <Suspense fallback={<FormPageSkeleton />}>
       <PeerReviewContent />
     </Suspense>
   );

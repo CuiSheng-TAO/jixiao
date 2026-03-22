@@ -127,11 +127,11 @@ function getActiveIndex(cycleStatus: string | null): number {
 }
 
 const ratingTable = [
-  { stars: 5, label: "五星", def: "取得杰出的成果，在世界范围拥有领先性", dist: "<=10%" },
-  { stars: 4, label: "四星", def: "超出期望的成果，在行业内具有竞争力", dist: "<=20%" },
-  { stars: 3, label: "三星", def: "符合预期的成果，始终如一地完成工作职责", dist: "50%+" },
-  { stars: 2, label: "二星", def: "成果不达预期，需要提高", dist: "<=15%" },
-  { stars: 1, label: "一星", def: "成果远低于预期，未达合格标准", dist: "<=5%" },
+  { stars: 5, label: "五星", def: "取得杰出的成果，所做的工作在世界范围拥有领先性，拥有极强的推动力，拥有显著的影响力", dist: "<=10%" },
+  { stars: 4, label: "四星", def: "超出期望的成果，所做的工作在行业内具有竞争力，拥有很强的推动力，拥有一定的影响力", dist: "<=20%" },
+  { stars: 3, label: "三星", def: "符合预期的成果，始终如一地完成工作职责，可以较好的完成工作落地、闭环，具有较好的学习能力，具有不错的推动力", dist: "50%+" },
+  { stars: 2, label: "二星", def: "成果不达预期，需要提高。基本满足考核要求，但与他人相比不能充分执行所有的工作职责，或虽执行了职责但平均水平较低或成果较差", dist: "<=15%" },
+  { stars: 1, label: "一星", def: "成果远低于预期，未达合格标准。不能证明其具备所需的知识和技能或不能利用所需的知识和技能；不能执行其工作职责", dist: "<=5%" },
 ];
 
 const faqItems = [
@@ -199,7 +199,7 @@ function GuideCard({
           {children}
           <Link
             href={href}
-            className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-800"
+            className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:text-primary/80"
           >
             {linkText}
             <ArrowRight className="h-3.5 w-3.5" />
@@ -251,8 +251,8 @@ export function GuidePage({ cycle }: Props) {
     <div className="mx-auto max-w-4xl space-y-10 pb-10">
       {/* Header */}
       <div className="text-center">
-        <h1 className="text-3xl font-bold tracking-tight">绩效考核使用指南</h1>
-        <p className="mt-2 text-muted-foreground">
+        <h1 className="text-2xl font-semibold tracking-tight">绩效考核使用指南</h1>
+        <p className="mt-1.5 text-sm text-muted-foreground">
           {cycle?.name ? `${cycle.name}流程说明` : "绩效考核流程说明"}
         </p>
       </div>
@@ -314,7 +314,7 @@ export function GuidePage({ cycle }: Props) {
                       {step.title}
                     </p>
                     {isCurrent && (
-                      <Badge variant="default" className="mt-1 text-xs">
+                      <Badge className="mt-1 bg-blue-100 text-blue-700 text-xs">
                         进行中
                       </Badge>
                     )}
@@ -420,7 +420,7 @@ export function GuidePage({ cycle }: Props) {
                   <div className="space-y-1">
                     <p className="text-sm font-semibold text-foreground">管理者导向</p>
                     <p className="text-sm text-muted-foreground">
-                      各级管理者是团队绩效管理第一责任人，负责下属的目标对齐、双月过程辅导、绩效初评、一对一反馈沟通；组织团队内绩效复盘；举证员工绩效贡献，参与校准会。
+                      各级管理者是团队绩效管理第一责任人；负责下属的目标对齐、双月过程辅导、绩效初评、一对一反馈沟通；组织团队内绩效复盘；举证员工绩效贡献，参与校准会；制定下属绩效改进计划，落地人才发展动作。
                     </p>
                   </div>
 
@@ -446,27 +446,31 @@ export function GuidePage({ cycle }: Props) {
                       <div className="ml-2 space-y-2 text-sm text-muted-foreground">
                         <div>
                           <p className="font-medium text-foreground/80">综合能力：</p>
+                          <p className="text-xs text-muted-foreground/80 mb-1">综合能力是人才价值交付的基本盘，是绩效持续达标的底层支撑，与岗位职级强绑定，不同职级对应明确的能力标尺，也是组织能力建设的最小单元。</p>
                           <ul className="ml-4 list-disc space-y-0.5">
-                            <li>复杂问题解决与业务闭环：穿透表象抓住业务本质，以最小成本解决核心矛盾</li>
-                            <li>专业纵深与角色履职：匹配岗位职级的专业硬实力</li>
-                            <li>跨边界协同与组织价值创造：在跨团队协作中创造增量价值</li>
-                            <li>团队赋能与价值带动：为团队/组织赋能，带动周边同事共同成长</li>
-                            <li>vibe coding（必含，对所有岗位生效）：通过AI-first工作方式提高交付效能</li>
-                            <li>领导力-基础管理执行（限Leader）</li>
+                            <li>复杂问题解决与业务闭环：穿透表象抓住业务本质，以最小成本解决核心矛盾，实现从目标到结果的全链路闭环</li>
+                            <li>专业纵深与角色履职：匹配岗位职级的专业硬实力，全面、稳定履行岗位职责，在专业领域形成不可替代的价值</li>
+                            <li>跨边界协同与组织价值创造：在跨团队、跨职能、跨区域协作中创造增量价值，而非单纯的配合执行</li>
+                            <li>团队赋能与价值带动：基于自身能力为团队/组织赋能，带动周边同事共同成长，能做到利他</li>
+                            <li>vibe coding（必含，对所有岗位生效）：能通过AI-first工作方式落地，提高交付效能</li>
+                            <li>领导力-基础管理执行（限Leader）：遵循[T] RFC-368-研发团队基础管理办法</li>
                           </ul>
                         </div>
                         <div>
                           <p className="font-medium text-foreground/80">学习能力：</p>
+                          <p className="text-xs text-muted-foreground/80 mb-1">学习能力是员工在快速变化的业务环境中，快速获取、消化、转化新知识新方法，持续刷新认知、迭代能力，实现从「知道」到「做到」闭环的核心能力，是公司保持创新活力的核心人才特质，也是高潜人才识别、成长的关键项。</p>
                           <ul className="ml-4 list-disc space-y-0.5">
-                            <li>问题分析与判断力：能抓主要矛盾，识别问题本质</li>
-                            <li>推动执行力：把目标拆解成路径、节奏、责任人和关键节点</li>
-                            <li>主动性与批判性思考：基于业务实际提出独立判断</li>
+                            <li>问题分析与判断力：能抓主要矛盾，识别问题本质，在信息不完整时做出相对正确的判断，而不是停留在表面现象</li>
+                            <li>推动执行力：能把目标拆解成路径、节奏、责任人和关键节点，持续推进，不拖不等不绕</li>
+                            <li>主动性与批判性思考：能否基于业务实际，提出自己的独立判断与优化建议，不盲目跟风，始终基于本质思考做决策</li>
                           </ul>
                         </div>
                         <div>
                           <p className="font-medium text-foreground/80">适应能力：</p>
+                          <p className="text-xs text-muted-foreground/80 mb-1">面对业务复杂性、场景变化、节奏加速、组织调整或目标切换时，能够快速调整认知、情绪、方法和资源配置，持续保持有效产出的能力。</p>
                           <ul className="ml-4 list-disc space-y-0.5">
-                            <li>AI-first工作方式落地与AI-native交付的组织转型战略适配度</li>
+                            <li>AI-first工作方式落地与AI-native交付这一组织转型战略的适配度</li>
+                            <li>可参考主动性、自我成长、心理韧性、潜力项展开综述</li>
                           </ul>
                         </div>
                       </div>
@@ -513,7 +517,7 @@ export function GuidePage({ cycle }: Props) {
 
                   <Link
                     href="/team"
-                    className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-800"
+                    className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:text-primary/80"
                   >
                     前往评估
                     <ArrowRight className="h-3.5 w-3.5" />

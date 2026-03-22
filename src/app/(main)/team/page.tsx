@@ -1,16 +1,17 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
+import { ListPageSkeleton } from "@/components/page-skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StarRating } from "@/components/star-rating";
+import { PageHeader } from "@/components/page-header";
+import { UserCheck } from "lucide-react";
 import { toast } from "sonner";
 import { usePreview } from "@/hooks/use-preview";
-import { Skeleton } from "@/components/ui/skeleton";
-import { UserCheck } from "lucide-react";
 
 type TeamEval = {
   employee: { id: string; name: string; department: string; jobTitle: string | null };
@@ -159,7 +160,7 @@ function TeamContent() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">团队评估</h1>
+      <PageHeader title="团队评估" description={`你有 ${evals.filter(e => e.evaluation?.status !== "SUBMITTED").length} 位下级待初评`} />
 
       <Tabs defaultValue="evaluate">
         <TabsList>
@@ -175,12 +176,14 @@ function TeamContent() {
                 <button
                   key={e.employee.id}
                   onClick={() => setSelected(e.employee.id)}
-                  className={`flex w-full items-center justify-between rounded-lg border p-3 text-left transition-colors ${
-                    selected === e.employee.id ? "border-primary bg-primary/10" : "hover:bg-muted"
+                  className={`group flex w-full items-center justify-between rounded-xl border p-3.5 text-left transition-all duration-[var(--transition-base)] ${
+                    selected === e.employee.id
+                      ? "border-primary/30 bg-primary/[0.04] shadow-sm"
+                      : "border-border/50 hover:border-border hover:bg-muted/40 hover:shadow-xs"
                   }`}
                 >
                   <div>
-                    <p className="font-medium">{e.employee.name}</p>
+                    <p className="text-sm font-medium">{e.employee.name}</p>
                     <p className="text-xs text-muted-foreground">{e.employee.department} {e.employee.jobTitle || ""}</p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -188,7 +191,7 @@ function TeamContent() {
                       <Badge variant="outline" className="text-xs">{e.evaluation.weightedScore.toFixed(1)}分</Badge>
                     )}
                     {e.evaluation?.status === "SUBMITTED" ? (
-                      <Badge>已评估</Badge>
+                      <Badge variant="success">已评估</Badge>
                     ) : (
                       <Badge variant="secondary">待评估</Badge>
                     )}
@@ -225,15 +228,15 @@ function TeamContent() {
                         <div className="grid grid-cols-3 gap-4 text-center">
                           <div>
                             <p className="text-2xl font-bold">{selectedEval.peerReviewSummary.output.toFixed(1)}</p>
-                            <p className="text-xs text-muted-foreground">业绩产出</p>
+                            <p className="text-xs text-gray-500">业绩产出</p>
                           </div>
                           <div>
                             <p className="text-2xl font-bold">{selectedEval.peerReviewSummary.collaboration.toFixed(1)}</p>
-                            <p className="text-xs text-muted-foreground">协作配合</p>
+                            <p className="text-xs text-gray-500">协作配合</p>
                           </div>
                           <div>
                             <p className="text-2xl font-bold">{selectedEval.peerReviewSummary.values.toFixed(1)}</p>
-                            <p className="text-xs text-muted-foreground">价值观</p>
+                            <p className="text-xs text-gray-500">价值观</p>
                           </div>
                         </div>
                       </CardContent>
@@ -242,11 +245,71 @@ function TeamContent() {
 
                   {/* Weighted score display */}
                   {liveWeightedScore != null && (
-                    <div className="flex items-center justify-between rounded-lg border border-primary/20 bg-primary/10 px-4 py-3">
+                    <div className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/[0.04] px-5 py-3.5">
                       <span className="text-sm font-medium">加权总分</span>
-                      <span className="text-lg font-bold text-primary">{liveWeightedScore.toFixed(1)} 分</span>
+                      <span className="text-xl font-bold tracking-tight text-primary">{liveWeightedScore.toFixed(1)} <span className="text-sm font-medium">分</span></span>
                     </div>
                   )}
+
+                  {/* 考核原则、导向、等级、初评指引 */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">初评说明</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <details className="text-sm text-muted-foreground">
+                        <summary className="cursor-pointer font-medium text-foreground">查看考核原则、导向、等级定义与初评指引</summary>
+                        <div className="mt-3 space-y-3">
+                          <div>
+                            <p className="font-semibold text-foreground/80">考核原则</p>
+                            <p>深度赋智绩效考核采用&ldquo;OKR目标牵引 + 360度综合价值评估 + 全层级绩效校准&rdquo;三位一体体系，明确OKR为目标管理与协同工具，不直接与绩效考核结果挂钩，避免员工博弈目标、不敢挑战；绩效考核聚焦周期内员工的实际价值贡献、协作价值、战略适配度，实现&ldquo;目标有牵引、评价有依据、激励有区分、发展有方向&rdquo;。</p>
+                          </div>
+                          <div>
+                            <p className="font-semibold text-foreground/80">管理者导向</p>
+                            <p>各级管理者是团队绩效管理第一责任人；负责下属的目标对齐、双月过程辅导、绩效初评、一对一反馈沟通；组织团队内绩效复盘；举证员工绩效贡献，参与校准会；制定下属绩效改进计划，落地人才发展动作。</p>
+                          </div>
+                          <div>
+                            <p className="font-semibold text-foreground/80">五星等级定义</p>
+                            <div className="overflow-x-auto rounded-md border mt-1">
+                              <table className="w-full text-sm">
+                                <thead>
+                                  <tr className="border-b bg-muted/50">
+                                    <th className="px-3 py-2 text-left font-medium">等级</th>
+                                    <th className="px-3 py-2 text-left font-medium">定义</th>
+                                    <th className="px-3 py-2 text-right font-medium whitespace-nowrap">分布参考</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {[
+                                    { label: "五星", def: "取得杰出的成果，所做的工作在世界范围拥有领先性，拥有极强的推动力，拥有显著的影响力", dist: "≤10%" },
+                                    { label: "四星", def: "超出期望的成果，所做的工作在行业内具有竞争力，拥有很强的推动力，拥有一定的影响力", dist: "≤20%" },
+                                    { label: "三星", def: "符合预期的成果，始终如一地完成工作职责，可以较好的完成工作落地、闭环，具有较好的学习能力，具有不错的推动力", dist: "50%+" },
+                                    { label: "二星", def: "成果不达预期，需要提高。基本满足考核要求，但与他人相比不能充分执行所有的工作职责，或虽执行了职责但平均水平较低或成果较差", dist: "≤15%" },
+                                    { label: "一星", def: "成果远低于预期，未达合格标准。不能证明其具备所需的知识和技能或不能利用所需的知识和技能；不能执行其工作职责", dist: "≤5%" },
+                                  ].map((row) => (
+                                    <tr key={row.label} className="border-b last:border-b-0">
+                                      <td className="px-3 py-2 whitespace-nowrap font-medium">{row.label}</td>
+                                      <td className="px-3 py-2">{row.def}</td>
+                                      <td className="px-3 py-2 text-right"><Badge variant="secondary">{row.dist}</Badge></td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                          <div>
+                            <p className="font-semibold text-foreground/80">初评指引</p>
+                            <ul className="mt-1 space-y-1">
+                              <li>• 直属上级结合员工工作总结、360度评估反馈、周期内实际产出、团队内相对贡献度、组织转型战略适配度，为员工给出初步绩效等级与详细评价意见，撰写绩效评语</li>
+                              <li>• 初评需严格遵循公司统一的绩效等级定义与分布指导规则，不得突破比例限制</li>
+                              <li>• 对高绩效、低绩效评级必须提供完整的贡献举证与事实依据</li>
+                              <li>• 初评结果仅为待校准状态，不得提前向员工透露</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </details>
+                    </CardContent>
+                  </Card>
 
                   {/* Three-dimension evaluation form */}
                   <Card>
@@ -281,15 +344,41 @@ function TeamContent() {
                           <span className="text-xs text-muted-foreground">权重30%</span>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          请结合员工综合能力 + 学习能力 + 适应能力综合评定
+                          请结合员工综合能力 + 学习能力 + 适应能力，综合评定，需提供数据/案例作证和描述
                         </p>
                         <details className="text-xs text-muted-foreground">
                           <summary className="cursor-pointer font-medium">查看子项说明</summary>
-                          <ul className="mt-1 list-disc space-y-1 pl-4">
-                            <li><span className="font-medium">综合能力：</span>复杂问题解决与业务闭环、专业纵深与角色履职、跨边界协同与组织价值创造、团队赋能与价值带动、vibe coding（必含）</li>
-                            <li><span className="font-medium">学习能力：</span>问题分析与判断力、推动执行力、主动性与批判性思考</li>
-                            <li><span className="font-medium">适应能力：</span>AI-first工作方式落地与AI-native交付适配度</li>
-                          </ul>
+                          <div className="mt-2 space-y-3 pl-2">
+                            <div>
+                              <p className="font-medium">综合能力：</p>
+                              <p className="text-xs text-muted-foreground/80 mb-1">综合能力是人才价值交付的基本盘，是绩效持续达标的底层支撑，与岗位职级强绑定，不同职级对应明确的能力标尺，也是组织能力建设的最小单元。</p>
+                              <ul className="list-disc space-y-0.5 pl-4">
+                                <li>复杂问题解决与业务闭环：穿透表象抓住业务本质，以最小成本解决核心矛盾，实现从目标到结果的全链路闭环</li>
+                                <li>专业纵深与角色履职：匹配岗位职级的专业硬实力，全面、稳定履行岗位职责，在专业领域形成不可替代的价值</li>
+                                <li>跨边界协同与组织价值创造：在跨团队、跨职能、跨区域协作中创造增量价值，而非单纯的配合执行</li>
+                                <li>团队赋能与价值带动：基于自身能力为团队/组织赋能，带动周边同事共同成长，能做到利他</li>
+                                <li>vibe coding（必含，对所有岗位生效）：能通过AI-first工作方式落地，提高交付效能</li>
+                                <li>领导力-基础管理执行（限Leader）：遵循[T] RFC-368-研发团队基础管理办法</li>
+                              </ul>
+                            </div>
+                            <div>
+                              <p className="font-medium">学习能力：</p>
+                              <p className="text-xs text-muted-foreground/80 mb-1">学习能力是员工在快速变化的业务环境中，快速获取、消化、转化新知识新方法，持续刷新认知、迭代能力，实现从「知道」到「做到」闭环的核心能力，是公司保持创新活力的核心人才特质，也是高潜人才识别、成长的关键项。</p>
+                              <ul className="list-disc space-y-0.5 pl-4">
+                                <li>问题分析与判断力：能抓主要矛盾，识别问题本质，在信息不完整时做出相对正确的判断，而不是停留在表面现象</li>
+                                <li>推动执行力：能把目标拆解成路径、节奏、责任人和关键节点，持续推进，不拖不等不绕</li>
+                                <li>主动性与批判性思考：能否基于业务实际，提出自己的独立判断与优化建议，不盲目跟风，始终基于本质思考做决策</li>
+                              </ul>
+                            </div>
+                            <div>
+                              <p className="font-medium">适应能力：</p>
+                              <p className="text-xs text-muted-foreground/80 mb-1">面对业务复杂性、场景变化、节奏加速、组织调整或目标切换时，能够快速调整认知、情绪、方法和资源配置，持续保持有效产出的能力。</p>
+                              <ul className="list-disc space-y-0.5 pl-4">
+                                <li>AI-first工作方式落地与AI-native交付这一组织转型战略的适配度</li>
+                                <li>可参考主动性、自我成长、心理韧性、潜力项展开综述</li>
+                              </ul>
+                            </div>
+                          </div>
                         </details>
                         <StarRating
                           value={formData[selected!]?.abilityStars}
@@ -299,7 +388,7 @@ function TeamContent() {
                         <Textarea
                           value={formData[selected!]?.abilityComment || ""}
                           onChange={(e) => updateField("abilityComment", e.target.value)}
-                          placeholder="请结合员工综合能力 + 学习能力 + 适应能力综合评定"
+                          placeholder="请结合员工综合能力 + 学习能力 + 适应能力，综合评定，需提供数据/案例作证和描述"
                           rows={3}
                           disabled={isSubmitted || preview}
                         />
@@ -311,6 +400,9 @@ function TeamContent() {
                           <h3 className="text-sm font-semibold">价值观</h3>
                           <span className="text-xs text-muted-foreground">权重20%</span>
                         </div>
+                        <p className="text-xs text-muted-foreground">
+                          ROOT = Ownership、独立思考与快速学习、结果导向、Always Day 1
+                        </p>
                         <StarRating
                           value={formData[selected!]?.valuesStars}
                           onChange={(v) => updateField("valuesStars", v)}
@@ -319,7 +411,7 @@ function TeamContent() {
                         <Textarea
                           value={formData[selected!]?.valuesComment || ""}
                           onChange={(e) => updateField("valuesComment", e.target.value)}
-                          placeholder='请针对价值观更新：从「始终创业」到「ROOT」的组织导向升级4条进行评估'
+                          placeholder='请针对价值观更新：从「始终创业」到「ROOT」的组织导向升级4条进行评估，需提供数据/案例作证和描述'
                           rows={3}
                           disabled={isSubmitted || preview}
                         />
@@ -337,9 +429,11 @@ function TeamContent() {
                 </div>
               ) : (
                 <Card>
-                  <CardContent className="flex flex-col items-center gap-3 py-12 text-muted-foreground">
-                    <UserCheck className="h-10 w-10 text-muted-foreground/50" />
-                    选择左侧的员工开始评估
+                  <CardContent className="py-16 text-center">
+                    <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+                      <UserCheck className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <p className="text-sm text-muted-foreground">选择左侧的员工开始评估</p>
                   </CardContent>
                 </Card>
               )}
@@ -350,7 +444,7 @@ function TeamContent() {
         <TabsContent value="confirm" className="space-y-4">
           {nominations.length === 0 ? (
             <Card>
-              <CardContent className="py-8 text-center text-muted-foreground">
+              <CardContent className="py-8 text-center text-gray-500">
                 暂无待确认的环评提名
               </CardContent>
             </Card>
@@ -405,7 +499,7 @@ function TeamContent() {
 
 export default function TeamPage() {
   return (
-    <Suspense fallback={<div className="space-y-6"><Skeleton className="h-8 w-40" /><div className="grid gap-4 lg:grid-cols-3"><div className="space-y-2 lg:col-span-1">{[1, 2, 3].map((i) => (<Skeleton key={i} className="h-16 w-full" />))}</div><Skeleton className="h-64 w-full lg:col-span-2" /></div></div>}>
+    <Suspense fallback={<ListPageSkeleton />}>
       <TeamContent />
     </Suspense>
   );

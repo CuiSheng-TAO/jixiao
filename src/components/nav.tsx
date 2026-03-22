@@ -69,64 +69,75 @@ export function Nav({ user }: NavProps) {
   }
 
   return (
-    <nav className="flex h-screen w-56 flex-col border-r bg-card">
-      <div className="flex items-center gap-2 border-b px-4 py-4">
-        <BarChart3 className="h-6 w-6 text-primary" />
-        <span className="text-lg font-bold">绩效系统</span>
+    <nav className="flex h-screen w-60 flex-col bg-card shadow-[1px_0_0_0_var(--border),4px_0_16px_rgba(0,0,0,0.03)]">
+      {/* Logo */}
+      <div className="flex items-center gap-3 px-5 py-5">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/80 shadow-sm">
+          <BarChart3 className="h-4.5 w-4.5 text-white" />
+        </div>
+        <span className="text-base font-semibold tracking-tight">绩效系统</span>
       </div>
 
-      <div className="flex-1 overflow-y-auto py-2">
-        {visibleItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
-          const classes = cn(
-            "flex items-center gap-3 mx-2 rounded-md px-3 py-2 text-sm transition-colors",
-            isActive
-              ? "bg-primary/10 text-primary font-medium"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground"
-          );
-          return preview ? (
-            <a key={item.href} href={buildHref(item.href)} className={classes}>
-              <Icon className="h-4 w-4" />
-              {item.label}
-            </a>
-          ) : (
-            <Link key={item.href} href={item.href} className={classes}>
-              <Icon className="h-4 w-4" />
-              {item.label}
-            </Link>
-          );
-        })}
+      {/* Nav items */}
+      <div className="flex-1 overflow-y-auto px-3 py-1">
+        <div className="space-y-0.5">
+          {visibleItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
+            const classes = cn(
+              "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-[var(--transition-base)]",
+              isActive
+                ? "bg-primary/[0.08] text-primary"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            );
+            const indicator = isActive ? (
+              <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-primary" />
+            ) : null;
+            return preview ? (
+              <a key={item.href} href={buildHref(item.href)} className={classes}>
+                {indicator}
+                <Icon className={cn("h-[18px] w-[18px] transition-colors duration-[var(--transition-base)]", isActive ? "text-primary" : "text-muted-foreground/70 group-hover:text-foreground")} />
+                {item.label}
+              </a>
+            ) : (
+              <Link key={item.href} href={item.href} className={classes}>
+                {indicator}
+                <Icon className={cn("h-[18px] w-[18px] transition-colors duration-[var(--transition-base)]", isActive ? "text-primary" : "text-muted-foreground/70 group-hover:text-foreground")} />
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
       </div>
 
       {/* 角色预览区域 */}
-      <div className="border-t px-3 py-3">
-        <div className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground">
+      <div className="mx-3 border-t border-border/60 px-1 py-3">
+        <div className="mb-2 flex items-center gap-2 px-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground/60">
           {preview ? (
-            <EyeOff className="h-3.5 w-3.5" />
+            <EyeOff className="h-3 w-3" />
           ) : (
-            <Eye className="h-3.5 w-3.5" />
+            <Eye className="h-3 w-3" />
           )}
           <span>角色预览</span>
         </div>
-        <div className="space-y-1">
+        <div className="space-y-0.5">
           {previewRoles.map(({ role, label }) => (
             <button
               key={role}
               onClick={() => enterPreview(role)}
               className={cn(
-                "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors",
+                "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-all duration-[var(--transition-base)]",
                 previewRole === role
-                  ? "bg-amber-100 text-amber-800 font-medium"
+                  ? "bg-warning/10 text-warning font-medium"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
             >
               <span
                 className={cn(
-                  "h-2 w-2 rounded-full border",
+                  "h-1.5 w-1.5 rounded-full transition-colors",
                   previewRole === role
-                    ? "border-amber-600 bg-amber-500"
-                    : "border-border"
+                    ? "bg-warning"
+                    : "bg-muted-foreground/30"
                 )}
               />
               {label}
@@ -136,23 +147,24 @@ export function Nav({ user }: NavProps) {
         {preview && (
           <button
             onClick={exitPreview}
-            className="mt-2 w-full rounded-md border border-amber-300 bg-amber-50 px-2 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100"
+            className="mt-2 w-full rounded-md bg-warning/10 px-2 py-1.5 text-xs font-medium text-warning transition-colors hover:bg-warning/15"
           >
             退出预览
           </button>
         )}
       </div>
 
-      <div className="border-t p-3">
+      {/* User info */}
+      <div className="mx-3 border-t border-border/60 p-2 pb-3">
         <DropdownMenu>
-          <DropdownMenuTrigger className="flex w-full items-center gap-2 rounded-md p-2 hover:bg-muted">
-            <Avatar className="h-8 w-8">
+          <DropdownMenuTrigger className="flex w-full items-center gap-2.5 rounded-lg p-2 transition-colors duration-[var(--transition-base)] hover:bg-muted">
+            <Avatar className="h-8 w-8 ring-2 ring-border/50">
               <AvatarImage src={user.avatarUrl || undefined} />
-              <AvatarFallback>{user.name[0]}</AvatarFallback>
+              <AvatarFallback className="bg-primary/10 text-xs font-medium text-primary">{user.name[0]}</AvatarFallback>
             </Avatar>
             <div className="flex-1 text-left">
-              <p className="text-sm font-medium">{user.name}</p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[13px] font-medium leading-tight">{user.name}</p>
+              <p className="text-[11px] text-muted-foreground">
                 {{ ADMIN: "管理员", HRBP: "HRBP", SUPERVISOR: "主管", EMPLOYEE: "员工" }[user.role]}
               </p>
             </div>

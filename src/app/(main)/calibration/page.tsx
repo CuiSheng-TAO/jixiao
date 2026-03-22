@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
+import { PageSkeleton } from "@/components/page-skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
+import { PageHeader } from "@/components/page-header";
 import { toast } from "sonner";
 import { usePreview } from "@/hooks/use-preview";
 
@@ -99,7 +100,7 @@ function CalibrationContent() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">绩效校准</h1>
+      <PageHeader title="绩效校准" description="查看与调整绩效等级分布" />
 
       {/* Distribution Chart */}
       <Card>
@@ -109,7 +110,7 @@ function CalibrationContent() {
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              className="rounded-md border px-3 py-1.5 text-sm"
+              className="h-8 rounded-lg border border-border/60 bg-background px-2.5 text-sm shadow-xs transition-all hover:border-border focus:border-ring focus:outline-none focus:ring-3 focus:ring-ring/20"
             >
               <option value="">全公司</option>
               {departments.map((d) => (
@@ -119,38 +120,36 @@ function CalibrationContent() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex items-end gap-4" style={{ height: 240 }}>
+          <div className="flex items-end gap-6 px-4" style={{ height: 320 }}>
             {distribution.map((d) => {
-              const barHeight = Math.max(8, (d.count / Math.max(total, 1)) * 200);
-              const refHeight = (distributionLimits[d.stars] / 100) * 200;
+              const maxCount = Math.max(...distribution.map((x) => x.count), 1);
+              const barHeight = Math.max(12, (d.count / maxCount) * 180);
 
               return (
-                <div key={d.stars} className="relative flex flex-1 flex-col items-center gap-1" style={{ height: "100%" }}>
-                  {/* Reference line */}
-                  <div
-                    className="absolute w-full border-t-2 border-dashed border-border"
-                    style={{ bottom: `${refHeight + 40}px` }}
-                    title={`参考线: ${distributionLabels[d.stars]}`}
-                  >
-                    <span className="absolute -top-4 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground">
+                <div key={d.stars} className="flex flex-1 flex-col items-center gap-2" style={{ height: "100%" }}>
+                  <div className="flex flex-1 flex-col items-center justify-end gap-1.5">
+                    {/* Reference label */}
+                    <span className="text-[10px] text-muted-foreground/50">
                       {distributionLabels[d.stars]}
                     </span>
-                  </div>
-
-                  <div className="flex flex-1 flex-col items-center justify-end gap-1">
-                    <span className={`text-sm font-medium ${d.exceeded ? "text-red-600" : ""}`}>
+                    {/* Count */}
+                    <span className={`text-sm font-semibold ${d.exceeded ? "text-red-500" : "text-foreground"}`}>
                       {d.count}
                     </span>
+                    {/* Bar */}
                     <div
-                      className={`w-full rounded-t-md transition-all ${
-                        d.exceeded ? "bg-red-500" : "bg-primary"
+                      className={`w-10 rounded-t-lg transition-all ${
+                        d.exceeded ? "bg-red-400" : "bg-primary/70"
                       }`}
                       style={{ height: `${barHeight}px` }}
                     />
-                    <span className="text-sm font-bold">{d.stars}星</span>
-                    <span className={`text-xs ${d.exceeded ? "font-bold text-red-600" : "text-muted-foreground"}`}>
+                  </div>
+                  {/* Label */}
+                  <div className="text-center">
+                    <span className="text-sm font-medium">{d.stars}星</span>
+                    <p className={`text-[11px] ${d.exceeded ? "font-semibold text-red-500" : "text-muted-foreground"}`}>
                       {d.pct.toFixed(0)}%
-                    </span>
+                    </p>
                   </div>
                 </div>
               );
@@ -162,42 +161,42 @@ function CalibrationContent() {
       {/* Employee Table */}
       <Card>
         <CardContent className="p-0">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted">
-                <th className="px-4 py-3 text-left font-medium">姓名</th>
-                <th className="px-4 py-3 text-left font-medium">部门</th>
-                <th className="px-4 py-3 text-center font-medium">自评状态</th>
-                <th className="px-4 py-3 text-center font-medium">360均分</th>
-                <th className="px-4 py-3 text-center font-medium">上级加权分</th>
-                <th className="px-4 py-3 text-center font-medium">最终星级</th>
-                <th className="px-4 py-3 text-center font-medium">操作</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>姓名</TableHead>
+                <TableHead>部门</TableHead>
+                <TableHead className="text-center">自评状态</TableHead>
+                <TableHead className="text-center">360均分</TableHead>
+                <TableHead className="text-center">上级加权分</TableHead>
+                <TableHead className="text-center">最终星级</TableHead>
+                <TableHead className="text-center">操作</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {filtered.map((item) => (
-                <tr key={item.user.id} className="border-b hover:bg-muted">
-                  <td className="px-4 py-3 font-medium">{item.user.name}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{item.user.department}</td>
-                  <td className="px-4 py-3 text-center">
-                    <Badge variant={item.selfEvalStatus === "imported" ? "default" : "outline"}>
+                <TableRow key={item.user.id}>
+                  <TableCell className="font-medium">{item.user.name}</TableCell>
+                  <TableCell className="text-muted-foreground">{item.user.department}</TableCell>
+                  <TableCell className="text-center">
+                    <Badge variant={item.selfEvalStatus === "imported" ? "success" : "outline"}>
                       {item.selfEvalStatus === "imported" ? "已导入" : "未导入"}
                     </Badge>
-                  </td>
-                  <td className="px-4 py-3 text-center">{item.peerAvg || "-"}</td>
-                  <td className="px-4 py-3 text-center">
+                  </TableCell>
+                  <TableCell className="text-center">{item.peerAvg || "-"}</TableCell>
+                  <TableCell className="text-center">
                     {item.supervisorWeighted != null ? (
                       <Badge variant="outline">{item.supervisorWeighted.toFixed(1)}</Badge>
                     ) : "-"}
-                  </td>
-                  <td className="px-4 py-3 text-center">
+                  </TableCell>
+                  <TableCell className="text-center">
                     {item.finalStars != null ? (
                       <Badge>{starLabels[item.finalStars]}</Badge>
                     ) : item.proposedStars != null ? (
                       <Badge variant="outline">{starLabels[item.proposedStars]}</Badge>
                     ) : "-"}
-                  </td>
-                  <td className="px-4 py-3 text-center">
+                  </TableCell>
+                  <TableCell className="text-center">
                     <Button
                       variant="outline"
                       size="sm"
@@ -211,69 +210,71 @@ function CalibrationContent() {
                     >
                       调整
                     </Button>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
 
       {/* Edit Dialog */}
-      <Dialog open={!!editingUser && !preview} onOpenChange={(open) => { if (!open) setEditingUser(null); }}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              调整绩效星级 - {data.find((d) => d.user.id === editingUser)?.user.name}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="mb-2 block text-sm font-medium">最终星级</label>
-              <div className="flex gap-2">
-                {[1, 2, 3, 4, 5].map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => setEditStars(s)}
-                    className={`rounded-lg border-2 px-4 py-2 font-bold transition-colors ${
-                      editStars === s
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border hover:border-border"
-                    }`}
-                  >
-                    {s}星
-                  </button>
-                ))}
+      {editingUser && !preview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <Card className="w-[420px] shadow-xl">
+            <CardHeader>
+              <CardTitle className="text-base">
+                调整绩效星级 — {data.find((d) => d.user.id === editingUser)?.user.name}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div>
+                <label className="mb-2.5 block text-sm font-medium">最终星级</label>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => setEditStars(s)}
+                      className={`flex h-11 flex-1 items-center justify-center rounded-xl text-sm font-semibold transition-all duration-[var(--transition-fast)] ${
+                        editStars === s
+                          ? "bg-primary text-primary-foreground shadow-md shadow-primary/25"
+                          : "border border-border/60 bg-background text-muted-foreground hover:border-primary/40 hover:text-primary"
+                      }`}
+                    >
+                      {s}星
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            <div>
-              <label className="mb-1 block text-sm font-medium">调整原因</label>
-              <textarea
-                value={editReason}
-                onChange={(e) => setEditReason(e.target.value)}
-                placeholder="请说明调整原因..."
-                rows={3}
-                className="w-full rounded-md border px-3 py-2 text-sm"
-              />
-            </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium">调整原因</label>
+                <textarea
+                  value={editReason}
+                  onChange={(e) => setEditReason(e.target.value)}
+                  placeholder="请说明调整原因..."
+                  rows={3}
+                  className="w-full rounded-lg border border-border/60 bg-background px-3 py-2.5 text-sm shadow-xs transition-all duration-[var(--transition-base)] hover:border-border focus:border-ring focus:shadow-sm focus:outline-none focus:ring-3 focus:ring-ring/20"
+                />
+              </div>
 
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setEditingUser(null)}>取消</Button>
-              <Button onClick={() => editingUser && saveCalibration(editingUser)} disabled={!editStars}>
-                保存
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+              <div className="flex justify-end gap-2 border-t pt-4">
+                <Button variant="outline" onClick={() => setEditingUser(null)}>取消</Button>
+                <Button onClick={() => saveCalibration(editingUser)} disabled={!editStars}>
+                  保存
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
 
 export default function CalibrationPage() {
   return (
-    <Suspense fallback={<div className="space-y-6"><Skeleton className="h-8 w-40" /><Skeleton className="h-60 w-full" /><Skeleton className="h-48 w-full" /></div>}>
+    <Suspense fallback={<PageSkeleton />}>
       <CalibrationContent />
     </Suspense>
   );

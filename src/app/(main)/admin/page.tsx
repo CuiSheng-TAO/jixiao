@@ -1,14 +1,16 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
+import { PageSkeleton } from "@/components/page-skeleton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { PageHeader } from "@/components/page-header";
 import { toast } from "sonner";
 import { usePreview } from "@/hooks/use-preview";
-import { cycleStatusConfig } from "@/lib/status";
 
 type ImportItem = {
   name: string;
@@ -53,6 +55,16 @@ type UserItem = {
 };
 
 const statusFlow = ["DRAFT", "SELF_EVAL", "PEER_REVIEW", "SUPERVISOR_EVAL", "CALIBRATION", "MEETING", "APPEAL", "ARCHIVED"];
+const statusLabels: Record<string, string> = {
+  DRAFT: "未开始",
+  SELF_EVAL: "个人自评",
+  PEER_REVIEW: "360环评",
+  SUPERVISOR_EVAL: "上级评估",
+  CALIBRATION: "绩效校准",
+  MEETING: "面谈",
+  APPEAL: "申诉",
+  ARCHIVED: "已归档",
+};
 
 function AdminContent() {
   const { preview, previewRole, getData } = usePreview();
@@ -112,7 +124,7 @@ function AdminContent() {
 
   const updateCycleStatus = async (cycleId: string, status: string) => {
     if (preview) return;
-    if (!confirm(`确认将考核周期推进到「${cycleStatusConfig[status]?.label}」阶段？`)) return;
+    if (!confirm(`确认将考核周期推进到「${statusLabels[status]}」阶段？`)) return;
     try {
       await fetch("/api/admin/cycle", {
         method: "PUT",
@@ -250,7 +262,7 @@ function AdminContent() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">系统管理</h1>
+      <PageHeader title="系统管理" description="考核周期、员工与数据管理" />
 
       <Tabs defaultValue="cycle">
         <TabsList>
@@ -278,7 +290,7 @@ function AdminContent() {
                   <input
                     value={newCycle.name}
                     onChange={(e) => setNewCycle({ ...newCycle, name: e.target.value })}
-                    className="w-full rounded-md border px-3 py-2 text-sm"
+                    className="h-9 w-full rounded-lg border border-border/60 bg-background px-3 py-1.5 text-sm shadow-xs transition-all duration-[var(--transition-base)] hover:border-border focus:border-ring focus:shadow-sm focus:outline-none focus:ring-3 focus:ring-ring/20"
                   />
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -297,12 +309,12 @@ function AdminContent() {
                     { label: "申诉截止", key: "appealEnd" },
                   ].map(({ label, key }) => (
                     <div key={key}>
-                      <label className="mb-1 block text-xs text-muted-foreground">{label}</label>
+                      <label className="mb-1 block text-xs text-gray-500">{label}</label>
                       <input
                         type="date"
                         value={newCycle[key as keyof typeof newCycle]}
                         onChange={(e) => setNewCycle({ ...newCycle, [key]: e.target.value })}
-                        className="w-full rounded-md border px-3 py-2 text-sm"
+                        className="h-9 w-full rounded-lg border border-border/60 bg-background px-3 py-1.5 text-sm shadow-xs transition-all duration-[var(--transition-base)] hover:border-border focus:border-ring focus:shadow-sm focus:outline-none focus:ring-3 focus:ring-ring/20"
                       />
                     </div>
                   ))}
@@ -326,28 +338,32 @@ function AdminContent() {
                         {new Date(cycle.selfEvalStart).toLocaleDateString()} - {new Date(cycle.meetingEnd).toLocaleDateString()}
                       </CardDescription>
                     </div>
-                    <Badge variant={cycleStatusConfig[cycle.status]?.variant as any}>{cycleStatusConfig[cycle.status]?.label}</Badge>
+                    <Badge>{statusLabels[cycle.status]}</Badge>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     {statusFlow.map((s, i) => (
-                      <div key={s} className="flex items-center gap-2">
+                      <div key={s} className="flex items-center gap-1.5">
                         <div
-                          className={`rounded-full px-3 py-1 text-xs font-medium ${
-                            i <= currentIdx ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                          className={`rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                            i <= currentIdx
+                              ? "bg-primary/10 text-primary"
+                              : "bg-muted text-muted-foreground/60"
                           }`}
                         >
-                          {cycleStatusConfig[s]?.label}
+                          {statusLabels[s]}
                         </div>
-                        {i < statusFlow.length - 1 && <span className="text-border">{"\u2192"}</span>}
+                        {i < statusFlow.length - 1 && (
+                          <span className={`text-xs ${i < currentIdx ? "text-primary/40" : "text-border"}`}>{"\u203A"}</span>
+                        )}
                       </div>
                     ))}
                   </div>
                   {nextStatus && (
                     <div className="mt-4">
                       <Button size="sm" onClick={() => updateCycleStatus(cycle.id, nextStatus)} disabled={preview}>
-                        推进到「{cycleStatusConfig[nextStatus]?.label}」
+                        推进到「{statusLabels[nextStatus]}」
                       </Button>
                     </div>
                   )}
@@ -360,28 +376,28 @@ function AdminContent() {
         <TabsContent value="users">
           <Card>
             <CardContent className="p-0">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted">
-                    <th className="px-4 py-3 text-left font-medium">姓名</th>
-                    <th className="px-4 py-3 text-left font-medium">部门</th>
-                    <th className="px-4 py-3 text-left font-medium">职位</th>
-                    <th className="px-4 py-3 text-left font-medium">上级</th>
-                    <th className="px-4 py-3 text-center font-medium">角色</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>姓名</TableHead>
+                    <TableHead>部门</TableHead>
+                    <TableHead>职位</TableHead>
+                    <TableHead>上级</TableHead>
+                    <TableHead className="text-center">角色</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {users.map((u) => (
-                    <tr key={u.id} className="border-b hover:bg-muted">
-                      <td className="px-4 py-3 font-medium">{u.name}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{u.department}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{u.jobTitle || "-"}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{u.supervisor?.name || "-"}</td>
-                      <td className="px-4 py-3 text-center">
+                    <TableRow key={u.id}>
+                      <TableCell className="font-medium">{u.name}</TableCell>
+                      <TableCell className="text-muted-foreground">{u.department}</TableCell>
+                      <TableCell className="text-muted-foreground">{u.jobTitle || "-"}</TableCell>
+                      <TableCell className="text-muted-foreground">{u.supervisor?.name || "-"}</TableCell>
+                      <TableCell className="text-center">
                         <select
                           value={u.role}
                           onChange={(e) => updateUserRole(u.id, e.target.value)}
-                          className="rounded border px-2 py-1 text-xs"
+                          className="rounded-md border border-border/60 bg-background px-2 py-1 text-xs transition-colors focus:border-primary focus:outline-none"
                           disabled={preview}
                         >
                           <option value="EMPLOYEE">员工</option>
@@ -389,11 +405,11 @@ function AdminContent() {
                           <option value="HRBP">HRBP</option>
                           <option value="ADMIN">管理员</option>
                         </select>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>
@@ -410,7 +426,7 @@ function AdminContent() {
               <Button onClick={syncOrg} disabled={syncing || preview}>
                 {syncing ? "同步中..." : "立即同步"}
               </Button>
-              <p className="mt-2 text-xs text-muted-foreground">
+              <p className="mt-2 text-xs text-gray-400">
                 需要在飞书开放平台配置应用权限：contact:contact:readonly_as_app
               </p>
             </CardContent>
@@ -426,12 +442,12 @@ function AdminContent() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="rounded-lg border border-primary/20 bg-primary/10 p-3">
-                <p className="text-xs text-primary">
+              <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
+                <p className="text-xs text-blue-700">
                   <strong>JSON格式：</strong>{" "}
                   {`[{ "name": "张三", "content": "自评内容..." }, ...]`}
                 </p>
-                <p className="mt-1 text-xs text-primary">
+                <p className="mt-1 text-xs text-blue-700">
                   <strong>CSV格式：</strong> 每行一条，格式为「姓名,自评内容」
                 </p>
               </div>
@@ -474,27 +490,27 @@ function AdminContent() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-muted">
-                      <th className="px-4 py-3 text-left font-medium">序号</th>
-                      <th className="px-4 py-3 text-left font-medium">姓名</th>
-                      <th className="px-4 py-3 text-left font-medium">自评内容预览</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {importParsed.map((item, idx) => (
-                      <tr key={idx} className="border-b hover:bg-muted">
-                        <td className="px-4 py-3 text-muted-foreground">{idx + 1}</td>
-                        <td className="px-4 py-3 font-medium">{item.name}</td>
-                        <td className="max-w-md truncate px-4 py-3 text-muted-foreground">
-                          {item.content.slice(0, 80)}
-                          {item.content.length > 80 ? "..." : ""}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>序号</TableHead>
+                    <TableHead>姓名</TableHead>
+                    <TableHead>自评内容预览</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {importParsed.map((item, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell className="text-muted-foreground">{idx + 1}</TableCell>
+                      <TableCell className="font-medium">{item.name}</TableCell>
+                      <TableCell className="max-w-md truncate text-muted-foreground">
+                        {item.content.slice(0, 80)}
+                        {item.content.length > 80 ? "..." : ""}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
               </CardContent>
             </Card>
           )}
@@ -547,7 +563,7 @@ function AdminContent() {
 
 export default function AdminPage() {
   return (
-    <Suspense fallback={<div className="py-12 text-center text-muted-foreground">加载中...</div>}>
+    <Suspense fallback={<PageSkeleton />}>
       <AdminContent />
     </Suspense>
   );

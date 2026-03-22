@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
+import { ListPageSkeleton } from "@/components/page-skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { PageHeader } from "@/components/page-header";
+import { MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { usePreview } from "@/hooks/use-preview";
 
@@ -70,11 +73,11 @@ function MeetingsContent() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">面谈记录</h1>
+      <PageHeader title="面谈记录" description="记录与管理绩效面谈" />
 
       {meetings.length === 0 ? (
         <Card>
-          <CardContent className="py-8 text-center text-muted-foreground">
+          <CardContent className="py-8 text-center text-gray-500">
             暂无面谈记录
           </CardContent>
         </Card>
@@ -89,15 +92,17 @@ function MeetingsContent() {
                   setNotes(m.notes || "");
                   setMeetingDate(m.meetingDate?.slice(0, 10) || "");
                 }}
-                className={`flex w-full items-center justify-between rounded-lg border p-3 text-left transition-colors ${
-                  selected === m.id ? "border-primary bg-primary/10" : "hover:bg-muted"
+                className={`flex w-full items-center justify-between rounded-xl border p-3.5 text-left transition-all duration-[var(--transition-base)] ${
+                  selected === m.id
+                    ? "border-primary/30 bg-primary/[0.04] shadow-sm"
+                    : "border-border/50 hover:border-border hover:bg-muted/40 hover:shadow-xs"
                 }`}
               >
                 <div>
-                  <p className="font-medium">{m.employee.name}</p>
+                  <p className="text-sm font-medium">{m.employee.name}</p>
                   <p className="text-xs text-muted-foreground">{m.employee.department}</p>
                 </div>
-                <Badge variant={m.employeeAck ? "default" : "secondary"}>
+                <Badge variant={m.employeeAck ? "success" : "secondary"}>
                   {m.employeeAck ? "已确认" : m.notes ? "已记录" : "待面谈"}
                 </Badge>
               </button>
@@ -119,7 +124,7 @@ function MeetingsContent() {
                       type="date"
                       value={meetingDate}
                       onChange={(e) => setMeetingDate(e.target.value)}
-                      className="rounded-md border px-3 py-2 text-sm"
+                      className="h-9 rounded-lg border border-border/60 bg-background px-3 py-1.5 text-sm shadow-xs transition-all duration-[var(--transition-base)] hover:border-border focus:border-ring focus:shadow-sm focus:outline-none focus:ring-3 focus:ring-ring/20"
                       disabled={preview}
                     />
                   </div>
@@ -156,8 +161,11 @@ function MeetingsContent() {
               </Card>
             ) : (
               <Card>
-                <CardContent className="py-12 text-center text-muted-foreground">
-                  选择左侧记录查看详情
+                <CardContent className="py-16 text-center">
+                  <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+                    <MessageSquare className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">选择左侧记录查看详情</p>
                 </CardContent>
               </Card>
             )}
@@ -170,7 +178,7 @@ function MeetingsContent() {
 
 export default function MeetingsPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center py-20 text-muted-foreground">加载中...</div>}>
+    <Suspense fallback={<ListPageSkeleton />}>
       <MeetingsContent />
     </Suspense>
   );

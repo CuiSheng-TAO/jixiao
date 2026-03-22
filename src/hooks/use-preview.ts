@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { isPreviewMode, getPreviewRole, getPreviewData, PREVIEW_ROLE_LABELS } from "@/lib/preview";
 import type { PreviewRole } from "@/lib/preview";
@@ -13,20 +14,20 @@ export function usePreview() {
   const previewRole = getPreviewRole(searchParams);
   const previewRoleLabel = previewRole ? PREVIEW_ROLE_LABELS[previewRole] : null;
 
-  function enterPreview(role: PreviewRole) {
+  const enterPreview = useCallback((role: PreviewRole) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("preview", role);
     window.location.href = `${pathname}?${params.toString()}`;
-  }
+  }, [searchParams, pathname]);
 
-  function exitPreview() {
+  const exitPreview = useCallback(() => {
     window.location.href = pathname;
-  }
+  }, [pathname]);
 
-  function getData(page: string): Record<string, unknown> {
+  const getData = useCallback((page: string): Record<string, unknown> => {
     if (!previewRole) return {};
     return getPreviewData(previewRole, page);
-  }
+  }, [previewRole]);
 
   return {
     preview,
