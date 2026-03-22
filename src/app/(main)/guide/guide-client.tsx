@@ -412,7 +412,7 @@ export function GuidePage({ cycle }: Props) {
                   <div className="space-y-1">
                     <p className="text-sm font-semibold text-foreground">考核原则</p>
                     <p className="text-sm text-muted-foreground">
-                      深度赋智绩效考核采用&ldquo;OKR目标牵引 + 360度综合价值评估 + 全层级绩效校准&rdquo;三位一体体系。OKR为目标管理与协同工具，不直接与绩效考核结果挂钩。绩效考核聚焦周期内员工的实际价值贡献、协作价值、战略适配度。
+                      深度赋智绩效考核采用&ldquo;OKR目标牵引 + 360度综合价值评估 + 全层级绩效校准&rdquo;三位一体体系，明确OKR为目标管理与协同工具，不直接与绩效考核结果挂钩，避免员工博弈目标、不敢挑战；绩效考核聚焦周期内员工的实际价值贡献、协作价值、战略适配度，实现&ldquo;目标有牵引、评价有依据、激励有区分、发展有方向&rdquo;。
                     </p>
                   </div>
 
@@ -440,7 +440,7 @@ export function GuidePage({ cycle }: Props) {
                     <div className="space-y-1">
                       <p className="text-sm font-medium text-foreground">二、个人能力（30%）</p>
                       <p className="text-sm text-muted-foreground">
-                        请结合员工综合能力 + 学习能力 + 适应能力综合评定。
+                        请结合员工综合能力 + 学习能力 + 适应能力，综合评定，需提供数据/案例作证和描述。
                       </p>
 
                       <div className="ml-2 space-y-2 text-sm text-muted-foreground">
