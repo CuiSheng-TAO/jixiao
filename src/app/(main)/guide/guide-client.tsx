@@ -261,37 +261,53 @@ export function GuidePage({ cycle }: Props) {
       <section className="space-y-4">
         <h2 className="text-xl font-semibold">流程总览</h2>
         <div className="overflow-x-auto">
-          <div className="flex min-w-[700px] gap-1.5">
+          <div className="relative flex min-w-[700px]">
+            {/* 连接线 */}
+            <div className="absolute top-3 left-[24px] right-[24px] h-[2px] bg-border" />
+            <div
+              className="absolute top-3 left-[24px] h-[2px] bg-primary transition-all"
+              style={{ width: activeIndex >= 0 ? `${(activeIndex / (steps.length - 1)) * 100}%` : "0%" }}
+            />
             {steps.map((step, i) => {
               const isCurrent = i === activeIndex;
               const isPast = i < activeIndex;
-              const colors = [
-                "bg-blue-50 border-blue-200 text-blue-900",
-                "bg-amber-50 border-amber-200 text-amber-900",
-                "bg-violet-50 border-violet-200 text-violet-900",
-                "bg-emerald-50 border-emerald-200 text-emerald-900",
-                "bg-rose-50 border-rose-200 text-rose-900",
-                "bg-orange-50 border-orange-200 text-orange-900",
-              ];
-
               return (
-                <div
-                  key={step.key}
-                  className={`flex-1 rounded-lg border px-3 py-2.5 ${colors[i]} ${isCurrent ? "ring-2 ring-blue-400 ring-offset-1" : ""}`}
-                >
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <p className="text-xs font-semibold leading-tight">{step.title}</p>
-                    {isCurrent && (
-                      <Badge className="bg-blue-500 text-white text-[10px] px-1.5 py-0">进行中</Badge>
-                    )}
-                    {isPast && (
-                      <CheckCircle2 className="h-3 w-3 text-green-600" />
+                <div key={step.key} className="relative flex-1 flex flex-col items-center text-center px-1">
+                  {/* 节点圆点 */}
+                  <div className={cn(
+                    "relative z-10 flex h-6 w-6 items-center justify-center rounded-full border-2 transition-all",
+                    isCurrent
+                      ? "border-primary bg-primary text-white"
+                      : isPast
+                        ? "border-primary bg-primary text-white"
+                        : "border-border bg-background text-muted-foreground"
+                  )}>
+                    {isPast ? (
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                    ) : (
+                      <span className="text-[10px] font-bold">{i + 1}</span>
                     )}
                   </div>
+                  {/* 标题 */}
+                  <p className={cn(
+                    "mt-2 text-xs font-semibold leading-tight",
+                    isCurrent ? "text-primary" : isPast ? "text-foreground" : "text-muted-foreground"
+                  )}>
+                    {step.title}
+                  </p>
+                  {/* 日期 */}
                   {step.date && (
-                    <p className="text-[11px] font-semibold opacity-80">{step.date}</p>
+                    <p className="mt-0.5 text-[10px] font-medium text-muted-foreground">{step.date}</p>
                   )}
-                  <p className="text-[10px] opacity-60 leading-tight mt-0.5">{step.desc}</p>
+                  {/* 状态标签 */}
+                  {isCurrent && (
+                    <Badge className="mt-1 bg-primary text-white text-[9px] px-1.5 py-0 h-4">进行中</Badge>
+                  )}
+                  {isPast && (
+                    <span className="mt-1 text-[9px] text-muted-foreground">已完成</span>
+                  )}
+                  {/* 描述 */}
+                  <p className="mt-1 text-[10px] leading-tight text-muted-foreground/70 max-w-[120px]">{step.desc}</p>
                 </div>
               );
             })}
