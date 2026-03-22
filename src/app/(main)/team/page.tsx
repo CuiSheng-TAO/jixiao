@@ -147,6 +147,58 @@ function TeamContent() {
     <div className="space-y-6">
       <PageHeader title="团队评估" description={`你有 ${evals.filter(e => e.evaluation?.status !== "SUBMITTED").length} 位下级待初评`} />
 
+      {/* 初评说明 - 页面顶部只显示一次 */}
+      <Card>
+        <CardContent className="py-4 text-xs text-muted-foreground divide-y">
+          <div className="pb-3">
+            <p className="text-sm font-semibold text-foreground mb-1">考核原则</p>
+            <p className="leading-relaxed">深度赋智绩效考核采用&ldquo;OKR目标牵引 + 360度综合价值评估 + 全层级绩效校准&rdquo;三位一体体系，明确OKR为目标管理与协同工具，不直接与绩效考核结果挂钩，避免员工博弈目标、不敢挑战；绩效考核聚焦周期内员工的实际价值贡献、协作价值、战略适配度，实现&ldquo;目标有牵引、评价有依据、激励有区分、发展有方向&rdquo;。</p>
+          </div>
+          <div className="py-3">
+            <p className="text-sm font-semibold text-foreground mb-1">管理者导向</p>
+            <p className="leading-relaxed">各级管理者是团队绩效管理第一责任人；负责下属的目标对齐、双月过程辅导、绩效初评、一对一反馈沟通；组织团队内绩效复盘；举证员工绩效贡献，参与校准会；制定下属绩效改进计划，落地人才发展动作。</p>
+          </div>
+          <div className="py-3">
+            <p className="text-sm font-semibold text-foreground mb-2">五星等级定义</p>
+            <div className="overflow-x-auto rounded-md border">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b bg-muted/50">
+                    <th className="px-2.5 py-1.5 text-left font-medium">等级</th>
+                    <th className="px-2.5 py-1.5 text-left font-medium">定义</th>
+                    <th className="px-2.5 py-1.5 text-right font-medium">分布</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { label: "五星", def: "取得杰出的成果，所做的工作在世界范围拥有领先性，拥有极强的推动力，拥有显著的影响力", dist: "≤10%" },
+                    { label: "四星", def: "超出期望的成果，所做的工作在行业内具有竞争力，拥有很强的推动力，拥有一定的影响力", dist: "≤20%" },
+                    { label: "三星", def: "符合预期的成果，始终如一地完成工作职责，可以较好的完成工作落地、闭环，具有较好的学习能力，具有不错的推动力", dist: "50%+" },
+                    { label: "二星", def: "成果不达预期，需要提高。基本满足考核要求，但与他人相比不能充分执行所有的工作职责，或虽执行了职责但平均水平较低或成果较差", dist: "≤15%" },
+                    { label: "一星", def: "成果远低于预期，未达合格标准。不能证明其具备所需的知识和技能或不能利用所需的知识和技能；不能执行其工作职责", dist: "≤5%" },
+                  ].map((row) => (
+                    <tr key={row.label} className="border-b last:border-b-0">
+                      <td className="px-2.5 py-1.5 whitespace-nowrap font-medium">{row.label}</td>
+                      <td className="px-2.5 py-1.5">{row.def}</td>
+                      <td className="px-2.5 py-1.5 text-right whitespace-nowrap">{row.dist}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div className="pt-3">
+            <p className="text-sm font-semibold text-foreground mb-1">初评指引</p>
+            <ul className="space-y-0.5 leading-relaxed">
+              <li>• 直属上级结合员工工作总结、360度评估反馈、周期内实际产出、团队内相对贡献度、组织转型战略适配度，给出初步绩效等级与详细评价意见</li>
+              <li>• 初评需严格遵循绩效等级定义与分布指导规则，不得突破比例限制</li>
+              <li>• 对高绩效、低绩效评级必须提供完整的贡献举证与事实依据</li>
+              <li>• 初评结果仅为待校准状态，不得提前向员工透露</li>
+            </ul>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="space-y-6">
           {/* Employee selector - horizontal */}
           <div className="flex flex-wrap gap-2">
@@ -223,58 +275,6 @@ function TeamContent() {
                       <span className="text-xl font-bold tracking-tight text-primary">{liveWeightedScore.toFixed(1)} <span className="text-sm font-medium">分</span></span>
                     </div>
                   )}
-
-                  {/* 初评说明 */}
-                  <Card>
-                    <CardContent className="py-4 text-xs text-muted-foreground divide-y">
-                      <div className="pb-3">
-                        <p className="text-sm font-semibold text-foreground mb-1">考核原则</p>
-                        <p className="leading-relaxed">深度赋智绩效考核采用&ldquo;OKR目标牵引 + 360度综合价值评估 + 全层级绩效校准&rdquo;三位一体体系，明确OKR为目标管理与协同工具，不直接与绩效考核结果挂钩，避免员工博弈目标、不敢挑战；绩效考核聚焦周期内员工的实际价值贡献、协作价值、战略适配度，实现&ldquo;目标有牵引、评价有依据、激励有区分、发展有方向&rdquo;。</p>
-                      </div>
-                      <div className="py-3">
-                        <p className="text-sm font-semibold text-foreground mb-1">管理者导向</p>
-                        <p className="leading-relaxed">各级管理者是团队绩效管理第一责任人；负责下属的目标对齐、双月过程辅导、绩效初评、一对一反馈沟通；组织团队内绩效复盘；举证员工绩效贡献，参与校准会；制定下属绩效改进计划，落地人才发展动作。</p>
-                      </div>
-                      <div className="py-3">
-                        <p className="text-sm font-semibold text-foreground mb-2">五星等级定义</p>
-                        <div className="overflow-x-auto rounded-md border">
-                          <table className="w-full text-xs">
-                            <thead>
-                              <tr className="border-b bg-muted/50">
-                                <th className="px-2.5 py-1.5 text-left font-medium">等级</th>
-                                <th className="px-2.5 py-1.5 text-left font-medium">定义</th>
-                                <th className="px-2.5 py-1.5 text-right font-medium">分布</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {[
-                                { label: "五星", def: "取得杰出的成果，所做的工作在世界范围拥有领先性，拥有极强的推动力，拥有显著的影响力", dist: "≤10%" },
-                                { label: "四星", def: "超出期望的成果，所做的工作在行业内具有竞争力，拥有很强的推动力，拥有一定的影响力", dist: "≤20%" },
-                                { label: "三星", def: "符合预期的成果，始终如一地完成工作职责，可以较好的完成工作落地、闭环，具有较好的学习能力，具有不错的推动力", dist: "50%+" },
-                                { label: "二星", def: "成果不达预期，需要提高。基本满足考核要求，但与他人相比不能充分执行所有的工作职责，或虽执行了职责但平均水平较低或成果较差", dist: "≤15%" },
-                                { label: "一星", def: "成果远低于预期，未达合格标准。不能证明其具备所需的知识和技能或不能利用所需的知识和技能；不能执行其工作职责", dist: "≤5%" },
-                              ].map((row) => (
-                                <tr key={row.label} className="border-b last:border-b-0">
-                                  <td className="px-2.5 py-1.5 whitespace-nowrap font-medium">{row.label}</td>
-                                  <td className="px-2.5 py-1.5">{row.def}</td>
-                                  <td className="px-2.5 py-1.5 text-right whitespace-nowrap">{row.dist}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                      <div className="pt-3">
-                        <p className="text-sm font-semibold text-foreground mb-1">初评指引</p>
-                        <ul className="space-y-0.5 leading-relaxed">
-                          <li>• 直属上级结合员工工作总结、360度评估反馈、周期内实际产出、团队内相对贡献度、组织转型战略适配度，给出初步绩效等级与详细评价意见</li>
-                          <li>• 初评需严格遵循绩效等级定义与分布指导规则，不得突破比例限制</li>
-                          <li>• 对高绩效、低绩效评级必须提供完整的贡献举证与事实依据</li>
-                          <li>• 初评结果仅为待校准状态，不得提前向员工透露</li>
-                        </ul>
-                      </div>
-                    </CardContent>
-                  </Card>
 
                   {/* Three-dimension evaluation form */}
                   <Card>
