@@ -378,7 +378,21 @@ function PeerReviewContent() {
 
                           <div>
                             <label className="mb-1 block text-sm font-medium">价值观践行 <span className="text-red-500">*</span></label>
-                            <p className="mb-2 text-xs text-gray-400">请结合员工周期内价值观践行综合评定，选取价值观更新：从「始终创业」到「ROOT」的组织导向升级4条中的至少2条，进行评估，需提供数据/案例作证和描述</p>
+                            <p className="mb-1.5 text-xs text-gray-400">请选取以下4条中的至少2条进行评估，需提供数据/案例作证和描述</p>
+                            <div className="mb-2 rounded-lg border border-border/50 p-2.5 text-[11px] text-muted-foreground divide-y">
+                              <div className="pb-1.5">
+                                <span className="font-medium text-foreground/70">坦诚真实</span> — 简单直接，对事不对人 · 敢于承认错误 · 暴露问题 · 不找借口，只找解法
+                              </div>
+                              <div className="py-1.5">
+                                <span className="font-medium text-foreground/70">极致进取</span> — 目标明确，积极主动 · 用 demo 代替文档 · 敢于挑战更优解 · 深入体验，消灭锯齿
+                              </div>
+                              <div className="py-1.5">
+                                <span className="font-medium text-foreground/70">成就利他</span> — 用户第一 · 信任伙伴，真诚合作 · 敏锐谦逊，ego 小，乐于贡献
+                              </div>
+                              <div className="pt-1.5">
+                                <span className="font-medium text-foreground/70">ROOT</span> — 有 ownership，不踢皮球 · 独立思考，快速学习，与 AI 共同进化 · 关注结果而非过程 · Always Day 1
+                              </div>
+                            </div>
                             <ScoreSelector
                               value={review.valuesScore}
                               onChange={(v) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, valuesScore: v } : r))}

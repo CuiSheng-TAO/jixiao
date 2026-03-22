@@ -380,7 +380,25 @@ function TeamContent() {
                           <h3 className="text-sm font-semibold">价值观</h3>
                           <span className="text-xs text-muted-foreground">权重20%</span>
                         </div>
-                        <p className="text-[11px] text-muted-foreground/70 leading-relaxed">请针对价值观更新：从「始终创业」到「ROOT」的组织导向升级4条进行评估，需提供数据/案例作证和描述。ROOT = Ownership、独立思考与快速学习、结果导向、Always Day 1</p>
+                        <p className="text-[11px] text-muted-foreground/70 leading-relaxed">请针对以下4条价值观进行评估，需提供数据/案例作证和描述</p>
+                        <div className="rounded-lg border border-border/50 p-3 text-[11px] text-muted-foreground divide-y">
+                          <div className="pb-2">
+                            <p className="font-medium text-foreground/70">坦诚真实 <span className="font-normal text-muted-foreground/60">Be candid and honest — 行为基础</span></p>
+                            <p className="mt-0.5">简单直接，对事不对人 · 敢于承认错误，不装不爱面子 · 暴露问题，不向上管理 · 不找借口，只找解法</p>
+                          </div>
+                          <div className="py-2">
+                            <p className="font-medium text-foreground/70">极致进取 <span className="font-normal text-muted-foreground/60">Move fast, aim higher — 动机驱动</span></p>
+                            <p className="mt-0.5">目标明确，积极主动 · 用 demo 代替文档，用行动代替沟通 · 敢于挑战更优解，用实验代替争论 · 深入体验，消灭锯齿</p>
+                          </div>
+                          <div className="py-2">
+                            <p className="font-medium text-foreground/70">成就利他 <span className="font-normal text-muted-foreground/60">Build together, win together — 协作胸怀</span></p>
+                            <p className="mt-0.5">用户第一，以用户成功为价值 · 内心阳光，信任伙伴，真诚合作 · 敏锐谦逊，ego 小，乐于贡献</p>
+                          </div>
+                          <div className="pt-2">
+                            <p className="font-medium text-foreground/70">ROOT <span className="font-normal text-muted-foreground/60">组织导向</span></p>
+                            <p className="mt-0.5">有 ownership，不踢皮球，不设边界 · 独立思考，快速学习，与 AI 共同进化 · 关注结果而非过程 · 始终像公司创业第一天那样思考</p>
+                          </div>
+                        </div>
                         <StarRating
                           value={formData[selected!]?.valuesStars}
                           onChange={(v) => updateField("valuesStars", v)}

@@ -480,11 +480,14 @@ export function GuidePage({ cycle }: Props) {
                     <div className="space-y-1">
                       <p className="text-sm font-medium text-foreground">三、价值观（20%）</p>
                       <p className="text-sm text-muted-foreground">
-                        请针对价值观更新：从「始终创业」到「ROOT」的组织导向升级4条进行评估。
+                        请针对以下4条价值观进行评估，需提供数据/案例作证和描述。
                       </p>
-                      <p className="text-sm text-muted-foreground">
-                        ROOT = Ownership、独立思考与快速学习、结果导向、Always Day 1
-                      </p>
+                      <ul className="ml-4 list-disc space-y-0.5 text-sm text-muted-foreground">
+                        <li><span className="font-medium">坦诚真实</span>（行为基础）— 简单直接，对事不对人；敢于承认错误；暴露问题，不向上管理；不找借口，只找解法</li>
+                        <li><span className="font-medium">极致进取</span>（动机驱动）— 目标明确，积极主动；用 demo 代替文档；敢于挑战更优解；深入体验，消灭锯齿</li>
+                        <li><span className="font-medium">成就利他</span>（协作胸怀）— 用户第一；信任伙伴，真诚合作；敏锐谦逊，ego 小，乐于贡献</li>
+                        <li><span className="font-medium">ROOT</span>（组织导向）— 有 ownership，不踢皮球；独立思考，快速学习，与 AI 共同进化；关注结果而非过程；Always Day 1</li>
+                      </ul>
                     </div>
                   </div>
 
