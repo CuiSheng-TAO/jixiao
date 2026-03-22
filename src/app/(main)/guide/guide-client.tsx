@@ -261,7 +261,7 @@ export function GuidePage({ cycle }: Props) {
       <section className="space-y-4">
         <h2 className="text-xl font-semibold">流程总览</h2>
         <div className="overflow-x-auto">
-          <div className="relative flex min-w-[700px]">
+          <div className="relative flex min-w-[900px]">
             {/* 连接线 */}
             <div className="absolute top-3 left-[24px] right-[24px] h-[2px] bg-border" />
             <div
@@ -307,7 +307,7 @@ export function GuidePage({ cycle }: Props) {
                     <span className="mt-1 text-[9px] text-muted-foreground">已完成</span>
                   )}
                   {/* 描述 */}
-                  <p className="mt-1 text-[10px] leading-tight text-muted-foreground/70 max-w-[120px]">{step.desc}</p>
+                  <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground/70">{step.desc}</p>
                 </div>
               );
             })}
