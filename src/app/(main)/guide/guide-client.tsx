@@ -68,43 +68,43 @@ function buildSteps(cycle: CycleData | null): StepDef[] {
       key: "SELF_EVAL",
       title: "个人自评",
       date: formatDateRange(cycle?.selfEvalStart ?? null, cycle?.selfEvalEnd ?? null) || "3/17-3/24",
-      desc: "通过飞书表单提交工作总结",
+      desc: "全体参评员工需提交个人自评",
       icon: ClipboardList,
     },
     {
       key: "PEER_REVIEW",
-      title: "360环评",
+      title: "上级初评与360环评",
       date: formatDateRange(cycle?.peerReviewStart ?? null, cycle?.peerReviewEnd ?? null) || "3/24-3/27",
-      desc: "提名评估人 & 互评同事",
+      desc: "由直属上级初评，360环评人≤5人",
       icon: Users,
     },
     {
       key: "SUPERVISOR_EVAL",
-      title: "上级初评",
-      date: formatDateRange(cycle?.supervisorStart ?? null, cycle?.supervisorEnd ?? null) || "3/24-3/27",
-      desc: "三维度星级评估",
-      icon: Star,
-    },
-    {
-      key: "CALIBRATION",
-      title: "绩效校准",
-      date: formatDateRange(cycle?.calibrationStart ?? null, cycle?.calibrationEnd ?? null) || "3/27-3/30",
-      desc: "公司级统一校准",
+      title: "公司级绩效终评校准",
+      date: formatDateRange(cycle?.supervisorStart ?? null, cycle?.supervisorEnd ?? null) || "3/27-3/30",
+      desc: "本次采用公司级终评校准取代线下述职",
       icon: BarChart3,
     },
     {
-      key: "MEETING",
-      title: "绩效面谈",
-      date: formatDateRange(cycle?.meetingStart ?? null, cycle?.meetingEnd ?? null) || "3/30-4/1",
-      desc: "一对一绩效反馈",
+      key: "CALIBRATION",
+      title: "绩效结果面谈",
+      date: formatDateRange(cycle?.calibrationStart ?? null, cycle?.calibrationEnd ?? null) || "3/30-4/1",
+      desc: "形式为一对一",
       icon: MessageSquare,
     },
     {
-      key: "APPEAL",
-      title: "申诉窗口",
-      date: formatDateRange(cycle?.appealStart ?? null, cycle?.appealEnd ?? null) || "4/1-4/4",
-      desc: "对结果有异议可申诉",
+      key: "MEETING",
+      title: "绩效申诉",
+      date: formatDateRange(cycle?.meetingStart ?? null, cycle?.meetingEnd ?? null) || "3/30-4/2",
+      desc: "需提交书面申诉至HRBP",
       icon: Megaphone,
+    },
+    {
+      key: "APPEAL",
+      title: "年终激励兑现",
+      date: "",
+      desc: "考核完成后2周内发放",
+      icon: Star,
     },
   ];
 }
@@ -257,82 +257,41 @@ export function GuidePage({ cycle }: Props) {
         </p>
       </div>
 
-      {/* Section 1: Flow Overview - Task 1: 时间线文字颜色改为蓝色系 */}
+      {/* Section 1: Flow Overview */}
       <section className="space-y-4">
         <h2 className="text-xl font-semibold">流程总览</h2>
         <div className="overflow-x-auto">
-          <div className="flex min-w-[720px] items-start gap-0">
+          <div className="flex min-w-[700px] gap-1.5">
             {steps.map((step, i) => {
-              const Icon = step.icon;
               const isCurrent = i === activeIndex;
               const isPast = i < activeIndex;
+              const colors = [
+                "bg-blue-50 border-blue-200 text-blue-900",
+                "bg-amber-50 border-amber-200 text-amber-900",
+                "bg-violet-50 border-violet-200 text-violet-900",
+                "bg-emerald-50 border-emerald-200 text-emerald-900",
+                "bg-rose-50 border-rose-200 text-rose-900",
+                "bg-orange-50 border-orange-200 text-orange-900",
+              ];
 
               return (
-                <div key={step.key} className="flex flex-1 flex-col items-center">
-                  {/* Connector + Circle */}
-                  <div className="flex w-full items-center">
-                    {/* Left connector */}
-                    <div
-                      className={`h-0.5 flex-1 ${
-                        i === 0 ? "bg-transparent" : isPast ? "bg-blue-500" : isCurrent ? "bg-blue-300" : "bg-gray-200"
-                      }`}
-                    />
-                    {/* Circle */}
-                    <div
-                      className={`relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 transition-all ${
-                        isCurrent
-                          ? "border-blue-500 bg-blue-50 text-blue-600 ring-4 ring-blue-100"
-                          : isPast
-                            ? "border-blue-500 bg-blue-500 text-white"
-                            : "border-gray-200 bg-white text-blue-400"
-                      }`}
-                    >
-                      {isPast ? (
-                        <CheckCircle2 className="h-5 w-5" />
-                      ) : (
-                        <Icon className="h-5 w-5" />
-                      )}
-                    </div>
-                    {/* Right connector */}
-                    <div
-                      className={`h-0.5 flex-1 ${
-                        i === steps.length - 1
-                          ? "bg-transparent"
-                          : isPast
-                            ? "bg-blue-500"
-                            : "bg-gray-200"
-                      }`}
-                    />
-                  </div>
-                  {/* Text below */}
-                  <div className="mt-3 text-center">
-                    <p
-                      className={`text-sm font-medium ${
-                        isCurrent ? "text-blue-600" : isPast ? "text-blue-600" : "text-blue-400"
-                      }`}
-                    >
-                      {step.title}
-                    </p>
+                <div
+                  key={step.key}
+                  className={`flex-1 rounded-lg border px-3 py-2.5 ${colors[i]} ${isCurrent ? "ring-2 ring-blue-400 ring-offset-1" : ""}`}
+                >
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <p className="text-xs font-semibold leading-tight">{step.title}</p>
                     {isCurrent && (
-                      <Badge className="mt-1 bg-blue-100 text-blue-700 text-xs">
-                        进行中
-                      </Badge>
+                      <Badge className="bg-blue-500 text-white text-[10px] px-1.5 py-0">进行中</Badge>
                     )}
-                    <p
-                      className={`mt-1 text-xs font-semibold ${
-                        isCurrent ? "text-blue-600" : isPast ? "text-blue-600" : "text-blue-400"
-                      }`}
-                    >
-                      {step.date}
-                    </p>
-                    <p
-                      className={`mt-0.5 max-w-[100px] text-xs leading-tight ${
-                        isCurrent ? "text-blue-500" : isPast ? "text-blue-500" : "text-blue-400"
-                      }`}
-                    >
-                      {step.desc}
-                    </p>
+                    {isPast && (
+                      <CheckCircle2 className="h-3 w-3 text-green-600" />
+                    )}
                   </div>
+                  {step.date && (
+                    <p className="text-[11px] font-semibold opacity-80">{step.date}</p>
+                  )}
+                  <p className="text-[10px] opacity-60 leading-tight mt-0.5">{step.desc}</p>
                 </div>
               );
             })}
