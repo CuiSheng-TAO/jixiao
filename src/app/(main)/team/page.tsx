@@ -20,6 +20,9 @@ type TeamEval = {
     performanceComment: string;
     abilityStars: number | null;
     abilityComment: string;
+    comprehensiveStars: number | null;
+    learningStars: number | null;
+    adaptabilityStars: number | null;
     valuesStars: number | null;
     valuesComment: string;
     weightedScore: number | null;
@@ -40,15 +43,23 @@ type TeamEval = {
 type FormData = {
   performanceStars: number | null;
   performanceComment: string;
-  abilityStars: number | null;
+  comprehensiveStars: number | null;
+  learningStars: number | null;
+  adaptabilityStars: number | null;
   abilityComment: string;
   valuesStars: number | null;
   valuesComment: string;
 };
 
+function computeAbilityStars(fd: FormData): number | null {
+  if (fd.comprehensiveStars == null || fd.learningStars == null || fd.adaptabilityStars == null) return null;
+  return Math.round((fd.comprehensiveStars + fd.learningStars + fd.adaptabilityStars) / 3);
+}
+
 function computeWeightedScore(fd: FormData): number | null {
-  if (fd.performanceStars == null || fd.abilityStars == null || fd.valuesStars == null) return null;
-  return fd.performanceStars * 0.5 + fd.abilityStars * 0.3 + fd.valuesStars * 0.2;
+  const abilityStars = computeAbilityStars(fd);
+  if (fd.performanceStars == null || abilityStars == null || fd.valuesStars == null) return null;
+  return fd.performanceStars * 0.5 + abilityStars * 0.3 + fd.valuesStars * 0.2;
 }
 
 function TeamContent() {
@@ -67,7 +78,9 @@ function TeamContent() {
         initial[e.employee.id] = {
           performanceStars: e.evaluation?.performanceStars || null,
           performanceComment: e.evaluation?.performanceComment || "",
-          abilityStars: e.evaluation?.abilityStars || null,
+          comprehensiveStars: e.evaluation?.comprehensiveStars || null,
+          learningStars: e.evaluation?.learningStars || null,
+          adaptabilityStars: e.evaluation?.adaptabilityStars || null,
           abilityComment: e.evaluation?.abilityComment || "",
           valuesStars: e.evaluation?.valuesStars || null,
           valuesComment: e.evaluation?.valuesComment || "",
@@ -87,7 +100,9 @@ function TeamContent() {
               initial[e.employee.id] = {
                 performanceStars: e.evaluation?.performanceStars || null,
                 performanceComment: e.evaluation?.performanceComment || "",
-                abilityStars: e.evaluation?.abilityStars || null,
+                comprehensiveStars: e.evaluation?.comprehensiveStars || null,
+                learningStars: e.evaluation?.learningStars || null,
+                adaptabilityStars: e.evaluation?.adaptabilityStars || null,
                 abilityComment: e.evaluation?.abilityComment || "",
                 valuesStars: e.evaluation?.valuesStars || null,
                 valuesComment: e.evaluation?.valuesComment || "",
@@ -110,7 +125,7 @@ function TeamContent() {
   const saveEval = async (employeeId: string, action: "save" | "submit") => {
     if (preview) return;
     const fd = formData[employeeId];
-    if (action === "submit" && (!fd.performanceStars || !fd.abilityStars || !fd.valuesStars)) {
+    if (action === "submit" && (!fd.performanceStars || !fd.comprehensiveStars || !fd.learningStars || !fd.adaptabilityStars || !fd.valuesStars)) {
       toast.error("请完成所有维度的星级评分");
       return;
     }
@@ -303,34 +318,53 @@ function TeamContent() {
                         />
                       </div>
 
-                      {/* Ability */}
-                      <div className="space-y-2">
+                      {/* Ability - 3 sub-dimensions */}
+                      <div className="space-y-3">
                         <div className="flex items-baseline gap-2">
                           <h3 className="text-sm font-semibold">个人能力</h3>
-                          <span className="text-xs text-muted-foreground">权重30%</span>
+                          <span className="text-xs text-muted-foreground">权重30%（三项等权1:1:1）</span>
+                          {(() => {
+                            const ab = computeAbilityStars(formData[selected!] || {} as FormData);
+                            return ab != null ? <span className="text-xs font-medium text-primary">{ab}星</span> : null;
+                          })()}
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                          请结合员工综合能力 + 学习能力 + 适应能力，综合评定，需提供数据/案例作证和描述
-                        </p>
-                        <div className="text-xs text-muted-foreground mt-1 divide-y">
-                          <div className="py-2">
-                            <p className="font-medium text-foreground/70">综合能力 <span className="font-normal text-muted-foreground/60">— 人才价值交付的基本盘，与岗位职级强绑定</span></p>
-                            <p className="mt-0.5 text-[11px] leading-relaxed">复杂问题解决与业务闭环 · 专业纵深与角色履职 · 跨边界协同与组织价值创造 · 团队赋能与价值带动 · vibe coding（必含） · 领导力-基础管理执行（限Leader）</p>
+
+                        <div className="space-y-3 rounded-lg border border-border/50 p-3">
+                          <div className="space-y-1">
+                            <p className="text-xs font-medium">综合能力 <span className="font-normal text-muted-foreground/60">— 人才价值交付的基本盘，与岗位职级强绑定</span></p>
+                            <p className="text-[11px] text-muted-foreground/70">复杂问题解决 · 专业纵深 · 跨边界协同 · 团队赋能 · vibe coding（必含） · 领导力（限Leader）</p>
+                            <StarRating
+                              value={formData[selected!]?.comprehensiveStars}
+                              onChange={(v) => updateField("comprehensiveStars", v)}
+                              disabled={!!isSubmitted}
+                              size="sm"
+                            />
                           </div>
-                          <div className="py-2">
-                            <p className="font-medium text-foreground/70">学习能力 <span className="font-normal text-muted-foreground/60">— 从「知道」到「做到」闭环的核心能力</span></p>
-                            <p className="mt-0.5 text-[11px] leading-relaxed">问题分析与判断力 · 推动执行力 · 主动性与批判性思考</p>
+
+                          <div className="border-t pt-3 space-y-1">
+                            <p className="text-xs font-medium">学习能力 <span className="font-normal text-muted-foreground/60">— 从「知道」到「做到」闭环</span></p>
+                            <p className="text-[11px] text-muted-foreground/70">问题分析与判断力 · 推动执行力 · 主动性与批判性思考</p>
+                            <StarRating
+                              value={formData[selected!]?.learningStars}
+                              onChange={(v) => updateField("learningStars", v)}
+                              disabled={!!isSubmitted}
+                              size="sm"
+                            />
                           </div>
-                          <div className="py-2">
-                            <p className="font-medium text-foreground/70">适应能力 <span className="font-normal text-muted-foreground/60">— 面对变化快速调整，持续有效产出</span></p>
-                            <p className="mt-0.5 text-[11px] leading-relaxed">AI-first工作方式落地与AI-native交付适配度 · 主动性、自我成长、心理韧性、潜力项</p>
+
+                          <div className="border-t pt-3 space-y-1">
+                            <p className="text-xs font-medium">适应能力 <span className="font-normal text-muted-foreground/60">— 面对变化快速调整，持续有效产出</span></p>
+                            <p className="text-[11px] text-muted-foreground/70">AI-first 适配度 · 主动性、自我成长、心理韧性、潜力项</p>
+                            <StarRating
+                              value={formData[selected!]?.adaptabilityStars}
+                              onChange={(v) => updateField("adaptabilityStars", v)}
+                              disabled={!!isSubmitted}
+                              size="sm"
+                            />
                           </div>
                         </div>
-                        <StarRating
-                          value={formData[selected!]?.abilityStars}
-                          onChange={(v) => updateField("abilityStars", v)}
-                          disabled={!!isSubmitted}
-                        />
+
+                        <p className="text-[11px] text-muted-foreground/70">请结合以上三项综合评定，需提供数据/案例作证和描述</p>
                         <Textarea
                           value={formData[selected!]?.abilityComment || ""}
                           onChange={(e) => updateField("abilityComment", e.target.value)}

@@ -100,9 +100,23 @@ export async function POST(req: NextRequest) {
     }
 
     const performanceStars = validateStars(body.performanceStars);
-    const abilityStars = validateStars(body.abilityStars);
+    const comprehensiveStars = validateStars(body.comprehensiveStars);
+    const learningStars = validateStars(body.learningStars);
+    const adaptabilityStars = validateStars(body.adaptabilityStars);
+    // 个人能力 = 综合能力:学习能力:适应能力 = 1:1:1
+    const abilityStars = (comprehensiveStars != null && learningStars != null && adaptabilityStars != null)
+      ? Math.round((comprehensiveStars + learningStars + adaptabilityStars) / 3)
+      : null;
     const valuesStars = validateStars(body.valuesStars);
     const weightedScore = computeWeightedScore(performanceStars, abilityStars, valuesStars);
+
+    const abilityData = {
+      abilityStars,
+      abilityComment: sanitizeText(body.abilityComment),
+      comprehensiveStars,
+      learningStars,
+      adaptabilityStars,
+    };
 
     const eval_ = await prisma.supervisorEval.upsert({
       where: {
@@ -111,8 +125,7 @@ export async function POST(req: NextRequest) {
       update: {
         performanceStars,
         performanceComment: sanitizeText(body.performanceComment),
-        abilityStars,
-        abilityComment: sanitizeText(body.abilityComment),
+        ...abilityData,
         valuesStars,
         valuesComment: sanitizeText(body.valuesComment),
         weightedScore,
@@ -125,8 +138,7 @@ export async function POST(req: NextRequest) {
         employeeId: body.employeeId,
         performanceStars,
         performanceComment: sanitizeText(body.performanceComment),
-        abilityStars,
-        abilityComment: sanitizeText(body.abilityComment),
+        ...abilityData,
         valuesStars,
         valuesComment: sanitizeText(body.valuesComment),
         weightedScore,

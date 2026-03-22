@@ -142,8 +142,11 @@ model SupervisorEval {
   employee           User      @relation("Evaluated", fields: [employeeId], references: [id])
   performanceStars   Int?      // 业绩产出50%，1-5星
   performanceComment String    @default("")
-  abilityStars       Int?      // 个人能力30%，1-5星
+  abilityStars       Int?      // 个人能力30%，1-5星（由3个子维度1:1:1加权计算）
   abilityComment     String    @default("")
+  comprehensiveStars Int?      // 综合能力 1-5星
+  learningStars      Int?      // 学习能力 1-5星
+  adaptabilityStars  Int?      // 适应能力 1-5星
   valuesStars        Int?      // 价值观20%，1-5星
   valuesComment      String    @default("")
   weightedScore      Float?    // 系统自动计算
