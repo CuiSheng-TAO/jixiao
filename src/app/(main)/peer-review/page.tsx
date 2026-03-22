@@ -78,6 +78,8 @@ function PeerReviewContent() {
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [checkedDims, setCheckedDims] = useState<Record<string, Set<string>>>({});
+  const [dimComments, setDimComments] = useState<Record<string, Record<string, string>>>({});
   const [declineDialog, setDeclineDialog] = useState<{ open: boolean; reviewId: string; revieweeName: string }>({ open: false, reviewId: "", revieweeName: "" });
   const [declineReason, setDeclineReason] = useState("");
   const [declining, setDeclining] = useState(false);
@@ -413,32 +415,64 @@ function PeerReviewContent() {
                               创新能力、解决问题能力、组织贡献
                               <span className="ml-1.5 rounded bg-gray-100 px-1.5 py-0.5 text-xs font-normal text-gray-500">可选</span>
                             </label>
-                            <p className="mb-2 text-xs text-gray-400">请勾选你要评估的维度，然后进行综合评定，需提供数据/案例作证和描述</p>
-                            <div className="mb-2 flex flex-wrap gap-3">
-                              {["创新能力", "解决问题能力", "组织贡献"].map((dim) => (
-                                <label key={dim} className="flex items-center gap-1.5 text-sm cursor-pointer">
-                                  <input
-                                    type="checkbox"
-                                    className="h-3.5 w-3.5 rounded border-gray-300"
-                                    disabled={isDisabled}
-                                  />
-                                  {dim}
-                                </label>
-                              ))}
+                            <p className="mb-2 text-xs text-gray-400">勾选你要评估的维度，每个维度独立填写评语，需提供数据/案例作证和描述</p>
+                            <div className="space-y-2">
+                              {["创新能力", "解决问题能力", "组织贡献"].map((dim) => {
+                                const checked = checkedDims[review.id]?.has(dim) ?? false;
+                                return (
+                                  <div key={dim}>
+                                    <label className="flex items-center gap-1.5 text-sm cursor-pointer">
+                                      <input
+                                        type="checkbox"
+                                        className="h-3.5 w-3.5 rounded border-gray-300"
+                                        checked={checked}
+                                        disabled={isDisabled}
+                                        onChange={() => {
+                                          setCheckedDims((prev) => {
+                                            const current = new Set(prev[review.id] || []);
+                                            if (current.has(dim)) current.delete(dim); else current.add(dim);
+                                            return { ...prev, [review.id]: current };
+                                          });
+                                        }}
+                                      />
+                                      <span className="font-medium">{dim}</span>
+                                    </label>
+                                    {checked && (
+                                      <Textarea
+                                        value={dimComments[review.id]?.[dim] || ""}
+                                        onChange={(e) => {
+                                          const val = e.target.value;
+                                          setDimComments((prev) => ({
+                                            ...prev,
+                                            [review.id]: { ...prev[review.id], [dim]: val },
+                                          }));
+                                          // 同步拼接到 innovationComment
+                                          const allComments = { ...dimComments[review.id], [dim]: val };
+                                          const combined = Object.entries(allComments)
+                                            .filter(([k]) => checkedDims[review.id]?.has(k))
+                                            .map(([k, v]) => `【${k}】${v}`)
+                                            .join("\n");
+                                          setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, innovationComment: combined } : r));
+                                        }}
+                                        placeholder={`请针对「${dim}」提供数据或案例说明...`}
+                                        rows={2}
+                                        className="mt-1.5 ml-5"
+                                        disabled={isDisabled}
+                                      />
+                                    )}
+                                  </div>
+                                );
+                              })}
                             </div>
-                            <ScoreSelector
-                              value={review.innovationScore}
-                              onChange={(v) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, innovationScore: v } : r))}
-                              disabled={isDisabled}
-                            />
-                            <Textarea
-                              value={review.innovationComment}
-                              onChange={(e) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, innovationComment: e.target.value } : r))}
-                              placeholder="请输入评语..."
-                              rows={2}
-                              className="mt-2"
-                              disabled={isDisabled}
-                            />
+                            {(checkedDims[review.id]?.size ?? 0) > 0 && (
+                              <div className="mt-2">
+                                <ScoreSelector
+                                  value={review.innovationScore}
+                                  onChange={(v) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, innovationScore: v } : r))}
+                                  disabled={isDisabled}
+                                />
+                              </div>
+                            )}
                           </div>
                         </div>
 
