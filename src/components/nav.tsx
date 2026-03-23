@@ -16,6 +16,7 @@ import {
   Eye,
   EyeOff,
   BookOpen,
+  Lock,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -60,14 +61,13 @@ export function Nav({ user }: NavProps) {
 
   // 预览模式下用预览角色过滤菜单，否则用真实角色
   const activeRole = previewRole ?? user.role;
-  const visibleItems = navItems.filter((item) => {
-    if (!item.roles.includes(activeRole)) return false;
-    // 时间限制：ADMIN 不受限制
-    if (item.availableFrom && activeRole !== "ADMIN") {
-      if (new Date() < new Date(item.availableFrom)) return false;
-    }
-    return true;
-  });
+  const now = new Date();
+  const visibleItems = navItems
+    .filter((item) => item.roles.includes(activeRole))
+    .map((item) => {
+      const locked = !!(item.availableFrom && activeRole !== "ADMIN" && now < new Date(item.availableFrom));
+      return { ...item, locked };
+    });
 
   // 构造带preview参数的链接
   function buildHref(href: string): string {
@@ -93,7 +93,22 @@ export function Nav({ user }: NavProps) {
         <div className="space-y-0.5">
           {visibleItems.map((item) => {
             const Icon = item.icon;
-            const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
+            const isActive = !item.locked && (pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href)));
+
+            if (item.locked) {
+              return (
+                <span
+                  key={item.href}
+                  className="group relative flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium text-muted-foreground/40 cursor-not-allowed"
+                  title="未到开放时间"
+                >
+                  <Icon className="h-[18px] w-[18px] text-muted-foreground/30" />
+                  {item.label}
+                  <Lock className="ml-auto h-3.5 w-3.5 text-muted-foreground/30" />
+                </span>
+              );
+            }
+
             const classes = cn(
               "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-[var(--transition-base)]",
               isActive
