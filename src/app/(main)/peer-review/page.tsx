@@ -246,7 +246,6 @@ function PeerReviewContent() {
                       <button
                         onClick={() => setSelectedUsers((prev) => prev.filter((id) => id !== uid))}
                         className="ml-1 text-gray-400 hover:text-gray-600"
-                        disabled={preview}
                       >
                         x
                       </button>
