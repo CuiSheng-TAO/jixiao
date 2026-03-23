@@ -1,12 +1,14 @@
-import { getActiveCycle } from "@/lib/session";
+import { getActiveCycle, getSessionUser } from "@/lib/session";
 import { GuidePage } from "./guide-client";
 import type { CycleData } from "./guide-client";
 
 export default async function GuidePageServer() {
   let cycleData: CycleData | null = null;
+  let userRole = "EMPLOYEE";
 
   try {
-    const cycle = await getActiveCycle();
+    const [cycle, user] = await Promise.all([getActiveCycle(), getSessionUser()]);
+    if (user) userRole = user.role;
     if (cycle) {
       cycleData = {
         name: cycle.name,
@@ -26,8 +28,8 @@ export default async function GuidePageServer() {
       };
     }
   } catch {
-    // fallback to null, client will default to step 0
+    // fallback to defaults
   }
 
-  return <GuidePage cycle={cycleData} />;
+  return <GuidePage cycle={cycleData} userRole={userRole} />;
 }

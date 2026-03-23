@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { usePreview } from "@/hooks/use-preview";
 import {
   ClipboardList,
   Users,
@@ -37,6 +38,7 @@ export type CycleData = {
 
 type Props = {
   cycle: CycleData | null;
+  userRole: string;
 };
 
 function formatDateShort(dateStr: string | null): string {
@@ -242,7 +244,12 @@ function RatingTableInline() {
   );
 }
 
-export function GuidePage({ cycle }: Props) {
+export function GuidePage({ cycle, userRole }: Props) {
+  const { previewRole } = usePreview();
+  const activeRole = previewRole ?? userRole;
+  const showSupervisor = ["SUPERVISOR", "HRBP", "ADMIN"].includes(activeRole);
+  const showAdmin = ["ADMIN"].includes(activeRole);
+
   const cycleStatus = cycle?.status ?? null;
   const activeIndex = getActiveIndex(cycleStatus);
   const steps = buildSteps(cycle);
@@ -275,8 +282,8 @@ export function GuidePage({ cycle }: Props) {
         <Tabs defaultValue="employee">
           <TabsList className="w-full">
             <TabsTrigger value="employee" className="flex-1">员工指南</TabsTrigger>
-            <TabsTrigger value="supervisor" className="flex-1">主管指南</TabsTrigger>
-            <TabsTrigger value="admin" className="flex-1">管理员指南</TabsTrigger>
+            {showSupervisor && <TabsTrigger value="supervisor" className="flex-1">主管指南</TabsTrigger>}
+            {showAdmin && <TabsTrigger value="admin" className="flex-1">管理员指南</TabsTrigger>}
           </TabsList>
 
           {/* Task 5: 删除"查看绩效结果"卡片 */}
