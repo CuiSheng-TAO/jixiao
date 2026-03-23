@@ -25,6 +25,7 @@ function MeetingsContent() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editNotes, setEditNotes] = useState<Record<string, string>>({});
   const [editDates, setEditDates] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (preview && previewRole) {
@@ -50,6 +51,7 @@ function MeetingsContent() {
 
   const saveMeeting = async (employeeId: string, meetingId: string) => {
     if (preview) return;
+    setSaving(true);
     try {
       await fetch("/api/meeting", {
         method: "POST",
@@ -65,11 +67,14 @@ function MeetingsContent() {
       setMeetings(Array.isArray(data) ? data : []);
     } catch {
       toast.error("保存失败");
+    } finally {
+      setSaving(false);
     }
   };
 
   const ackMeeting = async (meetingId: string) => {
     if (preview) return;
+    if (!confirm("确认面谈结果？确认后无法撤销。")) return;
     try {
       await fetch("/api/meeting/ack", {
         method: "POST",
@@ -145,7 +150,7 @@ function MeetingsContent() {
                     <div className="flex justify-end gap-2">
                       <Button
                         onClick={() => saveMeeting(m.employee.id, m.id)}
-                        disabled={preview}
+                        disabled={preview || saving}
                       >
                         保存记录
                       </Button>

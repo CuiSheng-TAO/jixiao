@@ -50,6 +50,7 @@ function CalibrationContent() {
   const [editingUser, setEditingUser] = useState<string | null>(null);
   const [editStars, setEditStars] = useState<number | null>(null);
   const [editReason, setEditReason] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (preview && previewRole) {
@@ -79,6 +80,8 @@ function CalibrationContent() {
 
   const saveCalibration = async (userId: string) => {
     if (preview) return;
+    if (!confirm("确认保存校准结果？")) return;
+    setSaving(true);
     try {
       await fetch("/api/calibration", {
         method: "POST",
@@ -95,6 +98,8 @@ function CalibrationContent() {
       if (Array.isArray(newData)) setData(newData);
     } catch {
       toast.error("保存失败");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -258,7 +263,7 @@ function CalibrationContent() {
 
               <div className="flex justify-end gap-2 border-t pt-4">
                 <Button variant="outline" onClick={() => setEditingUser(null)}>取消</Button>
-                <Button onClick={() => saveCalibration(editingUser)} disabled={!editStars}>
+                <Button onClick={() => saveCalibration(editingUser)} disabled={!editStars || saving}>
                   保存
                 </Button>
               </div>

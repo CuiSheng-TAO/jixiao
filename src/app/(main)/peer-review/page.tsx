@@ -83,6 +83,9 @@ function PeerReviewContent() {
   const [declineDialog, setDeclineDialog] = useState<{ open: boolean; reviewId: string; revieweeName: string }>({ open: false, reviewId: "", revieweeName: "" });
   const [declineReason, setDeclineReason] = useState("");
   const [declining, setDeclining] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [savingNoms, setSavingNoms] = useState(false);
 
   useEffect(() => {
     if (preview && previewRole) {
@@ -92,6 +95,7 @@ function PeerReviewContent() {
       setSelectedUsers(
         ((previewData.nominations as Nomination[]) || []).map((n) => n.nominee.id)
       );
+      setLoading(false);
       return;
     }
 
@@ -111,6 +115,8 @@ function PeerReviewContent() {
       if (Array.isArray(users)) setAllUsers(users);
     }).catch((e) => {
       if ((e as Error).name !== "AbortError") console.error(e);
+    }).finally(() => {
+      if (!signal.aborted) setLoading(false);
     });
     return () => controller.abort();
   }, [preview, previewRole, getData]);
@@ -121,6 +127,7 @@ function PeerReviewContent() {
       toast.error("请至少选择3位评估人");
       return;
     }
+    setSavingNoms(true);
     try {
       const res = await fetch("/api/peer-review/nominate", {
         method: "POST",
@@ -132,6 +139,8 @@ function PeerReviewContent() {
       toast.success("评估人提名已保存");
     } catch {
       toast.error("保存失败");
+    } finally {
+      setSavingNoms(false);
     }
   };
 
@@ -149,6 +158,7 @@ function PeerReviewContent() {
       if (!confirm("提交后将无法修改，确认提交？")) return;
     }
 
+    setSaving(true);
     try {
       const res = await fetch("/api/peer-review", {
         method: "POST",
@@ -164,6 +174,8 @@ function PeerReviewContent() {
       toast.success(action === "submit" ? "评估已提交" : "已保存");
     } catch {
       toast.error("操作失败");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -201,6 +213,8 @@ function PeerReviewContent() {
       (u.name.includes(searchQuery) || u.department.includes(searchQuery)) &&
       !selectedUsers.includes(u.id)
   );
+
+  if (loading) return <FormPageSkeleton />;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -288,7 +302,7 @@ function PeerReviewContent() {
                 </div>
               )}
 
-              <Button onClick={saveNominations} disabled={preview || selectedUsers.length < 3}>
+              <Button onClick={saveNominations} disabled={preview || savingNoms || selectedUsers.length < 3}>
                 保存提名 ({selectedUsers.length}人)
               </Button>
             </CardContent>
@@ -314,6 +328,22 @@ function PeerReviewContent() {
         </TabsContent>
 
         <TabsContent value="review" className="space-y-4">
+          {reviews.length > 0 && (() => {
+            const done = reviews.filter(r => r.status === "SUBMITTED" || r.status === "DECLINED").length;
+            const total = reviews.length;
+            const pct = Math.round((done / total) * 100);
+            return (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">完成进度</span>
+                  <span className="font-medium">{done}/{total} ({pct}%)</span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-muted">
+                  <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+            );
+          })()}
           {reviews.length === 0 ? (
             <Card>
               <CardContent className="py-8 text-center text-gray-500">
@@ -498,10 +528,10 @@ function PeerReviewContent() {
 
                         {isDraft && (
                           <div className="flex justify-end gap-2">
-                            <Button variant="outline" size="sm" onClick={() => saveReview(review, "save")} disabled={preview}>
+                            <Button variant="outline" size="sm" onClick={() => saveReview(review, "save")} disabled={preview || saving}>
                               保存
                             </Button>
-                            <Button size="sm" onClick={() => saveReview(review, "submit")} disabled={preview}>
+                            <Button size="sm" onClick={() => saveReview(review, "submit")} disabled={preview || saving}>
                               提交
                             </Button>
                           </div>

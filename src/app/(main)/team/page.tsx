@@ -67,6 +67,7 @@ function TeamContent() {
   const [evals, setEvals] = useState<TeamEval[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [formData, setFormData] = useState<Record<string, FormData>>({});
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (preview && previewRole) {
@@ -131,6 +132,7 @@ function TeamContent() {
     }
     if (action === "submit" && !confirm("确认提交？提交后无法修改。")) return;
 
+    setSaving(true);
     try {
       await fetch("/api/supervisor-eval", {
         method: "POST",
@@ -142,6 +144,8 @@ function TeamContent() {
       setEvals(data);
     } catch {
       toast.error("操作失败");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -416,8 +420,8 @@ function TeamContent() {
                       {/* Actions */}
                       {!isSubmitted && (
                         <div className="flex justify-end gap-2 border-t pt-4">
-                          <Button variant="outline" onClick={() => saveEval(selected!, "save")} disabled={preview}>保存</Button>
-                          <Button onClick={() => saveEval(selected!, "submit")} disabled={preview}>提交评估</Button>
+                          <Button variant="outline" onClick={() => saveEval(selected!, "save")} disabled={preview || saving}>{saving ? "保存中..." : "保存"}</Button>
+                          <Button onClick={() => saveEval(selected!, "submit")} disabled={preview || saving}>提交评估</Button>
                         </div>
                       )}
                     </CardContent>
