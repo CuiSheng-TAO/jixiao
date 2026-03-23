@@ -261,57 +261,11 @@ export function GuidePage({ cycle }: Props) {
       <section className="space-y-4">
         <h2 className="text-xl font-semibold">流程总览</h2>
         <div className="overflow-x-auto">
-          <div className="relative flex min-w-[900px]">
-            {/* 连接线 */}
-            <div className="absolute top-3 left-[24px] right-[24px] h-[2px] bg-border" />
-            <div
-              className="absolute top-3 left-[24px] h-[2px] bg-primary transition-all"
-              style={{ width: activeIndex >= 0 ? `${(activeIndex / (steps.length - 1)) * 100}%` : "0%" }}
-            />
-            {steps.map((step, i) => {
-              const isCurrent = i === activeIndex;
-              const isPast = i < activeIndex;
-              return (
-                <div key={step.key} className="relative flex-1 flex flex-col items-center text-center px-1">
-                  {/* 节点圆点 */}
-                  <div className={cn(
-                    "relative z-10 flex h-6 w-6 items-center justify-center rounded-full border-2 transition-all",
-                    isCurrent
-                      ? "border-primary bg-primary text-white"
-                      : isPast
-                        ? "border-primary bg-primary text-white"
-                        : "border-border bg-background text-muted-foreground"
-                  )}>
-                    {isPast ? (
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                    ) : (
-                      <span className="text-[10px] font-bold">{i + 1}</span>
-                    )}
-                  </div>
-                  {/* 标题 */}
-                  <p className={cn(
-                    "mt-2 text-xs font-semibold leading-tight",
-                    isCurrent ? "text-primary" : isPast ? "text-foreground" : "text-muted-foreground"
-                  )}>
-                    {step.title}
-                  </p>
-                  {/* 日期 */}
-                  {step.date && (
-                    <p className="mt-0.5 text-[10px] font-medium text-muted-foreground">{step.date}</p>
-                  )}
-                  {/* 状态标签 */}
-                  {isCurrent && (
-                    <Badge className="mt-1 bg-primary text-white text-[9px] px-1.5 py-0 h-4">进行中</Badge>
-                  )}
-                  {isPast && (
-                    <span className="mt-1 text-[9px] text-muted-foreground">已完成</span>
-                  )}
-                  {/* 描述 */}
-                  <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground/70">{step.desc}</p>
-                </div>
-              );
-            })}
-          </div>
+          <img
+            src="/timeline.png"
+            alt="绩效考核流程时间线：个人自评 0317-0324 → 上级初评与360环评 0324-0327 → 公司级绩效终评校准 0327-0330 → 绩效结果面谈 0330-0401 → 绩效申诉 0330-0402 → 年终激励兑现"
+            className="w-full min-w-[700px]"
+          />
         </div>
       </section>
 
