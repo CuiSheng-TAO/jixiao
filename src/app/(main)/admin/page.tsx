@@ -77,6 +77,7 @@ function AdminContent() {
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [userSearch, setUserSearch] = useState("");
   const [newCycle, setNewCycle] = useState({
     name: "2025年下半年绩效考核",
     selfEvalStart: "2026-03-17",
@@ -375,6 +376,15 @@ function AdminContent() {
 
         <TabsContent value="users">
           <Card>
+            <CardContent className="p-4 pb-0">
+              <input
+                type="text"
+                placeholder="搜索姓名、部门、职位..."
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+                className="h-9 w-full max-w-sm rounded-lg border border-border/60 bg-background px-3 py-1.5 text-sm shadow-xs transition-all hover:border-border focus:border-ring focus:shadow-sm focus:outline-none focus:ring-3 focus:ring-ring/20"
+              />
+            </CardContent>
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
@@ -387,7 +397,11 @@ function AdminContent() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {users.map((u) => (
+                  {users.filter((u) => {
+                    if (!userSearch) return true;
+                    const q = userSearch.toLowerCase();
+                    return (u.name?.toLowerCase().includes(q)) || (u.department?.toLowerCase().includes(q)) || (u.jobTitle?.toLowerCase().includes(q)) || (u.supervisor?.name?.toLowerCase().includes(q));
+                  }).map((u) => (
                     <TableRow key={u.id}>
                       <TableCell className="font-medium">{u.name}</TableCell>
                       <TableCell className="text-muted-foreground">{u.department}</TableCell>
