@@ -45,6 +45,13 @@ type TeamEval = {
     collaboration: number;
     values: number;
     count: number;
+    expectedCount: number;
+    reviews: Array<{
+      outputScore: number | null; outputComment: string;
+      collaborationScore: number | null; collaborationComment: string;
+      valuesScore: number | null; valuesComment: string;
+      innovationScore: number | null; innovationComment: string;
+    }>;
   } | null;
 };
 
@@ -113,6 +120,7 @@ function TeamContent() {
   const [formData, setFormData] = useState<Record<string, FormData>>({});
   const [saving, setSaving] = useState(false);
   const [expandedSelfEval, setExpandedSelfEval] = useState(false);
+  const [expandedPeerReview, setExpandedPeerReview] = useState(false);
 
   useEffect(() => {
     if (preview && previewRole) {
@@ -302,25 +310,82 @@ function TeamContent() {
                   {/* Peer review summary */}
                   {selectedEval.peerReviewSummary && (
                     <Card>
-                      <CardHeader>
-                        <CardTitle className="text-base">360环评汇总 ({selectedEval.peerReviewSummary.count}人)</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-3 gap-4 text-center">
-                          <div>
-                            <p className="text-2xl font-bold">{selectedEval.peerReviewSummary.output.toFixed(1)}</p>
-                            <p className="text-xs text-gray-500">业绩产出</p>
-                          </div>
-                          <div>
-                            <p className="text-2xl font-bold">{selectedEval.peerReviewSummary.collaboration.toFixed(1)}</p>
-                            <p className="text-xs text-gray-500">协作配合</p>
-                          </div>
-                          <div>
-                            <p className="text-2xl font-bold">{selectedEval.peerReviewSummary.values.toFixed(1)}</p>
-                            <p className="text-xs text-gray-500">价值观</p>
-                          </div>
+                      <CardHeader className="cursor-pointer" onClick={() => setExpandedPeerReview(!expandedPeerReview)}>
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-base">
+                            360环评汇总
+                            {selectedEval.peerReviewSummary.expectedCount === 0 ? (
+                              <span className="ml-2 text-sm font-normal text-muted-foreground">尚未提名评估人</span>
+                            ) : (
+                              <span className="ml-2 text-sm font-normal text-muted-foreground">
+                                ({selectedEval.peerReviewSummary.count}/{selectedEval.peerReviewSummary.expectedCount} 已完成)
+                              </span>
+                            )}
+                          </CardTitle>
+                          <span className="text-xs text-muted-foreground">{expandedPeerReview ? "收起" : "展开详情"}</span>
                         </div>
-                      </CardContent>
+                        {selectedEval.peerReviewSummary.expectedCount > 0 && (
+                          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+                            <div
+                              className={`h-full rounded-full transition-all ${selectedEval.peerReviewSummary.count >= selectedEval.peerReviewSummary.expectedCount ? "bg-green-500" : "bg-primary"}`}
+                              style={{ width: `${Math.min(100, (selectedEval.peerReviewSummary.count / selectedEval.peerReviewSummary.expectedCount) * 100)}%` }}
+                            />
+                          </div>
+                        )}
+                      </CardHeader>
+                      {selectedEval.peerReviewSummary.count > 0 && (
+                        <CardContent className="space-y-4">
+                          <div className="grid grid-cols-3 gap-4 text-center">
+                            <div>
+                              <p className="text-2xl font-bold">{selectedEval.peerReviewSummary.output.toFixed(1)}</p>
+                              <p className="text-xs text-gray-500">业绩产出</p>
+                            </div>
+                            <div>
+                              <p className="text-2xl font-bold">{selectedEval.peerReviewSummary.collaboration.toFixed(1)}</p>
+                              <p className="text-xs text-gray-500">协作配合</p>
+                            </div>
+                            <div>
+                              <p className="text-2xl font-bold">{selectedEval.peerReviewSummary.values.toFixed(1)}</p>
+                              <p className="text-xs text-gray-500">价值观</p>
+                            </div>
+                          </div>
+
+                          {expandedPeerReview && selectedEval.peerReviewSummary.reviews.length > 0 && (
+                            <div className="space-y-3 border-t pt-4">
+                              <p className="text-xs font-medium text-muted-foreground">匿名评语详情</p>
+                              {selectedEval.peerReviewSummary.reviews.map((r, i) => (
+                                <div key={i} className="rounded-lg border border-border/60 p-3 space-y-2 text-sm">
+                                  <p className="text-xs font-semibold text-muted-foreground">评估人 {i + 1}</p>
+                                  {r.outputComment && (
+                                    <div>
+                                      <span className="text-xs text-muted-foreground">业绩产出 ({r.outputScore}分)：</span>
+                                      <span>{r.outputComment}</span>
+                                    </div>
+                                  )}
+                                  {r.collaborationComment && (
+                                    <div>
+                                      <span className="text-xs text-muted-foreground">协作配合 ({r.collaborationScore}分)：</span>
+                                      <span>{r.collaborationComment}</span>
+                                    </div>
+                                  )}
+                                  {r.valuesComment && (
+                                    <div>
+                                      <span className="text-xs text-muted-foreground">价值观 ({r.valuesScore}分)：</span>
+                                      <span>{r.valuesComment}</span>
+                                    </div>
+                                  )}
+                                  {r.innovationComment && (
+                                    <div>
+                                      <span className="text-xs text-muted-foreground">其他 ({r.innovationScore}分)：</span>
+                                      <span>{r.innovationComment}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </CardContent>
+                      )}
                     </Card>
                   )}
 

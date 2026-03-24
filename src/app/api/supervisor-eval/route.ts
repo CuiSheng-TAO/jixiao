@@ -32,16 +32,27 @@ export async function GET() {
 
         const peerReviews = await prisma.peerReview.findMany({
           where: { cycleId: cycle.id, revieweeId: sub.id, status: "SUBMITTED" },
+          select: {
+            outputScore: true, outputComment: true,
+            collaborationScore: true, collaborationComment: true,
+            valuesScore: true, valuesComment: true,
+            innovationScore: true, innovationComment: true,
+          },
         });
 
-        const avgPeer = peerReviews.length > 0
-          ? {
-              output: peerReviews.reduce((s, r) => s + (r.outputScore || 0), 0) / peerReviews.length,
-              collaboration: peerReviews.reduce((s, r) => s + (r.collaborationScore || 0), 0) / peerReviews.length,
-              values: peerReviews.reduce((s, r) => s + (r.valuesScore || 0), 0) / peerReviews.length,
-              count: peerReviews.length,
-            }
-          : null;
+        // 查询预期评估人数（该员工提名且被接受的数量）
+        const expectedCount = await prisma.reviewerNomination.count({
+          where: { cycleId: cycle.id, nominatorId: sub.id, nomineeStatus: "ACCEPTED" },
+        });
+
+        const avgPeer = {
+          output: peerReviews.length > 0 ? peerReviews.reduce((s, r) => s + (r.outputScore || 0), 0) / peerReviews.length : 0,
+          collaboration: peerReviews.length > 0 ? peerReviews.reduce((s, r) => s + (r.collaborationScore || 0), 0) / peerReviews.length : 0,
+          values: peerReviews.length > 0 ? peerReviews.reduce((s, r) => s + (r.valuesScore || 0), 0) / peerReviews.length : 0,
+          count: peerReviews.length,
+          expectedCount,
+          reviews: peerReviews,
+        };
 
         return {
           employee: sub,
