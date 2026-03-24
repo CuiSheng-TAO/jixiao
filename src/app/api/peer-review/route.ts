@@ -55,28 +55,39 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "已拒评，无法修改" }, { status: 400 });
     }
 
-    const outputScore = validateStars(body.outputScore);
-    const collaborationScore = validateStars(body.collaborationScore);
-    const valuesScore = validateStars(body.valuesScore);
-    const innovationScore = validateStars(body.innovationScore);
+    // 新维度（与绩效初评一致）
+    const performanceStars = validateStars(body.performanceStars);
+    const comprehensiveStars = validateStars(body.comprehensiveStars);
+    const learningStars = validateStars(body.learningStars);
+    const adaptabilityStars = validateStars(body.adaptabilityStars);
+    const candidStars = validateStars(body.candidStars);
+    const progressStars = validateStars(body.progressStars);
+    const altruismStars = validateStars(body.altruismStars);
+    const rootStars = validateStars(body.rootStars);
 
     if (isSubmit) {
-      if (!outputScore || !collaborationScore || !valuesScore) {
-        return NextResponse.json({ error: "请完成所有必填评分（业绩产出、协作配合、价值观）" }, { status: 400 });
+      if (!performanceStars || !comprehensiveStars || !learningStars || !adaptabilityStars || !candidStars || !progressStars || !altruismStars || !rootStars) {
+        return NextResponse.json({ error: "请完成所有维度的星级评分" }, { status: 400 });
       }
     }
 
     const review = await prisma.peerReview.update({
       where: { id: body.id },
       data: {
-        outputScore,
-        outputComment: sanitizeText(body.outputComment),
-        collaborationScore,
-        collaborationComment: sanitizeText(body.collaborationComment),
-        valuesScore,
-        valuesComment: sanitizeText(body.valuesComment),
-        innovationScore,
-        innovationComment: sanitizeText(body.innovationComment),
+        performanceStars,
+        performanceComment: sanitizeText(body.performanceComment),
+        comprehensiveStars,
+        learningStars,
+        adaptabilityStars,
+        abilityComment: sanitizeText(body.abilityComment),
+        candidStars,
+        candidComment: sanitizeText(body.candidComment),
+        progressStars,
+        progressComment: sanitizeText(body.progressComment),
+        altruismStars,
+        altruismComment: sanitizeText(body.altruismComment),
+        rootStars,
+        rootComment: sanitizeText(body.rootComment),
         status: isSubmit ? "SUBMITTED" : "DRAFT",
         submittedAt: isSubmit ? new Date() : undefined,
       },

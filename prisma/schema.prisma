@@ -118,8 +118,23 @@ model PeerReview {
   collaborationComment String   @default("")
   valuesScore         Int?      // 价值观践行 1-5
   valuesComment       String    @default("")
-  innovationScore     Int?      // 可选
+  innovationScore     Int?      // 可选（旧字段，保留兼容）
   innovationComment   String    @default("")
+  // 新维度（与绩效初评一致）
+  performanceStars    Int?      // 业绩产出
+  performanceComment  String    @default("")
+  comprehensiveStars  Int?      // 综合能力
+  learningStars       Int?      // 学习能力
+  adaptabilityStars   Int?      // 适应能力
+  abilityComment      String    @default("")
+  candidStars         Int?      // 坦诚真实
+  candidComment       String    @default("")
+  progressStars       Int?      // 极致进取
+  progressComment     String    @default("")
+  altruismStars       Int?      // 成就利他
+  altruismComment     String    @default("")
+  rootStars           Int?      // ROOT
+  rootComment         String    @default("")
   declinedAt          DateTime?
   declineReason       String    @default("")
   status              String    @default("DRAFT") // DRAFT, SUBMITTED, DECLINED
