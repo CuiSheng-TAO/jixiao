@@ -42,7 +42,7 @@ const navItems = [
   { href: "/dashboard", label: "首页", icon: Home, roles: ["EMPLOYEE", "SUPERVISOR", "HRBP", "ADMIN"] },
   { href: "/self-eval", label: "个人自评", icon: ClipboardList, roles: ["EMPLOYEE", "SUPERVISOR", "HRBP", "ADMIN"] },
   { href: "/peer-review", label: "360环评", icon: Users, roles: ["EMPLOYEE", "SUPERVISOR", "HRBP", "ADMIN"] },
-  { href: "/team", label: "团队评估", icon: UserCheck, roles: ["SUPERVISOR", "HRBP", "ADMIN"] },
+  { href: "/team", label: "绩效初评", icon: UserCheck, roles: ["SUPERVISOR", "HRBP", "ADMIN"] },
   { href: "/calibration", label: "绩效校准", icon: BarChart3, roles: ["HRBP", "ADMIN"] },
   { href: "/meetings", label: "面谈记录", icon: MessageSquare, roles: ["SUPERVISOR", "HRBP", "ADMIN"], availableFrom: "2026-03-30T00:00:00" },
   { href: "/appeal", label: "绩效申诉", icon: MessageSquareWarning, roles: ["EMPLOYEE", "SUPERVISOR", "HRBP", "ADMIN"], availableFrom: "2026-03-30T00:00:00" },

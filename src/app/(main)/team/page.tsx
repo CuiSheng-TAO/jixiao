@@ -165,7 +165,7 @@ function TeamContent() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="团队评估" description={`你有 ${evals.filter(e => e.evaluation?.status !== "SUBMITTED").length} 位下级待初评`} />
+      <PageHeader title="绩效初评" description={`你有 ${evals.filter(e => e.evaluation?.status !== "SUBMITTED").length} 位下级待初评`} />
 
       {/* 初评说明 - 页面顶部只显示一次 */}
       <Card>

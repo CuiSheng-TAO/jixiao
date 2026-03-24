@@ -144,7 +144,7 @@ function DashboardContent() {
             icon: UserCheck,
             iconColor: "text-orange-600",
             iconBg: "bg-orange-50",
-            title: "团队评估",
+            title: "绩效初评",
             description: data.pendingTeamEvals > 0 ? `${data.pendingTeamEvals} 人待评估` : "暂无待办",
             accent: "group-hover:border-orange-200",
           },
