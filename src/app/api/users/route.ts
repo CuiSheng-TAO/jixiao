@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
       const pendingTeamEvals = ["SUPERVISOR", "HRBP", "ADMIN"].includes(user.role)
         ? await prisma.user.count({ where: { supervisorId: user.id } })
         : 0;
-      const hasAppeal = cycle ? await prisma.appeal.count({ where: { employeeId: user.id, cycleId: cycle.id } }) > 0 : false;
+      const hasAppeal = cycle ? await prisma.appeal.count({ where: { userId: user.id, cycleId: cycle.id } }) > 0 : false;
       return NextResponse.json({
         name: user.name,
         role: user.role,
