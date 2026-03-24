@@ -41,9 +41,9 @@ type User = {
   department: string;
 };
 
-function ScoreSelector({ value, onChange, disabled }: { value: number | null; onChange: (v: number) => void; disabled: boolean }) {
+function ScoreSelector({ value, onChange, disabled, onUnclear }: { value: number | null; onChange: (v: number) => void; disabled: boolean; onUnclear?: () => void }) {
   return (
-    <div className="flex gap-1.5">
+    <div className="flex items-center gap-1.5">
       {[1, 2, 3, 4, 5].map((n) => (
         <button
           key={n}
@@ -58,6 +58,19 @@ function ScoreSelector({ value, onChange, disabled }: { value: number | null; on
           {n}
         </button>
       ))}
+      {onUnclear && (
+        <button
+          onClick={() => !disabled && onUnclear()}
+          disabled={disabled}
+          className={`ml-2 flex h-9 items-center justify-center rounded-full px-3 text-sm transition-all duration-[var(--transition-fast)] ${
+            value === 0
+              ? "bg-gray-500 text-white shadow-md scale-105"
+              : "border border-border/60 bg-background text-muted-foreground hover:border-gray-400 hover:text-gray-600 hover:bg-gray-50"
+          } ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer active:scale-95"}`}
+        >
+          不清楚
+        </button>
+      )}
     </div>
   );
 }
@@ -415,6 +428,7 @@ function PeerReviewContent() {
                               value={review.outputScore}
                               onChange={(v) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, outputScore: v } : r))}
                               disabled={isDisabled}
+                              onUnclear={() => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, outputScore: 0, outputComment: "不清楚" } : r))}
                             />
                             <Textarea
                               value={review.outputComment}
@@ -433,6 +447,7 @@ function PeerReviewContent() {
                               value={review.collaborationScore}
                               onChange={(v) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, collaborationScore: v } : r))}
                               disabled={isDisabled}
+                              onUnclear={() => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, collaborationScore: 0, collaborationComment: "不清楚" } : r))}
                             />
                             <Textarea
                               value={review.collaborationComment}
@@ -465,6 +480,7 @@ function PeerReviewContent() {
                               value={review.valuesScore}
                               onChange={(v) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, valuesScore: v } : r))}
                               disabled={isDisabled}
+                              onUnclear={() => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, valuesScore: 0, valuesComment: "不清楚" } : r))}
                             />
                             <Textarea
                               value={review.valuesComment}
@@ -536,6 +552,7 @@ function PeerReviewContent() {
                                   value={review.innovationScore}
                                   onChange={(v) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, innovationScore: v } : r))}
                                   disabled={isDisabled}
+                                  onUnclear={() => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, innovationScore: 0, innovationComment: "不清楚" } : r))}
                                 />
                               </div>
                             )}
