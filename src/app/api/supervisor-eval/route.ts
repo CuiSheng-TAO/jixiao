@@ -15,13 +15,25 @@ export async function GET() {
     });
     if (!cycle) return NextResponse.json([]);
 
-    // 吴承霖：评全员（除自己）；邱翔：评全员（除自己和吴承霖）
+    // 考核名单 49 人
+    const EVAL_LIST_NAMES = [
+      "曹越","曹铭哲","欧阳伊希","窦雪茹","陈毅强","薛琳蕊","陈佳杰","刘一","张福强",
+      "杨倩仪","王煦晖","莫颖儿","吕鸿","冉晨宇","张志权","赖永涛","江培章","陈家兴",
+      "严骏","洪炯腾","沈楚城","张建生","符永涛","戴智斌","马莘权","徐宗泽","龙辰",
+      "胡毅薇","许斯荣","余一铭","曹文跃","李泽龙","禹聪琪","陈琼","李娟娟","刘瑞峰",
+      "李斌琦","林义章","唐昊鸣","王金淋","洪思睿","叶荣金","郭雨明","邹玙璠","杨偲妤",
+      "李红军","刘源源","顾元舜","郝锦",
+    ];
+
+    // 吴承霖：名单49人 + 名单外直属下级；邱翔：名单49人 + 名单外直属下级（排除吴承霖）
     const wuchenglin = await prisma.user.findFirst({ where: { name: "吴承霖" }, select: { id: true } });
     let subordinateWhere: object;
     if (wuchenglin && user.id === wuchenglin.id) {
-      subordinateWhere = { id: { not: user.id } };
+      // 吴承霖：名单上的人 OR 自己的直属下级，排除自己
+      subordinateWhere = { AND: [{ id: { not: user.id } }, { OR: [{ name: { in: EVAL_LIST_NAMES } }, { supervisorId: user.id }] }] };
     } else if (user.name === "邱翔" && wuchenglin) {
-      subordinateWhere = { id: { notIn: [user.id, wuchenglin.id] } };
+      // 邱翔：名单上的人 OR 自己的直属下级，排除自己和吴承霖
+      subordinateWhere = { AND: [{ id: { notIn: [user.id, wuchenglin.id] } }, { OR: [{ name: { in: EVAL_LIST_NAMES } }, { supervisorId: user.id }] }] };
     } else {
       subordinateWhere = { supervisorId: user.id };
     }
