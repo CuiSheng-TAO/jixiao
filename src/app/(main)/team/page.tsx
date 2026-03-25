@@ -138,6 +138,7 @@ function TeamContent() {
 
     const loadData = () => {
       fetch("/api/supervisor-eval").then((r) => r.json()).then((data) => {
+        if (!Array.isArray(data)) return;
         setEvals((prev) => {
           // First load: initialize form data
           if (prev.length === 0) {
