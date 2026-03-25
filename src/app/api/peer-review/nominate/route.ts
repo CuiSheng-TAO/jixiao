@@ -41,8 +41,8 @@ export async function POST(req: NextRequest) {
     // 周期阶段验证（ADMIN豁免）
     if (user.role !== "ADMIN") {
       const cycle = await getActiveCycle();
-      if (!cycle || (cycle.status !== "SELF_EVAL" && cycle.status !== "PEER_REVIEW")) {
-        return NextResponse.json({ error: "当前不在自评或互评阶段，无法执行此操作" }, { status: 400 });
+      if (!cycle || (cycle.status !== "SELF_EVAL" && cycle.status !== "PEER_REVIEW" && cycle.status !== "SUPERVISOR_EVAL")) {
+        return NextResponse.json({ error: "当前阶段无法执行此操作" }, { status: 400 });
       }
     }
 

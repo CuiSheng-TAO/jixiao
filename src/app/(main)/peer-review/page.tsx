@@ -184,6 +184,10 @@ function PeerReviewContent() {
         body: JSON.stringify({ nomineeIds: selectedUsers }),
       });
       const result = await res.json();
+      if (!res.ok) {
+        toast.error(result.error || "保存失败");
+        return;
+      }
       setNominations(result);
       toast.success("评估人提名已保存");
     } catch {
