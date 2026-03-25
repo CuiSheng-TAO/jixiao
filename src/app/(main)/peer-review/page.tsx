@@ -130,6 +130,7 @@ function PeerReviewContent() {
   const [savingNoms, setSavingNoms] = useState(false);
   const [approvals, setApprovals] = useState<ApprovalItem[]>([]);
   const [isApprover, setIsApprover] = useState(false);
+  const [selectedReviewId, setSelectedReviewId] = useState<string | null>(null);
   const [addNomDialog, setAddNomDialog] = useState<{ open: boolean; nominatorId: string; nominatorName: string }>({ open: false, nominatorId: "", nominatorName: "" });
   const [addNomSearch, setAddNomSearch] = useState("");
   const [addingNom, setAddingNom] = useState(false);
@@ -425,51 +426,80 @@ function PeerReviewContent() {
               </CardContent>
             </Card>
           ) : (
-            reviews.map((review) => {
-              const isDraft = review.status === "DRAFT";
-              const isDeclined = review.status === "DECLINED";
-              const isDisabled = !isDraft;
+            <>
+              {/* 人员选择器 */}
+              <div className="flex flex-wrap gap-2">
+                {reviews.map((r) => {
+                  const isSelected = selectedReviewId === r.id || (!selectedReviewId && reviews[0]?.id === r.id);
+                  const isDone = r.status === "SUBMITTED";
+                  const isDecl = r.status === "DECLINED";
+                  return (
+                    <button
+                      key={r.id}
+                      onClick={() => setSelectedReviewId(r.id)}
+                      className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                        isSelected
+                          ? "border-primary bg-primary/5 text-primary"
+                          : "border-border hover:bg-muted"
+                      }`}
+                    >
+                      {r.reviewee.name}
+                      {isDone && <span className="text-green-600">✓</span>}
+                      {isDecl && <span className="text-red-500">✗</span>}
+                      {!isDone && !isDecl && <Badge variant="secondary" className="ml-1 h-5 text-[10px]">待完成</Badge>}
+                    </button>
+                  );
+                })}
+              </div>
 
-              return (
-                <Card key={review.id}>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-base">
-                        评估 {review.reviewee.name}
-                        <span className="ml-2 text-sm font-normal text-gray-400">
-                          {review.reviewee.department}
-                        </span>
-                        {review.revieweeSelfEvalUrl && (
-                          <a href={review.revieweeSelfEvalUrl} target="_blank" rel="noopener noreferrer" className="ml-2 text-sm font-normal text-primary hover:underline">
-                            查看自评 →
-                          </a>
-                        )}
-                      </CardTitle>
-                      <div className="flex items-center gap-2">
-                        {isDraft && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-7 text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
-                            onClick={(e) => { e.stopPropagation(); setDeclineDialog({ open: true, reviewId: review.id, revieweeName: review.reviewee.name }); }}
-                            disabled={preview}
-                          >
-                            拒绝评估
-                          </Button>
-                        )}
-                        <Badge variant={review.status === "SUBMITTED" ? "default" : isDeclined ? "destructive" : "secondary"}>
-                          {review.status === "SUBMITTED" ? "已提交" : isDeclined ? "已拒评" : "待完成"}
-                        </Badge>
+              {/* 当前选中人的表单 */}
+              {(() => {
+                const review = reviews.find(r => r.id === selectedReviewId) || reviews[0];
+                if (!review) return null;
+                const isDraft = review.status === "DRAFT";
+                const isDeclined = review.status === "DECLINED";
+                const isDisabled = !isDraft;
+
+                return (
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-base">
+                          评估 {review.reviewee.name}
+                          <span className="ml-2 text-sm font-normal text-gray-400">
+                            {review.reviewee.department}
+                          </span>
+                          {review.revieweeSelfEvalUrl && (
+                            <a href={review.revieweeSelfEvalUrl} target="_blank" rel="noopener noreferrer" className="ml-2 text-sm font-normal text-primary hover:underline">
+                              查看自评 →
+                            </a>
+                          )}
+                        </CardTitle>
+                        <div className="flex items-center gap-2">
+                          {isDraft && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
+                              onClick={(e) => { e.stopPropagation(); setDeclineDialog({ open: true, reviewId: review.id, revieweeName: review.reviewee.name }); }}
+                              disabled={preview}
+                            >
+                              拒绝评估
+                            </Button>
+                          )}
+                          <Badge variant={review.status === "SUBMITTED" ? "default" : isDeclined ? "destructive" : "secondary"}>
+                            {review.status === "SUBMITTED" ? "已提交" : isDeclined ? "已拒评" : "待完成"}
+                          </Badge>
+                        </div>
                       </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {isDeclined ? (
-                      <div className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">
-                        拒绝原因：{review.declineReason}
-                      </div>
-                    ) : (
-                      <>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {isDeclined ? (
+                        <div className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">
+                          拒绝原因：{review.declineReason}
+                        </div>
+                      ) : (
+                        <>
                         <div className="space-y-6">
                           {/* 业绩产出 */}
                           <div className="space-y-2">
@@ -560,8 +590,9 @@ function PeerReviewContent() {
                     )}
                   </CardContent>
                 </Card>
-              );
-            })
+                );
+              })()}
+            </>
           )}
         </TabsContent>
 
