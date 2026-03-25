@@ -169,8 +169,8 @@ function PeerReviewContent() {
 
   const saveNominations = async () => {
     if (preview) return;
-    if (selectedUsers.length < 3) {
-      toast.error("请至少选择3位评估人");
+    if (selectedUsers.length < 5) {
+      toast.error("请至少选择5位评估人");
       return;
     }
     setSavingNoms(true);
@@ -327,7 +327,7 @@ function PeerReviewContent() {
             <CardHeader>
               <CardTitle>选择360评估人</CardTitle>
               <CardDescription>
-                邀请人数不少于3人、不高于5人，重要/核心岗可邀请多于5人。需覆盖上级、平级、跨团队协作方。
+                邀请人数不少于5人（上级≧1、平级≧2、跨团队协作方≧2），重要/核心岗可邀请多于5人，邀请如果存在不合理，办公室/HR组会再补充邀请。
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -375,7 +375,7 @@ function PeerReviewContent() {
                 </div>
               )}
 
-              <Button onClick={saveNominations} disabled={preview || savingNoms || selectedUsers.length < 3}>
+              <Button onClick={saveNominations} disabled={preview || savingNoms || selectedUsers.length < 5}>
                 保存提名 ({selectedUsers.length}人)
               </Button>
             </CardContent>

@@ -52,8 +52,8 @@ export async function POST(req: NextRequest) {
     // Filter out self-nomination
     nomineeIds = nomineeIds.filter((id) => id !== user.id);
 
-    if (nomineeIds.length < 3) {
-      return NextResponse.json({ error: "请至少提名3位同事" }, { status: 400 });
+    if (nomineeIds.length < 5) {
+      return NextResponse.json({ error: "请至少提名5位同事" }, { status: 400 });
     }
 
     const cycle = await prisma.reviewCycle.findFirst({
