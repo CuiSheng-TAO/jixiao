@@ -653,7 +653,7 @@ function AdminContent() {
                         <TableHead className="w-20">自评链接</TableHead>
                         <TableHead className="w-24">360提名</TableHead>
                         <TableHead className="w-20">互评进度</TableHead>
-                        <TableHead className="w-28">初评状态</TableHead>
+                        <TableHead>初评评估人</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -692,14 +692,21 @@ function AdminContent() {
                             ) : "0/0"}
                           </TableCell>
                           <TableCell className="text-xs">
-                            {row.supEval && row.supEval.length > 0 ? (
+                            {row.expectedEvaluators && row.expectedEvaluators.length > 0 ? (
                               <div className="space-y-0.5">
-                                {row.supEval.map((e, i) => (
-                                  <div key={i}>
-                                    <span className="text-muted-foreground">{e.evaluator}:</span>
-                                    <Badge variant={e.status === "SUBMITTED" ? "default" : "secondary"} className="ml-1 text-[10px] py-0">{e.status === "SUBMITTED" ? "已提交" : "草稿"}</Badge>
-                                  </div>
-                                ))}
+                                {row.expectedEvaluators.filter(e => !["吴承霖", "邱翔"].includes(e)).map((evaluator, i) => {
+                                  const actual = row.supEval?.find(e => evaluator.startsWith(e.evaluator));
+                                  return (
+                                    <div key={i} className="flex items-center gap-1">
+                                      <span>{evaluator}</span>
+                                      {actual ? (
+                                        <Badge variant={actual.status === "SUBMITTED" ? "default" : "secondary"} className="text-[10px] py-0">{actual.status === "SUBMITTED" ? "已评" : "草稿"}</Badge>
+                                      ) : (
+                                        <span className="text-muted-foreground">待评</span>
+                                      )}
+                                    </div>
+                                  );
+                                })}
                               </div>
                             ) : <span className="text-muted-foreground">—</span>}
                           </TableCell>
