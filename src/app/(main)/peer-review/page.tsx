@@ -262,6 +262,20 @@ function PeerReviewContent() {
     <div className="mx-auto max-w-3xl space-y-6">
       <PageHeader title="360环评" />
 
+      {/* 考核方案文档 */}
+      <Card>
+        <CardContent className="py-4">
+          <a
+            href="https://deepwisdom.feishu.cn/wiki/wikcnslHgjvS2goELNp0dX1PiPS"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-2.5 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
+          >
+            📄 查看完整考核方案文档 →
+          </a>
+        </CardContent>
+      </Card>
+
       {/* 环评说明 */}
       <Card>
         <CardContent className="py-5 text-sm text-foreground/80 space-y-4">
