@@ -17,6 +17,7 @@ interface StarRatingProps {
   onChange: (value: number) => void;
   disabled?: boolean;
   size?: "sm" | "md" | "lg";
+  showUnknown?: boolean;
 }
 
 const SIZE_MAP = {
@@ -36,6 +37,7 @@ export function StarRating({
   onChange,
   disabled = false,
   size = "md",
+  showUnknown = false,
 }: StarRatingProps) {
   const [hovered, setHovered] = useState<number | null>(null);
   const activeValue = hovered ?? value;
@@ -76,14 +78,33 @@ export function StarRating({
             </button>
           );
         })}
-        {value == null && (
+        {value == null && !showUnknown && (
           <span className="ml-1 text-xs text-muted-foreground">请评分</span>
         )}
+        {showUnknown && (
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => onChange(0)}
+            className={cn(
+              "ml-1 rounded-md px-2 py-1 text-xs font-medium transition-colors",
+              disabled ? "cursor-not-allowed opacity-60" :
+              value === 0
+                ? "bg-gray-600 text-white"
+                : "bg-muted text-muted-foreground hover:bg-gray-200"
+            )}
+          >
+            不了解
+          </button>
+        )}
       </div>
-      {activeValue != null && (
+      {activeValue != null && activeValue > 0 && (
         <p className="text-xs text-muted-foreground">
           {activeValue}星 — {STAR_DESCRIPTIONS[activeValue]}
         </p>
+      )}
+      {value === 0 && (
+        <p className="text-xs text-muted-foreground">不了解 — 对此维度不够了解，无法评价</p>
       )}
     </div>
   );

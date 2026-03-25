@@ -508,8 +508,8 @@ function PeerReviewContent() {
                               <span className="text-xs text-muted-foreground">权重50%</span>
                               <a href="https://deepwisdom.feishu.cn/wiki/wikcnslHgjvS2goELNp0dX1PiPS" target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">考核方案</a>
                             </div>
-                            <StarRating value={review.performanceStars} onChange={(v) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, performanceStars: v } : r))} disabled={isDisabled} />
-                            <Textarea value={review.performanceComment || ""} onChange={(e) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, performanceComment: e.target.value } : r))} placeholder="请输入评语..." rows={2} disabled={isDisabled} />
+                            <StarRating value={review.performanceStars} onChange={(v) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, performanceStars: v } : r))} disabled={isDisabled} showUnknown />
+                            <Textarea value={review.performanceComment || ""} onChange={(e) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, performanceComment: e.target.value } : r))} placeholder="请输入评语..." rows={2} disabled={isDisabled} showUnknown />
                           </div>
 
                           {/* 个人能力 */}
@@ -523,18 +523,18 @@ function PeerReviewContent() {
                             <div className="space-y-4 rounded-lg border border-border/50 p-4">
                               <div className="space-y-1.5">
                                 <p className="text-sm font-medium">综合能力 <span className="text-xs font-normal text-muted-foreground">— 问题分析与判断力 · 推动执行力 · 主动性与批判性思考</span></p>
-                                <StarRating value={review.comprehensiveStars} onChange={(v) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, comprehensiveStars: v } : r))} disabled={isDisabled} />
-                                <Textarea value={review.comprehensiveComment || ""} onChange={(e) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, comprehensiveComment: e.target.value } : r))} placeholder="请输入评语..." rows={2} disabled={isDisabled} />
+                                <StarRating value={review.comprehensiveStars} onChange={(v) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, comprehensiveStars: v } : r))} disabled={isDisabled} showUnknown />
+                                <Textarea value={review.comprehensiveComment || ""} onChange={(e) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, comprehensiveComment: e.target.value } : r))} placeholder="请输入评语..." rows={2} disabled={isDisabled} showUnknown />
                               </div>
                               <div className="space-y-1.5 border-t pt-3">
                                 <p className="text-sm font-medium">学习能力 <span className="text-xs font-normal text-muted-foreground">— 快速掌握新技能 · 举一反三 · 知识迁移与应用</span></p>
-                                <StarRating value={review.learningStars} onChange={(v) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, learningStars: v } : r))} disabled={isDisabled} />
-                                <Textarea value={review.learningComment || ""} onChange={(e) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, learningComment: e.target.value } : r))} placeholder="请输入评语..." rows={2} disabled={isDisabled} />
+                                <StarRating value={review.learningStars} onChange={(v) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, learningStars: v } : r))} disabled={isDisabled} showUnknown />
+                                <Textarea value={review.learningComment || ""} onChange={(e) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, learningComment: e.target.value } : r))} placeholder="请输入评语..." rows={2} disabled={isDisabled} showUnknown />
                               </div>
                               <div className="space-y-1.5 border-t pt-3">
                                 <p className="text-sm font-medium">适应能力 <span className="text-xs font-normal text-muted-foreground">— 面对变化快速调整，持续有效产出</span></p>
-                                <StarRating value={review.adaptabilityStars} onChange={(v) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, adaptabilityStars: v } : r))} disabled={isDisabled} />
-                                <Textarea value={review.adaptabilityComment || ""} onChange={(e) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, adaptabilityComment: e.target.value } : r))} placeholder="请输入评语..." rows={2} disabled={isDisabled} />
+                                <StarRating value={review.adaptabilityStars} onChange={(v) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, adaptabilityStars: v } : r))} disabled={isDisabled} showUnknown />
+                                <Textarea value={review.adaptabilityComment || ""} onChange={(e) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, adaptabilityComment: e.target.value } : r))} placeholder="请输入评语..." rows={2} disabled={isDisabled} showUnknown />
                               </div>
                             </div>
                           </div>
@@ -551,26 +551,26 @@ function PeerReviewContent() {
                               <div className="space-y-1.5">
                                 <p className="text-sm font-medium">坦诚真实 <span className="text-xs font-normal text-muted-foreground">Be candid and honest — 行为基础</span></p>
                                 <p className="text-[11px] text-muted-foreground">简单直接，对事不对人 · 敢于承认错误，不装不爱面子 · 暴露问题，不向上管理 · 不找借口，只找解法</p>
-                                <StarRating value={review.candidStars} onChange={(v) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, candidStars: v } : r))} disabled={isDisabled} />
-                                <Textarea value={review.candidComment || ""} onChange={(e) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, candidComment: e.target.value } : r))} placeholder="请输入评语..." rows={2} disabled={isDisabled} />
+                                <StarRating value={review.candidStars} onChange={(v) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, candidStars: v } : r))} disabled={isDisabled} showUnknown />
+                                <Textarea value={review.candidComment || ""} onChange={(e) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, candidComment: e.target.value } : r))} placeholder="请输入评语..." rows={2} disabled={isDisabled} showUnknown />
                               </div>
                               <div className="space-y-1.5 border-t pt-4">
                                 <p className="text-sm font-medium">极致进取 <span className="text-xs font-normal text-muted-foreground">Move fast, aim higher — 动机驱动</span></p>
                                 <p className="text-[11px] text-muted-foreground">目标明确，积极主动 · 用 demo 代替文档，用行动代替沟通 · 敢于挑战更优解，用实验代替争论 · 深入体验，消灭锯齿</p>
-                                <StarRating value={review.progressStars} onChange={(v) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, progressStars: v } : r))} disabled={isDisabled} />
-                                <Textarea value={review.progressComment || ""} onChange={(e) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, progressComment: e.target.value } : r))} placeholder="请输入评语..." rows={2} disabled={isDisabled} />
+                                <StarRating value={review.progressStars} onChange={(v) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, progressStars: v } : r))} disabled={isDisabled} showUnknown />
+                                <Textarea value={review.progressComment || ""} onChange={(e) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, progressComment: e.target.value } : r))} placeholder="请输入评语..." rows={2} disabled={isDisabled} showUnknown />
                               </div>
                               <div className="space-y-1.5 border-t pt-4">
                                 <p className="text-sm font-medium">成就利他 <span className="text-xs font-normal text-muted-foreground">Build together, win together — 协作胸怀</span></p>
                                 <p className="text-[11px] text-muted-foreground">用户第一，以用户成功为价值 · 内心阳光，信任伙伴，真诚合作 · 敏锐谦逊，ego 小，乐于贡献</p>
-                                <StarRating value={review.altruismStars} onChange={(v) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, altruismStars: v } : r))} disabled={isDisabled} />
-                                <Textarea value={review.altruismComment || ""} onChange={(e) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, altruismComment: e.target.value } : r))} placeholder="请输入评语..." rows={2} disabled={isDisabled} />
+                                <StarRating value={review.altruismStars} onChange={(v) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, altruismStars: v } : r))} disabled={isDisabled} showUnknown />
+                                <Textarea value={review.altruismComment || ""} onChange={(e) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, altruismComment: e.target.value } : r))} placeholder="请输入评语..." rows={2} disabled={isDisabled} showUnknown />
                               </div>
                               <div className="space-y-1.5 border-t pt-4">
                                 <p className="text-sm font-medium">ROOT <span className="text-xs font-normal text-muted-foreground">组织导向</span></p>
                                 <p className="text-[11px] text-muted-foreground">有 ownership，不踢皮球，不设边界 · 独立思考，快速学习，与 AI 共同进化 · 关注结果而非过程 · 始终像公司创业第一天那样思考</p>
-                                <StarRating value={review.rootStars} onChange={(v) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, rootStars: v } : r))} disabled={isDisabled} />
-                                <Textarea value={review.rootComment || ""} onChange={(e) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, rootComment: e.target.value } : r))} placeholder="请输入评语..." rows={2} disabled={isDisabled} />
+                                <StarRating value={review.rootStars} onChange={(v) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, rootStars: v } : r))} disabled={isDisabled} showUnknown />
+                                <Textarea value={review.rootComment || ""} onChange={(e) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, rootComment: e.target.value } : r))} placeholder="请输入评语..." rows={2} disabled={isDisabled} showUnknown />
                               </div>
                             </div>
                           </div>

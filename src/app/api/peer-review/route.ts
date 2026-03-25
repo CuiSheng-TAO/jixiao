@@ -77,19 +77,21 @@ export async function POST(req: NextRequest) {
     const rootStars = validateStars(body.rootStars);
 
     if (isSubmit) {
-      if (!performanceStars || !comprehensiveStars || !learningStars || !adaptabilityStars || !candidStars || !progressStars || !altruismStars || !rootStars) {
-        return NextResponse.json({ error: "请完成所有维度的星级评分" }, { status: 400 });
+      if (performanceStars === null || comprehensiveStars === null || learningStars === null || adaptabilityStars === null || candidStars === null || progressStars === null || altruismStars === null || rootStars === null) {
+        return NextResponse.json({ error: "请完成所有维度的星级评分（可选「不了解」）" }, { status: 400 });
       }
-      const pc = sanitizeText(body.performanceComment);
-      const compc = sanitizeText(body.comprehensiveComment);
-      const lc = sanitizeText(body.learningComment);
-      const adpc = sanitizeText(body.adaptabilityComment);
-      const cc = sanitizeText(body.candidComment);
-      const prc = sanitizeText(body.progressComment);
-      const alc = sanitizeText(body.altruismComment);
-      const rc = sanitizeText(body.rootComment);
-      if (!pc || !compc || !lc || !adpc || !cc || !prc || !alc || !rc) {
-        return NextResponse.json({ error: "请填写所有维度的文字评语" }, { status: 400 });
+      // 选了"不了解"(0)的维度不要求评语
+      const missingComments: string[] = [];
+      if (performanceStars! > 0 && !sanitizeText(body.performanceComment)) missingComments.push("业绩产出");
+      if (comprehensiveStars! > 0 && !sanitizeText(body.comprehensiveComment)) missingComments.push("综合能力");
+      if (learningStars! > 0 && !sanitizeText(body.learningComment)) missingComments.push("学习能力");
+      if (adaptabilityStars! > 0 && !sanitizeText(body.adaptabilityComment)) missingComments.push("适应能力");
+      if (candidStars! > 0 && !sanitizeText(body.candidComment)) missingComments.push("坦诚真实");
+      if (progressStars! > 0 && !sanitizeText(body.progressComment)) missingComments.push("极致进取");
+      if (altruismStars! > 0 && !sanitizeText(body.altruismComment)) missingComments.push("成就利他");
+      if (rootStars! > 0 && !sanitizeText(body.rootComment)) missingComments.push("ROOT");
+      if (missingComments.length > 0) {
+        return NextResponse.json({ error: `请填写以下维度的文字评语：${missingComments.join("、")}` }, { status: 400 });
       }
     }
 

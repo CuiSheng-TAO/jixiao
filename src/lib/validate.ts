@@ -5,6 +5,6 @@ export function sanitizeText(text: unknown, maxLen = 5000): string {
 
 export function validateStars(score: unknown): number | null {
   const n = Number(score);
-  if (!Number.isInteger(n) || n < 1 || n > 5) return null;
+  if (!Number.isInteger(n) || n < 0 || n > 5) return null;
   return n;
 }
