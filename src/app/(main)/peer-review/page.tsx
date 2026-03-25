@@ -40,6 +40,7 @@ type PeerReview = {
   valuesComment: string;
   innovationScore: number | null;
   innovationComment: string;
+  revieweeSelfEvalUrl: string | null;
   declinedAt: string | null;
   declineReason: string;
   status: string;
@@ -423,6 +424,11 @@ function PeerReviewContent() {
                         <span className="ml-2 text-sm font-normal text-gray-400">
                           {review.reviewee.department}
                         </span>
+                        {review.revieweeSelfEvalUrl && (
+                          <a href={review.revieweeSelfEvalUrl} target="_blank" rel="noopener noreferrer" className="ml-2 text-sm font-normal text-primary hover:underline">
+                            查看自评 →
+                          </a>
+                        )}
                       </CardTitle>
                       <div className="flex items-center gap-2">
                         {isDraft && (

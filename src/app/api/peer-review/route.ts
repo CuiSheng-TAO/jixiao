@@ -19,7 +19,18 @@ export async function GET() {
       include: { reviewee: { select: { id: true, name: true, department: true } } },
     });
 
-    return NextResponse.json(reviews);
+    // Attach self-eval sourceUrl for each reviewee
+    const revieweeIds = [...new Set(reviews.map(r => r.revieweeId))];
+    const selfEvals = await prisma.selfEvaluation.findMany({
+      where: { cycleId: cycle.id, userId: { in: revieweeIds } },
+      select: { userId: true, sourceUrl: true },
+    });
+    const selfEvalMap = new Map(selfEvals.map(s => [s.userId, s.sourceUrl]));
+
+    return NextResponse.json(reviews.map(r => ({
+      ...r,
+      revieweeSelfEvalUrl: selfEvalMap.get(r.revieweeId) || null,
+    })));
   } catch (error) {
     return NextResponse.json({ error: (error as Error).message }, { status: 500 });
   }
