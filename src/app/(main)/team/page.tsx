@@ -167,6 +167,10 @@ function TeamContent() {
       toast.error("请完成所有维度的星级评分");
       return;
     }
+    if (action === "submit" && (!fd.performanceComment?.trim() || !fd.abilityComment?.trim() || !fd.candidComment?.trim() || !fd.progressComment?.trim() || !fd.altruismComment?.trim() || !fd.rootComment?.trim())) {
+      toast.error("请填写所有维度的文字评语");
+      return;
+    }
     if (action === "submit" && !confirm("确认提交？提交后无法修改。")) return;
 
     setSaving(true);

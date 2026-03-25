@@ -168,6 +168,21 @@ export async function POST(req: NextRequest) {
       : null;
     const weightedScore = computeWeightedScore(performanceStars, abilityStars, valuesStars);
 
+    if (isSubmit) {
+      if (!performanceStars || !comprehensiveStars || !learningStars || !adaptabilityStars || !candidStars || !progressStars || !altruismStars || !rootStars) {
+        return NextResponse.json({ error: "请完成所有维度的星级评分" }, { status: 400 });
+      }
+      const pc = sanitizeText(body.performanceComment);
+      const ac = sanitizeText(body.abilityComment);
+      const cc = sanitizeText(body.candidComment);
+      const prc = sanitizeText(body.progressComment);
+      const alc = sanitizeText(body.altruismComment);
+      const rc = sanitizeText(body.rootComment);
+      if (!pc || !ac || !cc || !prc || !alc || !rc) {
+        return NextResponse.json({ error: "请填写所有维度的文字评语" }, { status: 400 });
+      }
+    }
+
     const abilityData = {
       abilityStars,
       abilityComment: sanitizeText(body.abilityComment),

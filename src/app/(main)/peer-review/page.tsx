@@ -197,6 +197,10 @@ function PeerReviewContent() {
         toast.error("请完成所有维度的星级评分");
         return;
       }
+      if (!review.performanceComment?.trim() || !review.abilityComment?.trim() || !review.candidComment?.trim() || !review.progressComment?.trim() || !review.altruismComment?.trim() || !review.rootComment?.trim()) {
+        toast.error("请填写所有维度的文字评语");
+        return;
+      }
       if (!confirm("提交后将无法修改，确认提交？")) return;
     }
 
