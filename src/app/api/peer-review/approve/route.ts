@@ -98,6 +98,36 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// Delete a nomination (and associated PeerReview)
+export async function DELETE(req: NextRequest) {
+  try {
+    const user = await getSessionUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!APPROVERS.includes(user.name) && user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const { nominationId } = await req.json() as { nominationId: string };
+    const nomination = await prisma.reviewerNomination.findUnique({ where: { id: nominationId } });
+    if (!nomination) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    // Delete associated PeerReview if exists
+    await prisma.peerReview.deleteMany({
+      where: {
+        cycleId: nomination.cycleId,
+        reviewerId: nomination.nomineeId,
+        revieweeId: nomination.nominatorId,
+      },
+    });
+
+    await prisma.reviewerNomination.delete({ where: { id: nominationId } });
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+  }
+}
+
 // Admin add nomination for a user (auto-approved)
 export async function PUT(req: NextRequest) {
   try {

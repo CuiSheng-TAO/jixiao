@@ -691,9 +691,29 @@ function PeerReviewContent() {
                                   </Button>
                                 </>
                               ) : (
-                                <Badge variant={item.supervisorStatus === "APPROVED" ? "default" : "destructive"}>
-                                  {item.supervisorStatus === "APPROVED" ? "已批准" : "已拒绝"}
-                                </Badge>
+                                <div className="flex items-center gap-2">
+                                  <Badge variant={item.supervisorStatus === "APPROVED" ? "default" : "destructive"}>
+                                    {item.supervisorStatus === "APPROVED" ? "已批准" : "已拒绝"}
+                                  </Badge>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 w-6 p-0 text-gray-400 hover:text-red-600"
+                                    disabled={preview}
+                                    onClick={async () => {
+                                      if (!confirm(`确认删除 ${item.nominee.name} 的提名？`)) return;
+                                      await fetch("/api/peer-review/approve", {
+                                        method: "DELETE",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({ nominationId: item.id }),
+                                      });
+                                      setApprovals(prev => prev.filter(a => a.id !== item.id));
+                                      toast.success(`已删除 ${item.nominee.name} 的提名`);
+                                    }}
+                                  >
+                                    ×
+                                  </Button>
+                                </div>
                               )}
                             </div>
                           </div>
