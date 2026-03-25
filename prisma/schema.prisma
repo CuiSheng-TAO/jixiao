@@ -124,8 +124,11 @@ model PeerReview {
   performanceStars    Int?      // 业绩产出
   performanceComment  String    @default("")
   comprehensiveStars  Int?      // 综合能力
+  comprehensiveComment String   @default("")
   learningStars       Int?      // 学习能力
+  learningComment     String    @default("")
   adaptabilityStars   Int?      // 适应能力
+  adaptabilityComment String    @default("")
   abilityComment      String    @default("")
   candidStars         Int?      // 坦诚真实
   candidComment       String    @default("")

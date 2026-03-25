@@ -20,8 +20,11 @@ type PeerReview = {
   performanceStars: number | null;
   performanceComment: string;
   comprehensiveStars: number | null;
+  comprehensiveComment: string;
   learningStars: number | null;
+  learningComment: string;
   adaptabilityStars: number | null;
+  adaptabilityComment: string;
   abilityComment: string;
   candidStars: number | null;
   candidComment: string;
@@ -197,7 +200,7 @@ function PeerReviewContent() {
         toast.error("请完成所有维度的星级评分");
         return;
       }
-      if (!review.performanceComment?.trim() || !review.abilityComment?.trim() || !review.candidComment?.trim() || !review.progressComment?.trim() || !review.altruismComment?.trim() || !review.rootComment?.trim()) {
+      if (!review.performanceComment?.trim() || !review.comprehensiveComment?.trim() || !review.learningComment?.trim() || !review.adaptabilityComment?.trim() || !review.candidComment?.trim() || !review.progressComment?.trim() || !review.altruismComment?.trim() || !review.rootComment?.trim()) {
         toast.error("请填写所有维度的文字评语");
         return;
       }
@@ -492,21 +495,23 @@ function PeerReviewContent() {
                               <span className="text-xs text-muted-foreground">权重30%（3项等权平均）</span>
                             </div>
 
-                            <div className="space-y-3 rounded-lg border border-border/50 p-4">
+                            <div className="space-y-4 rounded-lg border border-border/50 p-4">
                               <div className="space-y-1.5">
                                 <p className="text-sm font-medium">综合能力 <span className="text-xs font-normal text-muted-foreground">— 问题分析与判断力 · 推动执行力 · 主动性与批判性思考</span></p>
                                 <StarRating value={review.comprehensiveStars} onChange={(v) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, comprehensiveStars: v } : r))} disabled={isDisabled} />
+                                <Textarea value={review.comprehensiveComment || ""} onChange={(e) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, comprehensiveComment: e.target.value } : r))} placeholder="请输入评语..." rows={2} disabled={isDisabled} />
                               </div>
                               <div className="space-y-1.5 border-t pt-3">
                                 <p className="text-sm font-medium">学习能力 <span className="text-xs font-normal text-muted-foreground">— 快速掌握新技能 · 举一反三 · 知识迁移与应用</span></p>
                                 <StarRating value={review.learningStars} onChange={(v) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, learningStars: v } : r))} disabled={isDisabled} />
+                                <Textarea value={review.learningComment || ""} onChange={(e) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, learningComment: e.target.value } : r))} placeholder="请输入评语..." rows={2} disabled={isDisabled} />
                               </div>
                               <div className="space-y-1.5 border-t pt-3">
                                 <p className="text-sm font-medium">适应能力 <span className="text-xs font-normal text-muted-foreground">— 面对变化快速调整，持续有效产出</span></p>
                                 <StarRating value={review.adaptabilityStars} onChange={(v) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, adaptabilityStars: v } : r))} disabled={isDisabled} />
+                                <Textarea value={review.adaptabilityComment || ""} onChange={(e) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, adaptabilityComment: e.target.value } : r))} placeholder="请输入评语..." rows={2} disabled={isDisabled} />
                               </div>
                             </div>
-                            <Textarea value={review.abilityComment || ""} onChange={(e) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, abilityComment: e.target.value } : r))} placeholder="请结合以上三项综合评定..." rows={2} disabled={isDisabled} />
                           </div>
 
                           {/* 价值观 */}

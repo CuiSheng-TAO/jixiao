@@ -81,12 +81,14 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "请完成所有维度的星级评分" }, { status: 400 });
       }
       const pc = sanitizeText(body.performanceComment);
-      const ac = sanitizeText(body.abilityComment);
+      const compc = sanitizeText(body.comprehensiveComment);
+      const lc = sanitizeText(body.learningComment);
+      const adpc = sanitizeText(body.adaptabilityComment);
       const cc = sanitizeText(body.candidComment);
       const prc = sanitizeText(body.progressComment);
       const alc = sanitizeText(body.altruismComment);
       const rc = sanitizeText(body.rootComment);
-      if (!pc || !ac || !cc || !prc || !alc || !rc) {
+      if (!pc || !compc || !lc || !adpc || !cc || !prc || !alc || !rc) {
         return NextResponse.json({ error: "请填写所有维度的文字评语" }, { status: 400 });
       }
     }
@@ -97,8 +99,11 @@ export async function POST(req: NextRequest) {
         performanceStars,
         performanceComment: sanitizeText(body.performanceComment),
         comprehensiveStars,
+        comprehensiveComment: sanitizeText(body.comprehensiveComment),
         learningStars,
+        learningComment: sanitizeText(body.learningComment),
         adaptabilityStars,
+        adaptabilityComment: sanitizeText(body.adaptabilityComment),
         abilityComment: sanitizeText(body.abilityComment),
         candidStars,
         candidComment: sanitizeText(body.candidComment),
