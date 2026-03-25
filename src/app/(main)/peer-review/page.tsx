@@ -312,7 +312,7 @@ function PeerReviewContent() {
               </div>
               <div>
                 <p className="font-medium text-foreground mb-0.5">环评维度</p>
-                <p className="leading-relaxed">业绩产出质量、协作配合度、价值观践行、创新能力、解决问题能力、团队贡献，评估人需结合实际协作经历给出具体评价与打分，禁止无依据的主观评价。</p>
+                <p className="leading-relaxed">业绩产出（输出结果+OKR完成度）、个人能力（综合能力+学习能力+适应能力）、价值观践行、领导力（限leader），评估人需结合实际协作经历给出具体评价与打分，禁止无依据的主观评价。</p>
               </div>
             </div>
           </div>
