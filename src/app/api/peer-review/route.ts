@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
     // 周期阶段验证（ADMIN豁免）
     if (user.role !== "ADMIN") {
       const cycle = await getActiveCycle();
-      if (!cycle || cycle.status !== "PEER_REVIEW") {
+      if (!cycle || (cycle.status !== "PEER_REVIEW" && cycle.status !== "SUPERVISOR_EVAL")) {
         return NextResponse.json({ error: "当前不在互评阶段，无法执行此操作" }, { status: 400 });
       }
     }
