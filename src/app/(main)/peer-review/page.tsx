@@ -518,9 +518,6 @@ function PeerReviewContent() {
                               </div>
                             </div>
                           </div>
-                              </div>
-                            )}
-                          </div>
                         </div>
 
                         {isDraft && (

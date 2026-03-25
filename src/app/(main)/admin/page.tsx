@@ -54,6 +54,32 @@ type UserItem = {
   supervisor: { id: string; name: string } | null;
 };
 
+type VerifyRow = {
+  name: string;
+  inSystem: boolean;
+  isGroupB: boolean;
+  department: string | null;
+  role?: string;
+  supervisor: string | null;
+  selfEval: { status: string; hasUrl: boolean; hasContent: boolean; sourceUrl: string | null } | null;
+  nominations: { total: number; approved: number; pending: number; rejected: number } | null;
+  peerReview: { total: number; submitted: number } | null;
+  supEval: { evaluator: string; status: string }[] | null;
+  expectedEvaluators?: string[];
+};
+
+type VerifyData = {
+  cycleName: string;
+  cycleStatus: string;
+  summary: {
+    total: number; inSystem: number; missing: number;
+    groupA: number; groupB: number;
+    selfEvalDone: number; selfEvalMissing: number;
+    nominated: number; supEvalSubmitted: number;
+  };
+  roster: VerifyRow[];
+};
+
 const statusFlow = ["DRAFT", "SELF_EVAL", "PEER_REVIEW", "SUPERVISOR_EVAL", "CALIBRATION", "MEETING", "APPEAL", "ARCHIVED"];
 const statusLabels: Record<string, string> = {
   DRAFT: "未开始",
@@ -78,6 +104,8 @@ function AdminContent() {
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [userSearch, setUserSearch] = useState("");
+  const [verifyData, setVerifyData] = useState<VerifyData | null>(null);
+  const [verifyLoading, setVerifyLoading] = useState(false);
   const [newCycle, setNewCycle] = useState({
     name: "2025年下半年绩效考核",
     selfEvalStart: "2026-03-17",
@@ -271,6 +299,12 @@ function AdminContent() {
           <TabsTrigger value="users">员工管理 ({users.length})</TabsTrigger>
           <TabsTrigger value="sync">组织同步</TabsTrigger>
           <TabsTrigger value="import">自评导入</TabsTrigger>
+          <TabsTrigger value="verify" onClick={() => {
+            if (!verifyData && !verifyLoading) {
+              setVerifyLoading(true);
+              fetch("/api/admin/verify").then(r => r.json()).then(d => { if (!d.error) setVerifyData(d); }).finally(() => setVerifyLoading(false));
+            }
+          }}>数据核验</TabsTrigger>
         </TabsList>
 
         <TabsContent value="cycle" className="space-y-4">
@@ -570,6 +604,115 @@ function AdminContent() {
             </Card>
           )}
         </TabsContent>
+        <TabsContent value="verify" className="space-y-4">
+          {verifyLoading && <Card><CardContent className="py-8 text-center text-muted-foreground">加载中...</CardContent></Card>}
+          {verifyData && (
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">核验总览</CardTitle>
+                  <CardDescription>周期：{verifyData.cycleName} · 阶段：{statusLabels[verifyData.cycleStatus] || verifyData.cycleStatus}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                    <div className="rounded-lg border p-3 text-center">
+                      <div className="text-2xl font-bold">{verifyData.summary.inSystem}<span className="text-base font-normal text-muted-foreground">/{verifyData.summary.total}</span></div>
+                      <div className="text-xs text-muted-foreground">系统匹配</div>
+                      {verifyData.summary.missing > 0 && <Badge variant="destructive" className="mt-1">{verifyData.summary.missing} 缺失</Badge>}
+                    </div>
+                    <div className="rounded-lg border p-3 text-center">
+                      <div className="text-2xl font-bold">{verifyData.summary.selfEvalDone}<span className="text-base font-normal text-muted-foreground">/{verifyData.summary.groupA}</span></div>
+                      <div className="text-xs text-muted-foreground">自评链接已导入</div>
+                      {verifyData.summary.selfEvalMissing > 0 && <Badge variant="destructive" className="mt-1">{verifyData.summary.selfEvalMissing} 缺失</Badge>}
+                    </div>
+                    <div className="rounded-lg border p-3 text-center">
+                      <div className="text-2xl font-bold">{verifyData.summary.nominated}<span className="text-base font-normal text-muted-foreground">/{verifyData.summary.total}</span></div>
+                      <div className="text-xs text-muted-foreground">360提名≥3人</div>
+                    </div>
+                    <div className="rounded-lg border p-3 text-center">
+                      <div className="text-2xl font-bold">{verifyData.summary.supEvalSubmitted}<span className="text-base font-normal text-muted-foreground">/{verifyData.summary.total}</span></div>
+                      <div className="text-xs text-muted-foreground">初评已提交</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">花名册逐人核验</CardTitle>
+                  <CardDescription>红色背景 = 异常项，需关注</CardDescription>
+                </CardHeader>
+                <CardContent className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-20">姓名</TableHead>
+                        <TableHead className="w-20">部门</TableHead>
+                        <TableHead className="w-16">系统</TableHead>
+                        <TableHead className="w-20">直属上级</TableHead>
+                        <TableHead className="w-20">自评链接</TableHead>
+                        <TableHead className="w-24">360提名</TableHead>
+                        <TableHead className="w-20">互评进度</TableHead>
+                        <TableHead className="w-28">初评状态</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {verifyData.roster.map((row) => (
+                        <TableRow key={row.name} className={!row.inSystem ? "bg-red-50" : ""}>
+                          <TableCell className="font-medium">
+                            {row.name}
+                            {row.isGroupB && <span className="ml-1 text-[10px] text-muted-foreground">(B组)</span>}
+                          </TableCell>
+                          <TableCell className="text-xs">{row.department || "—"}</TableCell>
+                          <TableCell>{row.inSystem ? <span className="text-green-600">✓</span> : <span className="text-red-600 font-bold">✗</span>}</TableCell>
+                          <TableCell className="text-xs">{row.supervisor || "—"}</TableCell>
+                          <TableCell>
+                            {row.isGroupB ? (
+                              <span className="text-xs text-muted-foreground">B组免自评</span>
+                            ) : row.selfEval?.hasUrl ? (
+                              <a href={row.selfEval.sourceUrl || "#"} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline">✓ 链接</a>
+                            ) : row.selfEval?.hasContent ? (
+                              <span className="text-green-600">✓ 内容</span>
+                            ) : (
+                              <span className="text-red-600 font-bold">✗ 缺失</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-xs">
+                            {row.nominations ? (
+                              <span className={row.nominations.total < 3 ? "text-red-600 font-bold" : ""}>
+                                {row.nominations.total}人
+                                {row.nominations.approved > 0 && <span className="text-green-600"> ({row.nominations.approved}批)</span>}
+                                {row.nominations.pending > 0 && <span className="text-yellow-600"> ({row.nominations.pending}待)</span>}
+                              </span>
+                            ) : <span className="text-red-600 font-bold">未提名</span>}
+                          </TableCell>
+                          <TableCell className="text-xs">
+                            {row.peerReview ? (
+                              <span>{row.peerReview.submitted}/{row.peerReview.total}</span>
+                            ) : "0/0"}
+                          </TableCell>
+                          <TableCell className="text-xs">
+                            {row.supEval && row.supEval.length > 0 ? (
+                              <div className="space-y-0.5">
+                                {row.supEval.map((e, i) => (
+                                  <div key={i}>
+                                    <span className="text-muted-foreground">{e.evaluator}:</span>
+                                    <Badge variant={e.status === "SUBMITTED" ? "default" : "secondary"} className="ml-1 text-[10px] py-0">{e.status === "SUBMITTED" ? "已提交" : "草稿"}</Badge>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : <span className="text-muted-foreground">—</span>}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </TabsContent>
+
       </Tabs>
     </div>
   );
