@@ -269,20 +269,6 @@ function PeerReviewContent() {
     <div className="mx-auto max-w-3xl space-y-6">
       <PageHeader title="360环评" />
 
-      {/* 考核方案文档 */}
-      <Card>
-        <CardContent className="py-4">
-          <a
-            href="https://deepwisdom.feishu.cn/wiki/wikcnslHgjvS2goELNp0dX1PiPS"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-2.5 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
-          >
-            📄 查看完整考核方案文档 →
-          </a>
-        </CardContent>
-      </Card>
-
       {/* 环评说明 */}
       <Card>
         <CardContent className="py-5 text-sm text-foreground/80 space-y-4">
@@ -483,6 +469,7 @@ function PeerReviewContent() {
                             <div className="flex items-baseline gap-2">
                               <h3 className="text-sm font-semibold">业绩产出</h3>
                               <span className="text-xs text-muted-foreground">权重50%</span>
+                              <a href="https://deepwisdom.feishu.cn/wiki/wikcnslHgjvS2goELNp0dX1PiPS" target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">考核方案</a>
                             </div>
                             <StarRating value={review.performanceStars} onChange={(v) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, performanceStars: v } : r))} disabled={isDisabled} />
                             <Textarea value={review.performanceComment || ""} onChange={(e) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, performanceComment: e.target.value } : r))} placeholder="请输入评语..." rows={2} disabled={isDisabled} />
@@ -493,6 +480,7 @@ function PeerReviewContent() {
                             <div className="flex items-baseline gap-2">
                               <h3 className="text-sm font-semibold">个人能力</h3>
                               <span className="text-xs text-muted-foreground">权重30%（3项等权平均）</span>
+                              <a href="https://deepwisdom.feishu.cn/wiki/wikcnslHgjvS2goELNp0dX1PiPS" target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">考核方案</a>
                             </div>
 
                             <div className="space-y-4 rounded-lg border border-border/50 p-4">
@@ -519,6 +507,7 @@ function PeerReviewContent() {
                             <div className="flex items-baseline gap-2">
                               <h3 className="text-sm font-semibold">价值观</h3>
                               <span className="text-xs text-muted-foreground">权重20%（4项等权平均）</span>
+                              <a href="https://deepwisdom.feishu.cn/wiki/wikcnslHgjvS2goELNp0dX1PiPS" target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">考核方案</a>
                             </div>
 
                             <div className="space-y-4 rounded-lg border border-border/50 p-4">

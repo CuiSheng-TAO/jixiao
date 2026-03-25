@@ -207,19 +207,6 @@ function TeamContent() {
     <div className="space-y-6">
       <PageHeader title="绩效初评" description={`你有 ${evals.filter(e => e.evaluation?.status !== "SUBMITTED").length} 位下级待初评`} />
 
-      <Card>
-        <CardContent className="py-4">
-          <a
-            href="https://deepwisdom.feishu.cn/wiki/FPUDw7LHmi0OYbkLZAKcjMgBnmU"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-2.5 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
-          >
-            📄 查看完整考核方案文档 →
-          </a>
-        </CardContent>
-      </Card>
-
       {/* 初评说明 - 页面顶部只显示一次 */}
       <Card>
         <CardContent className="py-4 text-xs text-muted-foreground divide-y">
@@ -440,6 +427,7 @@ function TeamContent() {
                         <div className="flex items-baseline gap-2">
                           <h3 className="text-sm font-semibold">业绩产出</h3>
                           <span className="text-xs text-muted-foreground">权重50%</span>
+                          <a href="https://deepwisdom.feishu.cn/wiki/FPUDw7LHmi0OYbkLZAKcjMgBnmU" target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">考核方案</a>
                         </div>
                         <StarRating
                           value={formData[selected!]?.performanceStars}
@@ -461,6 +449,7 @@ function TeamContent() {
                         <div className="flex items-baseline gap-2">
                           <h3 className="text-sm font-semibold">个人能力</h3>
                           <span className="text-xs text-muted-foreground">权重30%（三项等权1:1:1）</span>
+                          <a href="https://deepwisdom.feishu.cn/wiki/FPUDw7LHmi0OYbkLZAKcjMgBnmU" target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">考核方案</a>
                           {(() => {
                             const ab = computeAbilityStars(formData[selected!] || {} as FormData);
                             return ab != null ? <span className="text-xs font-medium text-primary">{ab}星</span> : null;
@@ -517,6 +506,7 @@ function TeamContent() {
                         <div className="flex items-baseline gap-2">
                           <h3 className="text-sm font-semibold">价值观</h3>
                           <span className="text-xs text-muted-foreground">权重20%（4项等权平均）</span>
+                          <a href="https://deepwisdom.feishu.cn/wiki/FPUDw7LHmi0OYbkLZAKcjMgBnmU" target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">考核方案</a>
                           {computeValuesStars(formData[selected!]) != null && (
                             <Badge variant="outline" className="text-xs">均分 {computeValuesStars(formData[selected!])}</Badge>
                           )}
