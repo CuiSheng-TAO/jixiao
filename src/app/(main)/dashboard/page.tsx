@@ -125,7 +125,7 @@ function DashboardContent() {
       iconColor: "text-blue-600",
       iconBg: "bg-blue-50",
       title: "个人自评",
-      description: data.selfEvalStatus === "SUBMITTED" ? "已提交" : data.selfEvalStatus ? "草稿中" : "未开始",
+      description: "已提交",
       accent: "group-hover:border-blue-200",
     },
     {
@@ -148,15 +148,6 @@ function DashboardContent() {
             description: data.pendingTeamEvals > 0 ? `${data.pendingTeamEvals} 人待评估` : "暂无待办",
             accent: "group-hover:border-orange-200",
           },
-          {
-            href: buildHref("/meetings"),
-            icon: MessageSquare,
-            iconColor: "text-emerald-600",
-            iconBg: "bg-emerald-50",
-            title: "面谈记录",
-            description: "记录绩效面谈",
-            accent: "group-hover:border-emerald-200",
-          },
         ]
       : []),
     ...(isAdmin
@@ -169,6 +160,19 @@ function DashboardContent() {
             title: "绩效校准",
             description: "查看与调整绩效等级",
             accent: "group-hover:border-amber-200",
+          },
+        ]
+      : []),
+    ...(isSupervisor
+      ? [
+          {
+            href: buildHref("/meetings"),
+            icon: MessageSquare,
+            iconColor: "text-emerald-600",
+            iconBg: "bg-emerald-50",
+            title: "面谈记录",
+            description: "记录绩效面谈",
+            accent: "group-hover:border-emerald-200",
           },
         ]
       : []),
