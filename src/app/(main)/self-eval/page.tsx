@@ -28,18 +28,12 @@ function SelfEvalContent() {
   const [selfEvalStart, setSelfEvalStart] = useState<string | null>(null);
   const [selfEvalEnd, setSelfEvalEnd] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const previewData = preview && previewRole ? getData("self-eval") : null;
+  const isPreviewEmployee = preview && previewRole === "EMPLOYEE";
+  const resolvedData = isPreviewEmployee ? (previewData as SelfEvalData) : data;
 
   useEffect(() => {
     if (preview && previewRole) {
-      const previewData = getData("self-eval") as Record<string, unknown>;
-
-      if (previewRole === "EMPLOYEE") {
-        setData(previewData as unknown as SelfEvalData);
-      } else {
-        // 主管/管理员视角：显示提示信息
-        setData(null);
-      }
-      setLoading(false);
       return;
     }
 
@@ -71,13 +65,13 @@ function SelfEvalContent() {
       .finally(() => setLoading(false));
   }, [preview, previewRole, getData]);
 
-  if (loading) {
+  if (!isPreviewEmployee && loading) {
     return <FormPageSkeleton />;
   }
 
   // 预览模式下非员工角色的视图
   if (preview && previewRole && previewRole !== "EMPLOYEE") {
-    const previewData = getData("self-eval") as {
+    const previewViewData = previewData as {
       viewType: string;
       message: string;
       employees?: { name: string; department: string; status: string; importedContent: string }[];
@@ -88,8 +82,8 @@ function SelfEvalContent() {
           title="个人自评"
           description={previewRole === "SUPERVISOR" ? "主管视角" : "管理员视角"}
         />
-        <p className="text-sm text-muted-foreground">{previewData.message}</p>
-        {previewData.employees?.map((emp) => (
+        <p className="text-sm text-muted-foreground">{previewViewData.message}</p>
+        {previewViewData.employees?.map((emp) => (
           <Card key={emp.name}>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -111,7 +105,7 @@ function SelfEvalContent() {
     );
   }
 
-  const isImported = data && data.importedContent;
+  const isImported = resolvedData && resolvedData.importedContent;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -121,7 +115,7 @@ function SelfEvalContent() {
         actions={
           <Badge variant={isImported ? "default" : "secondary"}>
             {isImported
-              ? data.status === "SUBMITTED"
+              ? resolvedData.status === "SUBMITTED"
                 ? "已确认"
                 : "已导入"
               : "未导入"}
@@ -135,28 +129,29 @@ function SelfEvalContent() {
             <CardHeader>
               <CardTitle>自评内容</CardTitle>
               <CardDescription>
-                导入时间：{data.importedAt ? new Date(data.importedAt).toLocaleString("zh-CN") : "-"}
+                导入时间：
+                {resolvedData.importedAt ? new Date(resolvedData.importedAt).toLocaleString("zh-CN") : "-"}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="prose prose-sm max-w-none whitespace-pre-wrap rounded-xl bg-muted/50 p-5 text-sm leading-relaxed text-foreground/80">
-                {data.importedContent}
+                {resolvedData.importedContent}
               </div>
             </CardContent>
           </Card>
 
-          {data.sourceUrl && (
+          {resolvedData.sourceUrl && (
             <Card>
               <CardContent className="flex items-center gap-3 py-4">
                 <span className="text-sm text-gray-500">原始文档：</span>
                 <a
-                  href={preview ? undefined : data.sourceUrl}
+                  href={preview ? undefined : resolvedData.sourceUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm text-blue-600 underline hover:text-blue-800"
                   onClick={preview ? (e) => e.preventDefault() : undefined}
                 >
-                  {data.sourceUrl}
+                  {resolvedData.sourceUrl}
                 </a>
               </CardContent>
             </Card>

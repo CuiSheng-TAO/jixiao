@@ -1,13 +1,12 @@
 "use client";
 
 import { useCallback } from "react";
-import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { useSearchParams, usePathname } from "next/navigation";
 import { isPreviewMode, getPreviewRole, getPreviewData, PREVIEW_ROLE_LABELS } from "@/lib/preview";
 import type { PreviewRole } from "@/lib/preview";
 
 export function usePreview() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const pathname = usePathname();
 
   const preview = isPreviewMode(searchParams);

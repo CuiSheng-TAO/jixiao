@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,7 +14,6 @@ import {
   MessageSquare,
   Megaphone,
   ArrowRight,
-  CheckCircle2,
   Settings,
   RefreshCw,
   Download,
@@ -40,93 +40,6 @@ type Props = {
   cycle: CycleData | null;
   userRole: string;
 };
-
-function formatDateShort(dateStr: string | null): string {
-  if (!dateStr) return "";
-  const d = new Date(dateStr);
-  return `${d.getMonth() + 1}/${d.getDate()}`;
-}
-
-function formatDateRange(start: string | null, end: string | null): string {
-  const s = formatDateShort(start);
-  const e = formatDateShort(end);
-  if (s && e) return `${s}-${e}`;
-  if (s) return s;
-  if (e) return e;
-  return "";
-}
-
-type StepDef = {
-  key: string;
-  title: string;
-  date: string;
-  desc: string;
-  icon: typeof ClipboardList;
-};
-
-function buildSteps(cycle: CycleData | null): StepDef[] {
-  return [
-    {
-      key: "SELF_EVAL",
-      title: "个人自评",
-      date: formatDateRange(cycle?.selfEvalStart ?? null, cycle?.selfEvalEnd ?? null) || "3/17-3/24",
-      desc: "全体参评员工需提交个人自评",
-      icon: ClipboardList,
-    },
-    {
-      key: "PEER_REVIEW",
-      title: "上级初评与360环评",
-      date: formatDateRange(cycle?.peerReviewStart ?? null, cycle?.peerReviewEnd ?? null) || "3/24-3/27",
-      desc: "由直属上级初评，360环评人≤5人",
-      icon: Users,
-    },
-    {
-      key: "SUPERVISOR_EVAL",
-      title: "公司级绩效终评校准",
-      date: formatDateRange(cycle?.supervisorStart ?? null, cycle?.supervisorEnd ?? null) || "3/27-3/30",
-      desc: "本次采用公司级终评校准取代线下述职",
-      icon: BarChart3,
-    },
-    {
-      key: "CALIBRATION",
-      title: "绩效结果面谈",
-      date: formatDateRange(cycle?.calibrationStart ?? null, cycle?.calibrationEnd ?? null) || "3/30-4/1",
-      desc: "形式为一对一",
-      icon: MessageSquare,
-    },
-    {
-      key: "MEETING",
-      title: "绩效申诉",
-      date: formatDateRange(cycle?.meetingStart ?? null, cycle?.meetingEnd ?? null) || "3/30-4/2",
-      desc: "需提交书面申诉至HRBP禹聪琪，逾期默认绩效结果确认并归档",
-      icon: Megaphone,
-    },
-    {
-      key: "APPEAL",
-      title: "年终激励兑现",
-      date: "",
-      desc: "考核完成后2周内发放",
-      icon: Star,
-    },
-  ];
-}
-
-const statusOrder = [
-  "SELF_EVAL",
-  "PEER_REVIEW",
-  "SUPERVISOR_EVAL",
-  "CALIBRATION",
-  "MEETING",
-  "APPEAL",
-];
-
-function getActiveIndex(cycleStatus: string | null): number {
-  if (!cycleStatus) return 0;
-  if (cycleStatus === "DRAFT") return 0;
-  if (cycleStatus === "ARCHIVED") return statusOrder.length;
-  const idx = statusOrder.indexOf(cycleStatus);
-  return idx >= 0 ? idx : 0;
-}
 
 const ratingTable = [
   { stars: 5, label: "五星", def: "取得杰出的成果，所做的工作在世界范围拥有领先性，拥有极强的推动力，拥有显著的影响力", dist: "<=10%" },
@@ -250,10 +163,6 @@ export function GuidePage({ cycle, userRole }: Props) {
   const showSupervisor = ["SUPERVISOR", "HRBP", "ADMIN"].includes(activeRole);
   const showAdmin = ["ADMIN"].includes(activeRole);
 
-  const cycleStatus = cycle?.status ?? null;
-  const activeIndex = getActiveIndex(cycleStatus);
-  const steps = buildSteps(cycle);
-
   return (
     <div className="mx-auto max-w-4xl space-y-10 pb-10">
       {/* Header */}
@@ -268,10 +177,13 @@ export function GuidePage({ cycle, userRole }: Props) {
       <section className="space-y-4">
         <h2 className="text-xl font-semibold">流程总览</h2>
         <div className="overflow-x-auto">
-          <img
+          <Image
             src="/timeline.png"
             alt="绩效考核流程时间线：个人自评 0317-0324 → 上级初评与360环评 0324-0327 → 公司级绩效终评校准 0327-0330 → 绩效结果面谈 0330-0401 → 绩效申诉 0330-0402 → 年终激励兑现"
             className="w-full min-w-[700px]"
+            width={1440}
+            height={320}
+            priority
           />
         </div>
       </section>

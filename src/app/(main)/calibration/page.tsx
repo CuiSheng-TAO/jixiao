@@ -99,6 +99,7 @@ function CalibrationContent() {
       }
 
       const serverLeaderForms = buildLeaderFormSnapshot(data.leaderReview?.leaders || []);
+      const previousLeaderServerForms = leaderServerFormsRef.current;
       setWorkspace(data);
       setError("");
 
@@ -127,7 +128,7 @@ function CalibrationContent() {
 
         Object.entries(serverLeaderForms).forEach(([key, serverForm]) => {
           const localForm = prev[key];
-          const previousServerForm = leaderServerFormsRef.current[key] ?? serverForm;
+          const previousServerForm = previousLeaderServerForms[key] ?? serverForm;
 
           if (localForm && !areLeaderFormsEqual(localForm, previousServerForm)) {
             next[key] = localForm;

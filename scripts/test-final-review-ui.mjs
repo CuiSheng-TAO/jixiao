@@ -246,9 +246,19 @@ test("leader polling refresh uses latest-response-wins plus server-snapshot diff
     "leader form syncing should compare local drafts against the last server snapshot instead of a sticky touched flag",
   );
   assert.equal(
+    page.includes("const previousLeaderServerForms = leaderServerFormsRef.current;"),
+    true,
+    "leader refresh merging should capture the previous server snapshot before queueing state updates",
+  );
+  assert.equal(
     page.includes("!areLeaderFormsEqual(localForm, previousServerForm)"),
     true,
     "a local leader form should only stay pinned when it truly differs from the last server snapshot",
+  );
+  assert.equal(
+    page.includes("const previousServerForm = previousLeaderServerForms[key] ?? serverForm;"),
+    true,
+    "leader refresh merging should compare drafts against the captured pre-refresh snapshot, not a mutable ref",
   );
   assert.equal(
     page.includes("dirtyLeaderFormKeysRef"),

@@ -1,5 +1,4 @@
 import { chromium } from "playwright";
-import { writeFileSync } from "fs";
 import { join } from "path";
 
 const BASE = "http://localhost:3000";
@@ -65,7 +64,7 @@ async function main() {
       }
       await page.waitForTimeout(3000);
     }
-  } catch (e) {
+  } catch {
     console.log("Dev login not available, trying preview mode directly");
   }
 

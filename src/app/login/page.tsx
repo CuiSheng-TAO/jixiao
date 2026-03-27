@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart3, Shield, UserCheck, Users } from "lucide-react";
@@ -21,12 +21,11 @@ function LoginContent() {
   const [error, setError] = useState("");
   const [demoUsers, setDemoUsers] = useState<DemoUser[]>([]);
   const [showDemo, setShowDemo] = useState(false);
-  const [codeUsed, setCodeUsed] = useState(false);
+  const handledCodeRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (code && !codeUsed) {
-      setCodeUsed(true);
-      setLoading(true);
+    if (code && handledCodeRef.current !== code) {
+      handledCodeRef.current = code;
       fetch("/api/auth/feishu-login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -47,7 +46,7 @@ function LoginContent() {
           setLoading(false);
         });
     }
-  }, [code, codeUsed, router]);
+  }, [code, router]);
 
   const loadDemoUsers = async () => {
     try {
