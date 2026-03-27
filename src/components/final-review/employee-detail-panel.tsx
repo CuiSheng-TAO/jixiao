@@ -90,8 +90,8 @@ export function EmployeeDetailPanel({
               {employee.jobTitle ? ` · ${employee.jobTitle}` : ""}
             </p>
           </div>
-          <Badge variant={employee.officialConfirmedAt ? "default" : "outline"}>
-            {employee.officialConfirmedAt ? "已拍板" : "待拍板"}
+          <Badge variant={employee.officialStars == null ? "outline" : "default"}>
+            {employee.officialStars == null ? "待拍板" : "已拍板"}
           </Badge>
         </div>
 

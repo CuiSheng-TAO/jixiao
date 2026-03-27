@@ -323,7 +323,7 @@ function CalibrationContent() {
       setSelectedEmployeeId((current) => {
         const employees = data.employeeReview?.employees || [];
         if (current && employees.some((employee: EmployeeRow) => employee.id === current)) return current;
-        return employees.find((employee: EmployeeRow) => !employee.officialConfirmedAt)?.id || employees[0]?.id || null;
+        return employees.find((employee: EmployeeRow) => employee.officialStars == null)?.id || employees[0]?.id || null;
       });
       setSelectedLeaderId((current) => current || data.leaderReview?.leaders?.[0]?.id || null);
     } catch (e) {

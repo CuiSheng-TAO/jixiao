@@ -221,6 +221,38 @@ test("employee priority queues treat missing official stars as pending", () => {
   );
 });
 
+test("employee selection and status labels follow official stars for primary confirmed state", () => {
+  const page = read("src/app/(main)/calibration/page.tsx");
+  const cockpit = read("src/components/final-review/employee-cockpit.tsx");
+  const detailPanel = read("src/components/final-review/employee-detail-panel.tsx");
+
+  assert.equal(
+    page.includes("employees.find((employee: EmployeeRow) => employee.officialStars == null)"),
+    true,
+    "default employee selection should prioritize rows missing official stars",
+  );
+  assert.equal(
+    page.includes("!employee.officialConfirmedAt"),
+    false,
+    "default employee selection should not use missing confirmation time anymore",
+  );
+  assert.equal(
+    cockpit.includes('Badge variant={employee.officialStars == null ? "outline" : "secondary"}'),
+    true,
+    "left-side employee badges should use official stars for pending versus confirmed status",
+  );
+  assert.equal(
+    detailPanel.includes('Badge variant={employee.officialStars == null ? "outline" : "default"}'),
+    true,
+    "detail panel status badge should use official stars for the primary confirmed state",
+  );
+  assert.equal(
+    detailPanel.includes('employee.officialConfirmedAt ? "已拍板" : "待拍板"'),
+    false,
+    "detail panel should keep officialConfirmedAt for audit timing only, not the main status label",
+  );
+});
+
 test("calibration page keeps the pending employee metric on the server overview field", () => {
   const page = read("src/app/(main)/calibration/page.tsx");
 

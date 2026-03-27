@@ -57,7 +57,7 @@ function EmployeeQueueButton({
           <p className="text-sm font-medium text-[var(--cockpit-foreground)]">{employee.name}</p>
           <p className="mt-1 text-xs text-[var(--cockpit-muted-foreground)]">{employee.department}</p>
         </div>
-        <Badge variant={employee.officialConfirmedAt ? "secondary" : "outline"}>
+        <Badge variant={employee.officialStars == null ? "outline" : "secondary"}>
           {employee.officialStars == null ? "待拍板" : "已确认"}
         </Badge>
       </div>
