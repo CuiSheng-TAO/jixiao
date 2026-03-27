@@ -39,13 +39,6 @@
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
   --color-surface: var(--surface);
-  --color-cockpit-surface: var(--cockpit-surface);
-  --color-cockpit-surface-strong: var(--cockpit-surface-strong);
-  --color-cockpit-border: var(--cockpit-border);
-  --color-cockpit-foreground: var(--cockpit-foreground);
-  --color-cockpit-muted-foreground: var(--cockpit-muted-foreground);
-  --color-cockpit-accent: var(--cockpit-accent);
-  --color-cockpit-accent-strong: var(--cockpit-accent-strong);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
@@ -180,36 +173,5 @@
   }
   body {
     @apply bg-background text-foreground;
-  }
-}
-
-@layer components {
-  .final-review-cockpit-shell {
-    background: linear-gradient(180deg, var(--cockpit-surface-strong) 0%, var(--cockpit-surface) 100%);
-    border: 1px solid var(--cockpit-border);
-    box-shadow: var(--shadow-md);
-  }
-
-  .final-review-cockpit-panel {
-    background: var(--cockpit-surface);
-    border: 1px solid var(--cockpit-border);
-    box-shadow: var(--shadow-xs);
-  }
-
-  .final-review-cockpit-panel-strong {
-    background:
-      radial-gradient(circle at top right, rgba(255, 255, 255, 0.34), transparent 45%),
-      linear-gradient(180deg, rgba(255, 255, 255, 0.1), transparent),
-      var(--cockpit-surface-strong);
-  }
-
-  .final-review-cockpit-kicker {
-    color: var(--cockpit-muted-foreground);
-  }
-
-  .final-review-cockpit-chip {
-    background: rgba(191, 127, 65, 0.08);
-    border-color: rgba(191, 127, 65, 0.18);
-    color: var(--cockpit-foreground);
   }
 }

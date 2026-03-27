@@ -38,50 +38,56 @@ test("admin page adds a dedicated final review configuration tab", () => {
 });
 
 test("calibration page becomes a three-tab final review workspace", () => {
-  const source = read("src/app/(main)/calibration/page.tsx");
+  const page = read("src/app/(main)/calibration/page.tsx");
+  const principles = read("src/components/final-review/principles-tab.tsx");
 
-  assertSourceContains(source, "原则", "calibration page should include the tab label \"原则\"");
-  assertSourceContains(source, "非主管员工终评", "calibration page should include the tab label \"非主管员工终评\"");
-  assertSourceContains(source, "主管层双人终评", "calibration page should include the tab label \"主管层双人终评\"");
+  assertSourceContains(page, "原则", "calibration page should include the tab label \"原则\"");
+  assertSourceContains(page, "非主管员工终评", "calibration page should include the tab label \"非主管员工终评\"");
+  assertSourceContains(page, "主管层双人终评", "calibration page should include the tab label \"主管层双人终评\"");
   assert.equal(
-    source.includes("参考星级由初评加权分换算"),
+    page.includes("参考星级由初评加权分换算"),
     true,
     "employee final review rows should explain where the reference star comes from",
   );
   assert.equal(
-    source.includes("setInterval(loadWorkspace, 30000)"),
+    page.includes("setInterval(loadWorkspace, 30000)"),
     true,
     "final review workspace should auto-refresh every 30 seconds",
   );
   assert.equal(
-    source.includes("这一页告诉你本轮终评按什么原则看人、谁参与拍板、现在卡在哪"),
+    principles.includes("这一页告诉你本轮终评按什么原则看人、谁参与拍板、现在卡在哪"),
     true,
     "principles tab should explain its purpose in plain operator language",
   );
   assert.equal(
-    source.includes("这一页处理普通员工终评：先看分布，再逐个员工留下意见，最后由最终确认人拍板"),
+    page.includes("这一页告诉你本轮终评按什么原则看人、谁参与拍板、现在卡在哪"),
+    false,
+    "calibration page should not keep the principles briefing copy inline",
+  );
+  assert.equal(
+    page.includes("这一页处理普通员工终评：先看分布，再逐个员工留下意见，最后由最终确认人拍板"),
     true,
     "employee tab should explain the workflow in plain language",
   );
   assert.equal(
-    source.includes("这一页只处理主管层终评：先由两位填写人分别打分，再由最终确认人统一拍板"),
+    page.includes("这一页只处理主管层终评：先由两位填写人分别打分，再由最终确认人统一拍板"),
     true,
     "leader tab should explain the workflow in plain language",
   );
   assert.equal(
-    source.includes("5位终评相关人已完成的意见数"),
+    principles.includes("5位终评相关人已完成的意见数"),
     true,
     "top progress cards should explain what the metric actually means",
   );
   assert.equal(
-    source.includes("主管层问卷填写进度"),
+    principles.includes("主管层问卷填写进度"),
     true,
     "leader submission card should use plain-language wording",
   );
 });
 
-test("calibration page source includes principles-tab redesign tokens", () => {
-  const source = read("src/app/(main)/calibration/page.tsx");
+test("principles-tab source includes redesign tokens", () => {
+  const source = read("src/components/final-review/principles-tab.tsx");
 
   assertSourceContains(source, "原则", "principles tab should include the briefing anchor token \"原则\"");
   assertSourceContains(source, "全公司星级分布", "principles tab should include the overview token \"全公司星级分布\"");
@@ -89,8 +95,9 @@ test("calibration page source includes principles-tab redesign tokens", () => {
   assertSourceContains(source, "一句话解读", "principles tab should include the summary token \"一句话解读\"");
 });
 
-test("calibration page imports dedicated final-review principles helpers", () => {
+test("principles tab owns chart composition while the page stays a data container", () => {
   const page = read("src/app/(main)/calibration/page.tsx");
+  const principles = read("src/components/final-review/principles-tab.tsx");
 
   assert.equal(
     page.includes('from "@/components/final-review/principles-tab"'),
@@ -99,13 +106,54 @@ test("calibration page imports dedicated final-review principles helpers", () =>
   );
   assert.equal(
     page.includes('from "@/components/final-review/score-band-chart"'),
-    true,
-    "calibration page should import the score band chart helper",
+    false,
+    "calibration page should stop importing the score band chart helper directly",
   );
   assert.equal(
     page.includes('from "@/components/final-review/star-distribution-chart"'),
+    false,
+    "calibration page should stop importing the star distribution chart helper directly",
+  );
+  assert.equal(
+    principles.includes('from "./score-band-chart"') && principles.includes('from "./star-distribution-chart"'),
     true,
-    "calibration page should import the star distribution chart helper",
+    "principles tab should own the chart helper composition",
+  );
+  assert.equal(
+    page.includes("全公司星级分布") || page.includes("一句话解读"),
+    false,
+    "calibration page should not keep principles-only chart or summary wording inline",
+  );
+});
+
+test("principles-tab handles overdue wording and globals keep cockpit styling token-based", () => {
+  const principles = read("src/components/final-review/principles-tab.tsx");
+  const globals = read("src/app/globals.css");
+
+  assert.equal(
+    principles.includes("距离截止还有 ${formatCountdown(cycle.calibrationEnd)}"),
+    false,
+    "principles summary should not produce awkward overdue wording by prefixing all countdown states the same way",
+  );
+  assert.equal(
+    principles.includes("已过校准截止时间"),
+    true,
+    "principles summary should include an overdue-specific phrase after the deadline passes",
+  );
+  assert.equal(
+    globals.includes("--cockpit-surface") && globals.includes("--cockpit-border"),
+    true,
+    "globals should keep a minimal set of cockpit tokens",
+  );
+  assert.equal(
+    globals.includes("--color-cockpit-"),
+    false,
+    "globals should not add extra app-wide cockpit color aliases",
+  );
+  assert.equal(
+    globals.includes(".final-review-cockpit-"),
+    false,
+    "globals should not add component-specific cockpit utility classes",
   );
 });
 

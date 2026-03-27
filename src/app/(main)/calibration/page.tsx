@@ -7,8 +7,6 @@ import {
   buildScoreBandBuckets,
 } from "@/components/final-review/workspace-view";
 import { PrinciplesTab } from "@/components/final-review/principles-tab";
-import { ScoreBandChart } from "@/components/final-review/score-band-chart";
-import { StarDistributionChart } from "@/components/final-review/star-distribution-chart";
 import type {
   DistributionEntry,
   EmployeeRow,
@@ -490,32 +488,8 @@ function CalibrationContent() {
             cycle={workspace.cycle}
             config={workspace.config}
             overview={workspace.overview}
-            guideDescription="这一页告诉你本轮终评按什么原则看人、谁参与拍板、现在卡在哪。"
-            summaryLabel="一句话解读"
-            metricCopy={{
-              employeeOpinionTitle: "普通员工意见收集进度",
-              employeeOpinionDescription: "5位终评相关人已完成的意见数",
-              employeeConfirmTitle: "普通员工正式拍板进度",
-              employeeConfirmDescription: "最终确认人已完成正式确认的人数",
-              leaderConfirmTitle: "主管层正式拍板进度",
-              leaderConfirmDescription: "主管层已完成官方确认的人数",
-              leaderSubmissionTitle: "主管层问卷填写进度",
-              leaderSubmissionDescription: "吴承霖、邱翔分别已提交多少份主管层问卷",
-            }}
-            distributionChart={
-              <StarDistributionChart
-                title="全公司星级分布"
-                description="先看公司当前整体星级落点，再决定是否要优先处理偏离建议分布的星级。"
-                distribution={workspace.leaderReview.companyDistributions.all}
-              />
-            }
-            scoreBandChart={
-              <ScoreBandChart
-                title="分数带"
-                description="普通员工当前初评加权分落在哪些分段，能帮助快速识别需要重点翻看的区间。"
-                bands={scoreBandBuckets}
-              />
-            }
+            companyDistribution={workspace.leaderReview.companyDistributions.all}
+            scoreBandBuckets={scoreBandBuckets}
           />
         </TabsContent>
 

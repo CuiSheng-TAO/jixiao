@@ -1,76 +1,96 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { CSSProperties } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CockpitShell, type CockpitBriefingBlock, type CockpitMetric } from "./cockpit-shell";
-import type { WorkspacePayload } from "./types";
+import { ScoreBandChart } from "./score-band-chart";
+import { StarDistributionChart } from "./star-distribution-chart";
+import type { DistributionEntry, WorkspacePayload } from "./types";
+import type { ScoreBandBucket } from "./workspace-view";
 
 type PrinciplesTabProps = {
   cycle: NonNullable<WorkspacePayload["cycle"]>;
   config: NonNullable<WorkspacePayload["config"]>;
   overview: NonNullable<WorkspacePayload["overview"]>;
-  guideDescription: string;
-  summaryLabel: string;
-  metricCopy: {
-    employeeOpinionTitle: string;
-    employeeOpinionDescription: string;
-    employeeConfirmTitle: string;
-    employeeConfirmDescription: string;
-    leaderConfirmTitle: string;
-    leaderConfirmDescription: string;
-    leaderSubmissionTitle: string;
-    leaderSubmissionDescription: string;
-  };
-  distributionChart: ReactNode;
-  scoreBandChart: ReactNode;
+  companyDistribution: DistributionEntry[];
+  scoreBandBuckets: ScoreBandBucket[];
 };
 
-function formatCountdown(end: string) {
+function describeDeadline(end: string) {
   const diff = new Date(end).getTime() - Date.now();
-  if (diff <= 0) return "已截止";
+  if (diff <= 0) {
+    return {
+      overdue: true,
+      shortLabel: "已过截止时间",
+      summaryLabel: "已过校准截止时间",
+    };
+  }
+
   const totalMinutes = Math.floor(diff / (1000 * 60));
   const days = Math.floor(totalMinutes / (60 * 24));
   const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
   const minutes = totalMinutes % 60;
+  const shortLabel = days > 0 ? `${days}天 ${hours}小时` : `${hours}小时 ${minutes}分钟`;
 
-  if (days > 0) return `${days}天 ${hours}小时`;
-  return `${hours}小时 ${minutes}分钟`;
+  return {
+    overdue: false,
+    shortLabel,
+    summaryLabel: `距离校准截止还有 ${shortLabel}`,
+  };
 }
 
 function buildSummary(cycle: NonNullable<WorkspacePayload["cycle"]>, overview: NonNullable<WorkspacePayload["overview"]>) {
+  const deadline = describeDeadline(cycle.calibrationEnd);
   const pendingEmployees = Math.max(overview.progress.employeeTotalCount - overview.progress.employeeConfirmedCount, 0);
   const pendingLeaders = Math.max(overview.progress.leaderTotalCount - overview.progress.leaderConfirmedCount, 0);
   const firstRisk = overview.riskSummary[0];
 
   if (firstRisk) {
-    return `${firstRisk} 目前还剩 ${pendingEmployees} 位普通员工和 ${pendingLeaders} 位主管待正式拍板，距离截止还有 ${formatCountdown(cycle.calibrationEnd)}。`;
+    return `${deadline.summaryLabel}，${firstRisk} 目前还剩 ${pendingEmployees} 位普通员工和 ${pendingLeaders} 位主管待正式拍板。`;
   }
 
   if (pendingEmployees === 0 && pendingLeaders === 0) {
-    return `普通员工和主管层都已形成正式结论，当前重点是赶在 ${formatCountdown(cycle.calibrationEnd)} 内完成最后复核。`;
+    return deadline.overdue
+      ? "已过校准截止时间，普通员工和主管层都已形成正式结论，请尽快完成最后复核。"
+      : `${deadline.summaryLabel}，普通员工和主管层都已形成正式结论，当前重点是完成最后复核。`;
   }
 
-  return `目前还剩 ${pendingEmployees} 位普通员工和 ${pendingLeaders} 位主管待正式拍板，建议先处理意见分歧和高风险名单，再收口最后确认。`;
+  return deadline.overdue
+    ? `已过校准截止时间，目前还剩 ${pendingEmployees} 位普通员工和 ${pendingLeaders} 位主管待正式拍板，建议先处理高风险卡点，再尽快补齐最后确认。`
+    : `${deadline.summaryLabel}，目前还剩 ${pendingEmployees} 位普通员工和 ${pendingLeaders} 位主管待正式拍板，建议先处理意见分歧和高风险名单，再收口最后确认。`;
 }
 
 export function PrinciplesTab({
   cycle,
   config,
   overview,
-  guideDescription,
-  summaryLabel,
-  metricCopy,
-  distributionChart,
-  scoreBandChart,
+  companyDistribution,
+  scoreBandBuckets,
 }: PrinciplesTabProps) {
+  const badgeStyle = "rounded-full border-[color:rgba(191,127,65,0.18)] bg-[color:rgba(191,127,65,0.08)] px-3 py-1 font-medium text-[var(--cockpit-foreground)]";
+  const panelStyle: CSSProperties = {
+    background: "var(--cockpit-surface)",
+    borderColor: "var(--cockpit-border)",
+    boxShadow: "var(--shadow-xs)",
+  };
+  const strongPanelStyle: CSSProperties = {
+    background: [
+      "radial-gradient(circle at top right, rgba(255, 255, 255, 0.34), transparent 45%)",
+      "linear-gradient(180deg, rgba(255, 255, 255, 0.1), transparent)",
+      "var(--cockpit-surface-strong)",
+    ].join(", "),
+    borderColor: "var(--cockpit-border)",
+    boxShadow: "var(--shadow-xs)",
+  };
+  const deadline = describeDeadline(cycle.calibrationEnd);
   const briefingBlocks: CockpitBriefingBlock[] = [
     {
       title: "核心原则",
       content: (
         <div className="flex flex-wrap gap-2">
           {overview.principles.map((item) => (
-            <Badge key={item} variant="outline" className="final-review-cockpit-chip rounded-full border px-3 py-1 font-medium">
+            <Badge key={item} variant="outline" className={badgeStyle}>
               {item}
             </Badge>
           ))}
@@ -92,7 +112,7 @@ export function PrinciplesTab({
       content: (
         <div className="flex flex-wrap gap-2">
           {overview.distributionHints.map((item) => (
-            <Badge key={item} variant="secondary" className="final-review-cockpit-chip rounded-full border px-3 py-1 font-medium">
+            <Badge key={item} variant="secondary" className={badgeStyle}>
               {item}
             </Badge>
           ))}
@@ -106,24 +126,24 @@ export function PrinciplesTab({
 
   const metrics: CockpitMetric[] = [
     {
-      title: metricCopy.employeeOpinionTitle,
+      title: "普通员工意见收集进度",
       value: `${overview.progress.employeeOpinionDone}/${overview.progress.employeeOpinionTotal}`,
-      description: metricCopy.employeeOpinionDescription,
+      description: "5位终评相关人已完成的意见数",
     },
     {
-      title: metricCopy.employeeConfirmTitle,
+      title: "普通员工正式拍板进度",
       value: `${overview.progress.employeeConfirmedCount}/${overview.progress.employeeTotalCount}`,
-      description: metricCopy.employeeConfirmDescription,
+      description: "最终确认人已完成正式确认的人数",
     },
     {
-      title: metricCopy.leaderConfirmTitle,
+      title: "主管层正式拍板进度",
       value: `${overview.progress.leaderConfirmedCount}/${overview.progress.leaderTotalCount}`,
-      description: metricCopy.leaderConfirmDescription,
+      description: "主管层已完成官方确认的人数",
     },
     {
-      title: metricCopy.leaderSubmissionTitle,
+      title: "主管层问卷填写进度",
       value: leaderSubmissionText,
-      description: metricCopy.leaderSubmissionDescription,
+      description: "吴承霖、邱翔分别已提交多少份主管层问卷",
     },
   ];
 
@@ -131,20 +151,28 @@ export function PrinciplesTab({
     <CockpitShell
       title="原则与链路"
       description="把本轮终评的判断标准、参与角色和当前全局节奏放进一个更容易扫读的驾驶舱。"
-      guideDescription={guideDescription}
-      summaryLabel={summaryLabel}
+      guideDescription="这一页告诉你本轮终评按什么原则看人、谁参与拍板、现在卡在哪。"
+      summaryLabel="一句话解读"
       summary={buildSummary(cycle, overview)}
       briefingBlocks={briefingBlocks}
       metrics={metrics}
       main={
         <div className="grid gap-4 lg:grid-cols-2">
-          {distributionChart}
-          {scoreBandChart}
+          <StarDistributionChart
+            title="全公司星级分布"
+            description="先看公司当前整体星级落点，再决定是否要优先处理偏离建议分布的星级。"
+            distribution={companyDistribution}
+          />
+          <ScoreBandChart
+            title="分数带"
+            description="普通员工当前初评加权分落在哪些分段，能帮助快速识别需要重点翻看的区间。"
+            bands={scoreBandBuckets}
+          />
         </div>
       }
       aside={
         <>
-          <Card className="final-review-cockpit-panel rounded-[var(--radius-2xl)] border-0 shadow-none">
+          <Card className="rounded-[var(--radius-2xl)] border shadow-none" style={panelStyle}>
             <CardHeader>
               <CardTitle className="text-base text-[var(--cockpit-foreground)]">本轮终评角色</CardTitle>
             </CardHeader>
@@ -164,16 +192,17 @@ export function PrinciplesTab({
             </CardContent>
           </Card>
 
-          <Card className="final-review-cockpit-panel rounded-[var(--radius-2xl)] border-0 shadow-none">
+          <Card className="rounded-[var(--radius-2xl)] border shadow-none" style={panelStyle}>
             <CardHeader>
               <CardTitle className="text-base text-[var(--cockpit-foreground)]">风险与推进提醒</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="final-review-cockpit-panel-strong rounded-[var(--radius-xl)] p-4">
+              <div className="rounded-[var(--radius-xl)] border p-4" style={strongPanelStyle}>
                 <p className="text-sm font-semibold text-[var(--cockpit-foreground)]">校准截止</p>
-                <p className="mt-2 text-lg font-semibold text-[var(--cockpit-foreground)]">{formatCountdown(cycle.calibrationEnd)}</p>
+                <p className="mt-2 text-lg font-semibold text-[var(--cockpit-foreground)]">{deadline.shortLabel}</p>
                 <p className="mt-2 text-xs leading-5 text-[var(--cockpit-muted-foreground)]">
-                  双人提交进度：{leaderSubmissionText}
+                  {deadline.overdue ? "当前已过截止时间，请优先补齐未完成拍板。" : "双人提交进度："}
+                  {!deadline.overdue ? leaderSubmissionText : null}
                 </p>
               </div>
 

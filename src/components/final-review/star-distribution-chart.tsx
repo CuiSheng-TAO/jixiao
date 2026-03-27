@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { Bar, BarChart, CartesianGrid, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DistributionEntry } from "./types";
@@ -15,6 +16,11 @@ export function StarDistributionChart({
   description,
   distribution,
 }: StarDistributionChartProps) {
+  const panelStyle: CSSProperties = {
+    background: "var(--cockpit-surface)",
+    borderColor: "var(--cockpit-border)",
+    boxShadow: "var(--shadow-xs)",
+  };
   const data = distribution.map((item) => ({
     ...item,
     label: `${item.stars}星`,
@@ -22,7 +28,7 @@ export function StarDistributionChart({
   }));
 
   return (
-    <Card className="final-review-cockpit-panel rounded-[var(--radius-2xl)] border-0 shadow-none">
+    <Card className="rounded-[var(--radius-2xl)] border shadow-none" style={panelStyle}>
       <CardHeader>
         <CardTitle className="text-base text-[var(--cockpit-foreground)]">{title}</CardTitle>
         <CardDescription className="text-[var(--cockpit-muted-foreground)]">{description}</CardDescription>
