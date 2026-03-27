@@ -65,14 +65,22 @@ test("final review helper centralizes config parsing, access checks, and referen
   assert.equal(
     source.includes("performanceComment: true") &&
       source.includes("abilityComment: true") &&
-      source.includes("valuesComment: true"),
+      source.includes("candidComment: true") &&
+      source.includes("progressComment: true") &&
+      source.includes("altruismComment: true") &&
+      source.includes("rootComment: true"),
     true,
-    "workspace payload should select supervisor comment fields so the evidence panel can summarize them",
+    "workspace payload should select the real supervisor comment fields so the evidence panel can summarize them",
   );
   assert.equal(
     source.includes("supervisorCommentSummary:"),
     true,
     "workspace payload should include a concise supervisor comment summary for each employee",
+  );
+  assert.equal(
+    source.includes("if (officialStars != null && referenceStars != null && officialStars !== referenceStars)"),
+    true,
+    "final review helper should flag official overrides from the resolved official stars, including calibration fallback results",
   );
 });
 

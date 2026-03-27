@@ -53,6 +53,22 @@ function buildDefaultEmployeeConfirmForm(employee: EmployeeRow): EmployeeConfirm
   };
 }
 
+function areLeaderFormsEqual(left: LeaderForm, right: LeaderForm) {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function buildLeaderFormSnapshot(leaders: LeaderRow[]): Record<string, LeaderForm> {
+  const snapshot: Record<string, LeaderForm> = {};
+
+  leaders.forEach((leader) => {
+    leader.evaluations.forEach((evaluation) => {
+      snapshot[`${leader.id}:${evaluation.evaluatorId}`] = evaluation.form;
+    });
+  });
+
+  return snapshot;
+}
+
 function CalibrationContent() {
   const [workspace, setWorkspace] = useState<WorkspacePayload | null>(null);
   const [loading, setLoading] = useState(true);
@@ -65,15 +81,24 @@ function CalibrationContent() {
   const [leaderConfirmForms, setLeaderConfirmForms] = useState<Record<string, EmployeeConfirmForm>>({});
   const [selectedLeaderId, setSelectedLeaderId] = useState<string | null>(null);
   const [savingKey, setSavingKey] = useState("");
-  const dirtyLeaderFormKeysRef = useRef<Record<string, boolean>>({});
+  const latestWorkspaceRequestIdRef = useRef(0);
+  const leaderServerFormsRef = useRef<Record<string, LeaderForm>>({});
 
   const loadWorkspace = useCallback(async () => {
+    const requestId = latestWorkspaceRequestIdRef.current + 1;
+    latestWorkspaceRequestIdRef.current = requestId;
+
     try {
       const res = await fetch("/api/final-review/workspace");
       const data = await res.json();
+      if (requestId !== latestWorkspaceRequestIdRef.current) {
+        return;
+      }
       if (!res.ok) {
         throw new Error(data.error || "加载失败");
       }
+
+      const serverLeaderForms = buildLeaderFormSnapshot(data.leaderReview?.leaders || []);
       setWorkspace(data);
       setError("");
 
@@ -98,15 +123,20 @@ function CalibrationContent() {
       });
 
       setLeaderForms((prev) => {
-        const next: Record<string, LeaderForm> = {};
-        data.leaderReview?.leaders.forEach((leader: LeaderRow) => {
-          leader.evaluations.forEach((evaluation) => {
-            const key = `${leader.id}:${evaluation.evaluatorId}`;
-            next[key] = dirtyLeaderFormKeysRef.current[key] && prev[key] ? prev[key] : evaluation.form;
-          });
+        const next = { ...serverLeaderForms };
+
+        Object.entries(serverLeaderForms).forEach(([key, serverForm]) => {
+          const localForm = prev[key];
+          const previousServerForm = leaderServerFormsRef.current[key] ?? serverForm;
+
+          if (localForm && !areLeaderFormsEqual(localForm, previousServerForm)) {
+            next[key] = localForm;
+          }
         });
+
         return next;
       });
+      leaderServerFormsRef.current = serverLeaderForms;
 
       setLeaderConfirmForms((prev) => {
         const next = { ...prev };
@@ -128,9 +158,14 @@ function CalibrationContent() {
       });
       setSelectedLeaderId((current) => current || data.leaderReview?.leaders?.[0]?.id || null);
     } catch (e) {
+      if (requestId !== latestWorkspaceRequestIdRef.current) {
+        return;
+      }
       setError(e instanceof Error ? e.message : "加载失败");
     } finally {
-      setLoading(false);
+      if (requestId === latestWorkspaceRequestIdRef.current) {
+        setLoading(false);
+      }
     }
   }, []);
 
@@ -213,7 +248,6 @@ function CalibrationContent() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "保存失败");
-      delete dirtyLeaderFormKeysRef.current[key];
       toast.success(action === "submit" ? "主管层终评已提交" : "主管层终评草稿已保存");
       await loadWorkspace();
     } catch (e) {
@@ -335,7 +369,6 @@ function CalibrationContent() {
     value: number | string | null,
   ) => {
     const key = `${leaderId}:${evaluation.evaluatorId}`;
-    dirtyLeaderFormKeysRef.current[key] = true;
 
     setLeaderForms((prev) => ({
       ...prev,

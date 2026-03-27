@@ -169,16 +169,22 @@ function buildSupervisorCommentSummary(evaluations: Array<{
   evaluator: { name: string };
   performanceComment: string;
   abilityComment: string;
-  valuesComment: string;
+  candidComment: string;
+  progressComment: string;
+  altruismComment: string;
+  rootComment: string;
 }>): string | null {
   const summaries = evaluations.flatMap((evaluation) => {
     const comment = [
-      normalizeSummaryText(evaluation.performanceComment),
-      normalizeSummaryText(evaluation.abilityComment),
-      normalizeSummaryText(evaluation.valuesComment),
+      ["业绩", normalizeSummaryText(evaluation.performanceComment)],
+      ["能力", normalizeSummaryText(evaluation.abilityComment)],
+      ["坦诚真实", normalizeSummaryText(evaluation.candidComment)],
+      ["极致进取", normalizeSummaryText(evaluation.progressComment)],
+      ["成就利他", normalizeSummaryText(evaluation.altruismComment)],
+      ["ROOT", normalizeSummaryText(evaluation.rootComment)],
     ]
+      .flatMap(([label, value]) => (value ? [`${label}：${value}`] : []))
       .filter((value): value is string => Boolean(value))
-      .slice(0, 2)
       .join("；");
 
     if (!comment) return [];
@@ -329,7 +335,10 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
         status: true,
         performanceComment: true,
         abilityComment: true,
-        valuesComment: true,
+        candidComment: true,
+        progressComment: true,
+        altruismComment: true,
+        rootComment: true,
         evaluator: { select: { id: true, name: true } },
       },
     }),
@@ -471,7 +480,7 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
     const anomalyTags: string[] = [];
     if (overrideOpinionCount > 0) anomalyTags.push("存在改星意见");
     if (scoreSpread != null && scoreSpread >= 1) anomalyTags.push("初评分差较大");
-    if (latestConfirmation && referenceStars != null && latestConfirmation.officialStars !== referenceStars) {
+    if (officialStars != null && referenceStars != null && officialStars !== referenceStars) {
       anomalyTags.push("已拍板改星");
     }
 

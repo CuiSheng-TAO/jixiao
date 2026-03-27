@@ -227,28 +227,33 @@ test("leader detail panel ties questionnaire editability to each evaluation's ow
   );
 });
 
-test("leader polling refresh keeps clean forms fresh while preserving dirty local drafts", () => {
+test("leader polling refresh uses latest-response-wins plus server-snapshot diffing", () => {
   const page = read("src/app/(main)/calibration/page.tsx");
 
   assert.equal(
+    page.includes("latestWorkspaceRequestIdRef"),
+    true,
+    "leader workspace polling should track the latest in-flight response so stale responses cannot win",
+  );
+  assert.equal(
+    page.includes("if (requestId !== latestWorkspaceRequestIdRef.current)"),
+    true,
+    "older workspace responses should be ignored once a newer request has started",
+  );
+  assert.equal(
+    page.includes("leaderServerFormsRef"),
+    true,
+    "leader form syncing should compare local drafts against the last server snapshot instead of a sticky touched flag",
+  );
+  assert.equal(
+    page.includes("!areLeaderFormsEqual(localForm, previousServerForm)"),
+    true,
+    "a local leader form should only stay pinned when it truly differs from the last server snapshot",
+  );
+  assert.equal(
     page.includes("dirtyLeaderFormKeysRef"),
-    true,
-    "leader form cache should track which local drafts are dirty during polling",
-  );
-  assert.equal(
-    page.includes("dirtyLeaderFormKeysRef.current[key] && prev[key] ? prev[key] : evaluation.form"),
-    true,
-    "poll refresh should keep the local draft only for dirty leader forms and otherwise replace from server data",
-  );
-  assert.equal(
-    page.includes("dirtyLeaderFormKeysRef.current[key] = true"),
-    true,
-    "editing a leader questionnaire should mark that specific form as dirty",
-  );
-  assert.equal(
-    page.includes("delete dirtyLeaderFormKeysRef.current[key]"),
-    true,
-    "saving or submitting a leader questionnaire should clear the dirty marker so later polls can refresh it",
+    false,
+    "leader polling should stop relying on the sticky dirty-key approach",
   );
 });
 
@@ -317,6 +322,12 @@ test("employee cockpit risk labels use review signals instead of generic bookkee
     "payload should derive anomaly tags from actual disagreement and score-spread signals",
   );
   assert.equal(
+    payload.includes("if (officialStars != null && referenceStars != null && officialStars !== referenceStars)") &&
+      !payload.includes("latestConfirmation && referenceStars != null && latestConfirmation.officialStars !== referenceStars"),
+    true,
+    "official override signaling should compare the resolved official stars against the reference stars",
+  );
+  assert.equal(
     workspaceView.includes("风险信号"),
     true,
     "employee priority cards should describe these queues as risk signals rather than generic anomaly labels",
@@ -326,6 +337,7 @@ test("employee cockpit risk labels use review signals instead of generic bookkee
 test("employee evidence panel shows a concise supervisor comment summary", () => {
   const detailPanel = read("src/components/final-review/employee-detail-panel.tsx");
   const types = read("src/components/final-review/types.ts");
+  const payload = read("src/lib/final-review.ts");
 
   assert.equal(
     types.includes("supervisorCommentSummary: string | null;"),
@@ -341,6 +353,14 @@ test("employee evidence panel shows a concise supervisor comment summary", () =>
     detailPanel.includes("employee.supervisorCommentSummary"),
     true,
     "employee evidence panel should render the new supervisor comment summary field",
+  );
+  assert.equal(
+    payload.includes("candidComment") &&
+      payload.includes("progressComment") &&
+      payload.includes("altruismComment") &&
+      payload.includes("rootComment"),
+    true,
+    "supervisor comment summary should pull from the real per-value comments written in supervisor reviews",
   );
 });
 
