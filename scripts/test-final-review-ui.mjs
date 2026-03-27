@@ -207,6 +207,46 @@ test("leader tab composes a dual-review cockpit with paired comparison and detai
   );
 });
 
+test("leader detail panel ties questionnaire editability to each evaluation's ownership state", () => {
+  const detailPanel = read("src/components/final-review/leader-detail-panel.tsx");
+
+  assert.equal(
+    detailPanel.includes("editable={evaluation.editable}"),
+    true,
+    "leader questionnaire editability should come directly from each evaluation's editable flag",
+  );
+  assert.equal(
+    detailPanel.includes("disabled={!editable}"),
+    true,
+    "leader questionnaire inputs should become read-only when the evaluation is not editable",
+  );
+  assert.equal(
+    detailPanel.includes('{!editable ? <Badge variant="outline">只读</Badge> : null}'),
+    true,
+    "leader questionnaire should visibly mark non-owned evaluations as read-only",
+  );
+});
+
+test("leader detail panel gates final confirmation on dual submission readiness", () => {
+  const detailPanel = read("src/components/final-review/leader-detail-panel.tsx");
+
+  assert.equal(
+    detailPanel.includes('disabled={!leader.bothSubmitted || savingConfirmation}'),
+    true,
+    "leader confirmation action should stay disabled until both reviews are submitted",
+  );
+  assert.equal(
+    detailPanel.includes('{!leader.bothSubmitted ? ('),
+    true,
+    "leader detail panel should show the waiting-state explanation when dual submission is incomplete",
+  );
+  assert.equal(
+    detailPanel.includes('leader.bothSubmitted ? "双人已齐备" : "待双人齐备"'),
+    true,
+    "leader detail panel should key its submission status copy off the same dual-submission state",
+  );
+});
+
 test("employee cockpit keeps a reachable all-employee roster alongside priority queues", () => {
   const cockpit = read("src/components/final-review/employee-cockpit.tsx");
 
