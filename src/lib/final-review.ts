@@ -155,6 +155,46 @@ function roundToOneDecimal(value: number | null): number | null {
   return Math.round(value * 10) / 10;
 }
 
+function normalizeSummaryText(value: string | null | undefined): string | null {
+  const normalized = value?.replace(/\s+/g, " ").trim();
+  return normalized ? normalized : null;
+}
+
+function truncateSummary(value: string, maxLength = 160): string {
+  if (value.length <= maxLength) return value;
+  return `${value.slice(0, maxLength - 3).trimEnd()}...`;
+}
+
+function buildSupervisorCommentSummary(evaluations: Array<{
+  evaluator: { name: string };
+  performanceComment: string;
+  abilityComment: string;
+  valuesComment: string;
+}>): string | null {
+  const summaries = evaluations.flatMap((evaluation) => {
+    const comment = [
+      normalizeSummaryText(evaluation.performanceComment),
+      normalizeSummaryText(evaluation.abilityComment),
+      normalizeSummaryText(evaluation.valuesComment),
+    ]
+      .filter((value): value is string => Boolean(value))
+      .slice(0, 2)
+      .join("；");
+
+    if (!comment) return [];
+    return [`${evaluation.evaluator.name}：${comment}`];
+  });
+
+  if (!summaries.length) return null;
+  return truncateSummary(summaries.slice(0, 2).join(" / "));
+}
+
+function getWeightedScoreSpread(scores: Array<number | null | undefined>): number | null {
+  const validScores = scores.filter((score): score is number => score != null);
+  if (validScores.length < 2) return null;
+  return roundToOneDecimal(Math.max(...validScores) - Math.min(...validScores));
+}
+
 function getLatestConfirmationMap(confirmations: Array<{
   userId: string;
   scope: string;
@@ -287,6 +327,9 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
         evaluatorId: true,
         weightedScore: true,
         status: true,
+        performanceComment: true,
+        abilityComment: true,
+        valuesComment: true,
         evaluator: { select: { id: true, name: true } },
       },
     }),
@@ -406,6 +449,9 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
     const handledCount = employeeOpinions.filter((item) => item.decision !== "PENDING").length;
     const officialStars = latestConfirmation?.officialStars ?? calibrationMap.get(employee.id) ?? null;
     const currentStars = officialStars ?? referenceStars;
+    const overrideOpinionCount = employeeOpinions.filter((item) => item.decision === "OVERRIDE").length;
+    const scoreSpread = getWeightedScoreSpread(currentEvals.map((item) => item.weightedScore != null ? Number(item.weightedScore) : null));
+    const supervisorCommentSummary = buildSupervisorCommentSummary(currentEvals);
     const opinionCards = config.accessUserIds.map((reviewerId) => {
       const reviewer = usersById.get(reviewerId);
       const opinion = employeeOpinions.find((item) => item.reviewerId === reviewerId);
@@ -423,8 +469,11 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
     });
 
     const anomalyTags: string[] = [];
-    if (!latestConfirmation) anomalyTags.push("待官方确认");
-    if (weightedScore == null || referenceStars == null) anomalyTags.push("缺少参考星级");
+    if (overrideOpinionCount > 0) anomalyTags.push("存在改星意见");
+    if (scoreSpread != null && scoreSpread >= 1) anomalyTags.push("初评分差较大");
+    if (latestConfirmation && referenceStars != null && latestConfirmation.officialStars !== referenceStars) {
+      anomalyTags.push("已拍板改星");
+    }
 
     return {
       id: employee.id,
@@ -448,6 +497,7 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
       })),
       selfEvalStatus: selfEvalMap.get(employee.id)?.status || null,
       peerAverage: peerReviewAverageByEmployee.get(employee.id) ?? null,
+      supervisorCommentSummary: supervisorCommentSummary,
       handledCount,
       totalReviewerCount: config.accessUserIds.length,
       anomalyTags,

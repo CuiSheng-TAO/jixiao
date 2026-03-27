@@ -253,6 +253,12 @@ export function EmployeeDetailPanel({
           <p className="text-xs text-[var(--cockpit-muted-foreground)]">参考说明</p>
           <p className="mt-2 text-sm leading-6 text-[var(--cockpit-foreground)]">{employee.referenceSourceLabel}</p>
         </div>
+        <div className="mt-4 rounded-2xl border px-4 py-3">
+          <p className="text-xs text-[var(--cockpit-muted-foreground)]">初评评语摘要</p>
+          <p className="mt-2 text-sm leading-6 text-[var(--cockpit-foreground)]">
+            {employee.supervisorCommentSummary || "当前还没有可供参考的初评评语摘要。"}
+          </p>
+        </div>
         <div className="mt-4 space-y-2">
           {employee.currentEvaluatorStatuses.map((status) => (
             <div key={status.evaluatorId} className="flex items-center justify-between rounded-2xl border px-4 py-3 text-sm">

@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import {
   buildEmployeePriorityCards,
   buildLeaderPriorityCards,
@@ -65,6 +65,7 @@ function CalibrationContent() {
   const [leaderConfirmForms, setLeaderConfirmForms] = useState<Record<string, EmployeeConfirmForm>>({});
   const [selectedLeaderId, setSelectedLeaderId] = useState<string | null>(null);
   const [savingKey, setSavingKey] = useState("");
+  const dirtyLeaderFormKeysRef = useRef<Record<string, boolean>>({});
 
   const loadWorkspace = useCallback(async () => {
     try {
@@ -97,13 +98,11 @@ function CalibrationContent() {
       });
 
       setLeaderForms((prev) => {
-        const next = { ...prev };
+        const next: Record<string, LeaderForm> = {};
         data.leaderReview?.leaders.forEach((leader: LeaderRow) => {
           leader.evaluations.forEach((evaluation) => {
             const key = `${leader.id}:${evaluation.evaluatorId}`;
-            if (!next[key]) {
-              next[key] = evaluation.form;
-            }
+            next[key] = dirtyLeaderFormKeysRef.current[key] && prev[key] ? prev[key] : evaluation.form;
           });
         });
         return next;
@@ -214,6 +213,7 @@ function CalibrationContent() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "保存失败");
+      delete dirtyLeaderFormKeysRef.current[key];
       toast.success(action === "submit" ? "主管层终评已提交" : "主管层终评草稿已保存");
       await loadWorkspace();
     } catch (e) {
@@ -335,6 +335,7 @@ function CalibrationContent() {
     value: number | string | null,
   ) => {
     const key = `${leaderId}:${evaluation.evaluatorId}`;
+    dirtyLeaderFormKeysRef.current[key] = true;
 
     setLeaderForms((prev) => ({
       ...prev,

@@ -108,10 +108,10 @@ export function buildEmployeePriorityCards(rows: EmployeeRow[]): EmployeePriorit
     {
       key: "anomaly",
       title: "超线敏感区",
-      summary: groups.anomaly.length ? `${groups.anomaly.length} 人带有异常标签` : "当前没有异常标签",
+      summary: groups.anomaly.length ? `${groups.anomaly.length} 人带有风险信号` : "当前没有风险信号",
       description: groups.anomaly.length
-        ? `这些员工带有超线或风险提示，建议先确认 ${summarizeRows(groups.anomaly, "")} 的证据。`
-        : "当前没有员工落在超线或异常敏感区。",
+        ? `这些员工出现了改星意见、初评分差或已拍板改星，建议先确认 ${summarizeRows(groups.anomaly, "")} 的证据。`
+        : "当前没有员工落在需要优先解释的风险区。",
       count: groups.anomaly.length,
       rows: groups.anomaly,
       accent: "rose",
@@ -132,8 +132,8 @@ export function buildEmployeePriorityCards(rows: EmployeeRow[]): EmployeePriorit
       title: "低分带异常",
       summary: groups.lowBandAnomaly.length ? `${groups.lowBandAnomaly.length} 位低分异常待解释` : "低分带暂无异常组合",
       description: groups.lowBandAnomaly.length
-        ? `低分带里的 ${summarizeRows(groups.lowBandAnomaly, "")} 同时伴随异常标签，需要补足理由。`
-        : "当前低分带没有同时带异常标签的员工。",
+        ? `低分带里的 ${summarizeRows(groups.lowBandAnomaly, "")} 同时伴随真实风险信号，需要补足理由。`
+        : "当前低分带没有同时伴随风险信号的员工。",
       count: groups.lowBandAnomaly.length,
       rows: groups.lowBandAnomaly,
       accent: "violet",

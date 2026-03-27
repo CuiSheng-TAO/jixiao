@@ -62,6 +62,18 @@ test("final review helper centralizes config parsing, access checks, and referen
     true,
     "final review helper should resolve configured users from directoryUsers so admin reviewers render with names",
   );
+  assert.equal(
+    source.includes("performanceComment: true") &&
+      source.includes("abilityComment: true") &&
+      source.includes("valuesComment: true"),
+    true,
+    "workspace payload should select supervisor comment fields so the evidence panel can summarize them",
+  );
+  assert.equal(
+    source.includes("supervisorCommentSummary:"),
+    true,
+    "workspace payload should include a concise supervisor comment summary for each employee",
+  );
 });
 
 test("final review routes expose config, workspace, opinion, leader review, and confirmation entrypoints", () => {

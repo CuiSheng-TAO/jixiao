@@ -227,6 +227,31 @@ test("leader detail panel ties questionnaire editability to each evaluation's ow
   );
 });
 
+test("leader polling refresh keeps clean forms fresh while preserving dirty local drafts", () => {
+  const page = read("src/app/(main)/calibration/page.tsx");
+
+  assert.equal(
+    page.includes("dirtyLeaderFormKeysRef"),
+    true,
+    "leader form cache should track which local drafts are dirty during polling",
+  );
+  assert.equal(
+    page.includes("dirtyLeaderFormKeysRef.current[key] && prev[key] ? prev[key] : evaluation.form"),
+    true,
+    "poll refresh should keep the local draft only for dirty leader forms and otherwise replace from server data",
+  );
+  assert.equal(
+    page.includes("dirtyLeaderFormKeysRef.current[key] = true"),
+    true,
+    "editing a leader questionnaire should mark that specific form as dirty",
+  );
+  assert.equal(
+    page.includes("delete dirtyLeaderFormKeysRef.current[key]"),
+    true,
+    "saving or submitting a leader questionnaire should clear the dirty marker so later polls can refresh it",
+  );
+});
+
 test("leader detail panel gates final confirmation on dual submission readiness", () => {
   const detailPanel = read("src/components/final-review/leader-detail-panel.tsx");
 
@@ -269,6 +294,53 @@ test("employee priority queues treat missing official stars as pending", () => {
     workspaceView.includes("!row.officialConfirmedAt"),
     false,
     "pending employee queues should not rely on missing confirmation time anymore",
+  );
+});
+
+test("employee cockpit risk labels use review signals instead of generic bookkeeping tags", () => {
+  const workspaceView = read("src/components/final-review/workspace-view.ts");
+  const payload = read("src/lib/final-review.ts");
+
+  assert.equal(
+    payload.includes('anomalyTags.push("待官方确认")'),
+    false,
+    "risk labels should stop treating missing official confirmation as an anomaly signal",
+  );
+  assert.equal(
+    payload.includes('anomalyTags.push("缺少参考星级")'),
+    false,
+    "risk labels should stop treating missing reference stars as a review-risk signal",
+  );
+  assert.equal(
+    payload.includes('anomalyTags.push("存在改星意见")') && payload.includes('anomalyTags.push("初评分差较大")'),
+    true,
+    "payload should derive anomaly tags from actual disagreement and score-spread signals",
+  );
+  assert.equal(
+    workspaceView.includes("风险信号"),
+    true,
+    "employee priority cards should describe these queues as risk signals rather than generic anomaly labels",
+  );
+});
+
+test("employee evidence panel shows a concise supervisor comment summary", () => {
+  const detailPanel = read("src/components/final-review/employee-detail-panel.tsx");
+  const types = read("src/components/final-review/types.ts");
+
+  assert.equal(
+    types.includes("supervisorCommentSummary: string | null;"),
+    true,
+    "employee payload type should include the concise supervisor comment summary field",
+  );
+  assert.equal(
+    detailPanel.includes("初评评语摘要"),
+    true,
+    "employee evidence panel should display the supervisor comment summary label",
+  );
+  assert.equal(
+    detailPanel.includes("employee.supervisorCommentSummary"),
+    true,
+    "employee evidence panel should render the new supervisor comment summary field",
   );
 });
 

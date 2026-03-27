@@ -40,6 +40,7 @@ export type EmployeeRow = {
   }>;
   selfEvalStatus: string | null;
   peerAverage: number | null;
+  supervisorCommentSummary: string | null;
   handledCount: number;
   totalReviewerCount: number;
   anomalyTags: string[];
