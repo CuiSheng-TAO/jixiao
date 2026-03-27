@@ -40,11 +40,9 @@ test("admin page adds a dedicated final review configuration tab", () => {
 test("calibration page becomes a three-tab final review workspace", () => {
   const source = read("src/app/(main)/calibration/page.tsx");
 
-  assert.equal(
-    source.includes("原则") && source.includes("非主管员工终评") && source.includes("主管层双人终评"),
-    true,
-    "calibration page should expose the three final review tabs",
-  );
+  assertSourceContains(source, "原则", "calibration page should include the tab label \"原则\"");
+  assertSourceContains(source, "非主管员工终评", "calibration page should include the tab label \"非主管员工终评\"");
+  assertSourceContains(source, "主管层双人终评", "calibration page should include the tab label \"主管层双人终评\"");
   assert.equal(
     source.includes("参考星级由初评加权分换算"),
     true,
@@ -82,7 +80,7 @@ test("calibration page becomes a three-tab final review workspace", () => {
   );
 });
 
-test("calibration page renders the principles tab as a briefing plus overview cockpit", () => {
+test("calibration page source includes principles-tab redesign tokens", () => {
   const source = read("src/app/(main)/calibration/page.tsx");
 
   assertSourceContains(source, "原则", "principles tab should include the briefing anchor token \"原则\"");
@@ -91,7 +89,7 @@ test("calibration page renders the principles tab as a briefing plus overview co
   assertSourceContains(source, "一句话解读", "principles tab should include the summary token \"一句话解读\"");
 });
 
-test("employee final review tab uses chart-led navigation and a fixed decision panel", () => {
+test("calibration page source includes employee-tab redesign tokens", () => {
   const source = read("src/app/(main)/calibration/page.tsx");
 
   assertSourceContains(source, "重点名单", "employee tab should include the navigation token \"重点名单\"");
@@ -100,7 +98,7 @@ test("employee final review tab uses chart-led navigation and a fixed decision p
   assertSourceContains(source, "最终决策", "employee tab should include the decision panel token \"最终决策\"");
 });
 
-test("leader final review tab emphasizes dual-review comparison before final confirmation", () => {
+test("calibration page source includes leader-tab redesign tokens", () => {
   const source = read("src/app/(main)/calibration/page.tsx");
 
   assertSourceContains(source, "双人意见对照", "leader tab should include the comparison token \"双人意见对照\"");
