@@ -41,9 +41,11 @@ export type VerifyRosterRow = {
   peerReviewReceivedSubmitted: number;
   peerReviewReceivedTotal: number;
   peerReviewReceivedComplete: boolean;
+  peerReviewReceivedPendingReviewerNames: string[];
   peerReviewAssignedSubmitted: number;
   peerReviewAssignedTotal: number;
   peerReviewAssignedComplete: boolean;
+  peerReviewAssignedPendingRevieweeNames: string[];
   supEval: VerifySupervisorEval[];
   supervisorExpectedEvaluatorNames: string[];
   supervisorSubmittedEvaluatorNames: string[];
@@ -140,6 +142,7 @@ export async function buildAdminVerifyData(): Promise<VerifyData | null> {
   ]);
 
   const userByName = new Map(allUsers.map((user) => [user.name, user]));
+  const userById = new Map(allUsers.map((user) => [user.id, user]));
   const selfEvalByUserId = new Map(selfEvals.map((selfEval) => [selfEval.userId, selfEval]));
 
   const nominationsByNominator = new Map<string, VerifyNominations>();
@@ -163,20 +166,25 @@ export async function buildAdminVerifyData(): Promise<VerifyData | null> {
     nominationsByNominator.set(nomination.nominatorId, current);
   }
 
-  const peerReviewReceivedByReviewee = new Map<string, { total: number; submitted: number }>();
-  const peerReviewAssignedByReviewer = new Map<string, { total: number; submitted: number }>();
+  const peerReviewReceivedByReviewee = new Map<string, { total: number; submitted: number; pendingReviewerNames: string[] }>();
+  const peerReviewAssignedByReviewer = new Map<string, { total: number; submitted: number; pendingRevieweeNames: string[] }>();
   for (const review of peerReviews) {
-    const received = peerReviewReceivedByReviewee.get(review.revieweeId) || { total: 0, submitted: 0 };
+    const reviewerName = userById.get(review.reviewerId)?.name || review.reviewerId;
+    const received = peerReviewReceivedByReviewee.get(review.revieweeId) || { total: 0, submitted: 0, pendingReviewerNames: [] };
     received.total += 1;
     if (review.status === "SUBMITTED") {
       received.submitted += 1;
+    } else {
+      received.pendingReviewerNames.push(reviewerName);
     }
     peerReviewReceivedByReviewee.set(review.revieweeId, received);
-
-    const assigned = peerReviewAssignedByReviewer.get(review.reviewerId) || { total: 0, submitted: 0 };
+    const revieweeName = userById.get(review.revieweeId)?.name || review.revieweeId;
+    const assigned = peerReviewAssignedByReviewer.get(review.reviewerId) || { total: 0, submitted: 0, pendingRevieweeNames: [] };
     assigned.total += 1;
     if (review.status === "SUBMITTED") {
       assigned.submitted += 1;
+    } else {
+      assigned.pendingRevieweeNames.push(revieweeName);
     }
     peerReviewAssignedByReviewer.set(review.reviewerId, assigned);
   }
@@ -223,9 +231,11 @@ export async function buildAdminVerifyData(): Promise<VerifyData | null> {
         peerReviewReceivedSubmitted: 0,
         peerReviewReceivedTotal: 0,
         peerReviewReceivedComplete: false,
+        peerReviewReceivedPendingReviewerNames: [],
         peerReviewAssignedSubmitted: 0,
         peerReviewAssignedTotal: 0,
         peerReviewAssignedComplete: false,
+        peerReviewAssignedPendingRevieweeNames: [],
         supEval: [],
         supervisorExpectedEvaluatorNames: [],
         supervisorSubmittedEvaluatorNames: [],
@@ -244,8 +254,8 @@ export async function buildAdminVerifyData(): Promise<VerifyData | null> {
       pending: 0,
       rejected: 0,
     };
-    const peerReviewReceived = peerReviewReceivedByReviewee.get(user.id) || { total: 0, submitted: 0 };
-    const peerReviewAssigned = peerReviewAssignedByReviewer.get(user.id) || { total: 0, submitted: 0 };
+    const peerReviewReceived = peerReviewReceivedByReviewee.get(user.id) || { total: 0, submitted: 0, pendingReviewerNames: [] };
+    const peerReviewAssigned = peerReviewAssignedByReviewer.get(user.id) || { total: 0, submitted: 0, pendingRevieweeNames: [] };
     const assignment = assignments.get(user.id);
     const existingSupervisorEvals = supervisorEvalByEmployee.get(user.id) || [];
 
@@ -260,8 +270,10 @@ export async function buildAdminVerifyData(): Promise<VerifyData | null> {
     const peerNominationComplete = nominationSummary.total >= PEER_NOMINATION_MIN_COUNT;
     const peerReviewReceivedComplete =
       peerReviewReceived.total > 0 && peerReviewReceived.submitted >= peerReviewReceived.total;
+    const peerReviewReceivedPendingReviewerNames = peerReviewReceived.pendingReviewerNames;
     const peerReviewAssignedComplete =
       peerReviewAssigned.total === 0 || peerReviewAssigned.submitted >= peerReviewAssigned.total;
+    const peerReviewAssignedPendingRevieweeNames = peerReviewAssigned.pendingRevieweeNames;
     const supervisorComplete =
       supervisorExpectedEvaluatorNames.length > 0 && supervisorPendingEvaluatorNames.length === 0;
 
@@ -293,9 +305,11 @@ export async function buildAdminVerifyData(): Promise<VerifyData | null> {
       peerReviewReceivedSubmitted: peerReviewReceived.submitted,
       peerReviewReceivedTotal: peerReviewReceived.total,
       peerReviewReceivedComplete,
+      peerReviewReceivedPendingReviewerNames,
       peerReviewAssignedSubmitted: peerReviewAssigned.submitted,
       peerReviewAssignedTotal: peerReviewAssigned.total,
       peerReviewAssignedComplete,
+      peerReviewAssignedPendingRevieweeNames,
       supEval: existingSupervisorEvals,
       supervisorExpectedEvaluatorNames,
       supervisorSubmittedEvaluatorNames,

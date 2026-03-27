@@ -101,6 +101,15 @@ function PeerReviewContent() {
   const [addNomSearch, setAddNomSearch] = useState("");
   const [addingNom, setAddingNom] = useState(false);
 
+  async function fetchJsonOrThrow<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
+    const res = await fetch(input, init);
+    const result = await res.json();
+    if (!res.ok) {
+      throw new Error((result as { error?: string })?.error || "加载失败");
+    }
+    return result as T;
+  }
+
   useEffect(() => {
     if (preview && previewRole) {
       const previewData = getData("peer-review") as Record<string, unknown>;
@@ -115,20 +124,34 @@ function PeerReviewContent() {
 
     const controller = new AbortController();
     const signal = controller.signal;
-    Promise.all([
-      fetch("/api/peer-review", { signal }).then((r) => r.json()),
-      fetch("/api/peer-review/nominate", { signal }).then((r) => r.json()),
-      fetch("/api/users", { signal }).then((r) => r.json()),
-    ]).then(([d, noms, users]) => {
+    Promise.allSettled([
+      fetchJsonOrThrow<PeerReview[]>("/api/peer-review", { signal }),
+      fetchJsonOrThrow<Nomination[]>("/api/peer-review/nominate", { signal }),
+      fetchJsonOrThrow<User[]>("/api/users", { signal }),
+    ]).then(([reviewsResult, nominationsResult, usersResult]) => {
       if (signal.aborted) return;
-      if (Array.isArray(d)) setReviews(d);
-      if (Array.isArray(noms)) {
-        setNominations(noms);
-        setSelectedUsers(noms.map((n: Nomination) => n.nominee.id));
+
+      if (reviewsResult.status === "fulfilled") {
+        setReviews(reviewsResult.value);
+      } else if ((reviewsResult.reason as Error)?.name !== "AbortError") {
+        console.error(reviewsResult.reason);
+        toast.error("环评任务加载失败");
       }
-      if (Array.isArray(users)) setAllUsers(users);
-    }).catch((e) => {
-      if ((e as Error).name !== "AbortError") console.error(e);
+
+      if (nominationsResult.status === "fulfilled") {
+        setNominations(nominationsResult.value);
+        setSelectedUsers(nominationsResult.value.map((n) => n.nominee.id));
+      } else if ((nominationsResult.reason as Error)?.name !== "AbortError") {
+        console.error(nominationsResult.reason);
+        toast.error("提名数据加载失败");
+      }
+
+      if (usersResult.status === "fulfilled") {
+        setAllUsers(usersResult.value);
+      } else if ((usersResult.reason as Error)?.name !== "AbortError") {
+        console.error(usersResult.reason);
+        toast.error("同事列表加载失败");
+      }
     }).finally(() => {
       if (!signal.aborted) setLoading(false);
     });
@@ -489,17 +512,17 @@ function PeerReviewContent() {
 
                             <div className="space-y-4 rounded-lg border border-border/50 p-4">
                               <div className="space-y-1.5">
-                                <p className="text-sm font-medium">综合能力 <span className="text-xs font-normal text-muted-foreground">— 问题分析与判断力 · 推动执行力 · 主动性与批判性思考</span></p>
+                                <p className="text-sm font-medium">综合能力 <span className="text-xs font-normal text-muted-foreground">— vibe coding能力（必含，对所有岗位生效）、复杂问题解决与业务闭环、专业纵深与角色履职、跨边界协同与组织价值创造、团队赋能与价值带动、领导力-基础管理执行（限leader）</span></p>
                                 <StarRating value={review.comprehensiveStars} onChange={(v) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, comprehensiveStars: v } : r))} disabled={isDisabled} showUnknown />
                                 <Textarea value={review.comprehensiveComment || ""} onChange={(e) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, comprehensiveComment: e.target.value } : r))} placeholder="请输入评语..." rows={2} disabled={isDisabled} />
                               </div>
                               <div className="space-y-1.5 border-t pt-3">
-                                <p className="text-sm font-medium">学习能力 <span className="text-xs font-normal text-muted-foreground">— 快速掌握新技能 · 举一反三 · 知识迁移与应用</span></p>
+                                <p className="text-sm font-medium">学习能力 <span className="text-xs font-normal text-muted-foreground">— 问题分析与判断力、推动执行力、主动性与批判性思考。</span></p>
                                 <StarRating value={review.learningStars} onChange={(v) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, learningStars: v } : r))} disabled={isDisabled} showUnknown />
                                 <Textarea value={review.learningComment || ""} onChange={(e) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, learningComment: e.target.value } : r))} placeholder="请输入评语..." rows={2} disabled={isDisabled} />
                               </div>
                               <div className="space-y-1.5 border-t pt-3">
-                                <p className="text-sm font-medium">适应能力 <span className="text-xs font-normal text-muted-foreground">— 面对变化快速调整，持续有效产出</span></p>
+                                <p className="text-sm font-medium">适应能力 <span className="text-xs font-normal text-muted-foreground">— 指的是，面对业务复杂性、场景变化、节奏加速、组织调整或目标切换时，能够快速调整认知、情绪、方法和资源配置，持续保持有效产出的能力。</span></p>
                                 <StarRating value={review.adaptabilityStars} onChange={(v) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, adaptabilityStars: v } : r))} disabled={isDisabled} showUnknown />
                                 <Textarea value={review.adaptabilityComment || ""} onChange={(e) => setReviews((prev) => prev.map((r) => r.id === review.id ? { ...r, adaptabilityComment: e.target.value } : r))} placeholder="请输入评语..." rows={2} disabled={isDisabled} />
                               </div>

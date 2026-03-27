@@ -68,9 +68,11 @@ type VerifyRow = {
   peerReviewReceivedSubmitted: number;
   peerReviewReceivedTotal: number;
   peerReviewReceivedComplete: boolean;
+  peerReviewReceivedPendingReviewerNames: string[];
   peerReviewAssignedSubmitted: number;
   peerReviewAssignedTotal: number;
   peerReviewAssignedComplete: boolean;
+  peerReviewAssignedPendingRevieweeNames: string[];
   supEval: { evaluator: string; status: string }[];
   supervisorExpectedEvaluatorNames: string[];
   supervisorSubmittedEvaluatorNames: string[];
@@ -732,8 +734,8 @@ function AdminContent() {
                         <TableHead className="w-20">直属上级</TableHead>
                         <TableHead className="w-20">自评链接</TableHead>
                         <TableHead className="w-24">360提名</TableHead>
-                        <TableHead className="w-24">360被评</TableHead>
-                        <TableHead className="w-24">360待评他人</TableHead>
+                        <TableHead className="w-44">360被评</TableHead>
+                        <TableHead className="w-44">360待评他人</TableHead>
                         <TableHead className="w-48">初评进度</TableHead>
                         <TableHead className="w-44">待跟进项</TableHead>
                       </TableRow>
@@ -778,14 +780,28 @@ function AdminContent() {
                             ) : <span className="text-red-600 font-bold">未提名</span>}
                           </TableCell>
                           <TableCell className="text-xs">
-                            <span className={row.peerReviewReceivedComplete ? "text-green-600" : "text-red-600 font-bold"}>
-                              {row.peerReviewReceivedSubmitted}/{row.peerReviewReceivedTotal}
-                            </span>
+                            <div className="space-y-1">
+                              <span className={row.peerReviewReceivedComplete ? "text-green-600" : "text-red-600 font-bold"}>
+                                {row.peerReviewReceivedSubmitted}/{row.peerReviewReceivedTotal}
+                              </span>
+                              {row.peerReviewReceivedPendingReviewerNames.length > 0 && (
+                                <div className="text-[11px] text-red-600">
+                                  待完成：{row.peerReviewReceivedPendingReviewerNames.join("、")}
+                                </div>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell className="text-xs">
-                            <span className={row.peerReviewAssignedComplete ? "text-green-600" : "text-red-600 font-bold"}>
-                              {row.peerReviewAssignedSubmitted}/{row.peerReviewAssignedTotal}
-                            </span>
+                            <div className="space-y-1">
+                              <span className={row.peerReviewAssignedComplete ? "text-green-600" : "text-red-600 font-bold"}>
+                                {row.peerReviewAssignedSubmitted}/{row.peerReviewAssignedTotal}
+                              </span>
+                              {row.peerReviewAssignedPendingRevieweeNames.length > 0 && (
+                                <div className="text-[11px] text-red-600">
+                                  待完成：{row.peerReviewAssignedPendingRevieweeNames.join("、")}
+                                </div>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell className="text-xs">
                             {row.supervisorExpectedEvaluatorNames.length > 0 ? (
