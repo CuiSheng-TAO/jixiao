@@ -74,6 +74,44 @@ test("calibration page becomes a three-tab final review workspace", () => {
   );
 });
 
+test("calibration page renders the principles tab as a briefing plus overview cockpit", () => {
+  const source = read("src/app/(main)/calibration/page.tsx");
+
+  assert.equal(
+    source.includes("原则") &&
+      source.includes("全公司星级分布") &&
+      source.includes("分数带") &&
+      source.includes("一句话解读"),
+    true,
+    "principles tab should combine briefing guidance with a compact visual overview",
+  );
+});
+
+test("employee final review tab uses chart-led navigation and a fixed decision panel", () => {
+  const source = read("src/app/(main)/calibration/page.tsx");
+
+  assert.equal(
+    source.includes("重点名单") &&
+      source.includes("待拍板") &&
+      source.includes("意见分歧大") &&
+      source.includes("最终决策"),
+    true,
+    "employee tab should prioritize queue-based navigation and a right-side decision panel",
+  );
+});
+
+test("leader final review tab emphasizes dual-review comparison before final confirmation", () => {
+  const source = read("src/app/(main)/calibration/page.tsx");
+
+  assert.equal(
+    source.includes("双人意见对照") &&
+      source.includes("双人提交进度") &&
+      source.includes("主管名单"),
+    true,
+    "leader tab should surface paired reviewer comparison and roster-led navigation",
+  );
+});
+
 test("navigation and dashboard can surface configured final review access beyond static roles", () => {
   const navSource = read("src/components/nav.tsx");
   const layoutSource = read("src/app/(main)/layout.tsx");
