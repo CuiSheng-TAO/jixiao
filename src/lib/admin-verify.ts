@@ -56,6 +56,15 @@ export type VerifyRosterRow = {
   followUpSummary: string;
 };
 
+export type VerifyFollowUpRow = {
+  name: string;
+  department: string | null;
+  pendingPeerReviewCount: number;
+  pendingPeerReviewRevieweeNames: string[];
+  pendingSupervisorEvalCount: number;
+  pendingSupervisorEvalEmployeeNames: string[];
+};
+
 export type VerifySummary = {
   total: number;
   inSystem: number;
@@ -76,6 +85,7 @@ export type VerifyData = {
   cycleStatus: string;
   summary: VerifySummary;
   roster: VerifyRosterRow[];
+  followUpSheetRows: VerifyFollowUpRow[];
 };
 
 function buildFollowUpFlags(row: {
@@ -190,6 +200,7 @@ export async function buildAdminVerifyData(): Promise<VerifyData | null> {
   }
 
   const supervisorEvalByEmployee = new Map<string, VerifySupervisorEval[]>();
+  const supervisorSubmittedKeys = new Set<string>();
   for (const supervisorEval of supervisorEvals) {
     const current = supervisorEvalByEmployee.get(supervisorEval.employeeId) || [];
     current.push({
@@ -197,6 +208,9 @@ export async function buildAdminVerifyData(): Promise<VerifyData | null> {
       status: supervisorEval.status,
     });
     supervisorEvalByEmployee.set(supervisorEval.employeeId, current);
+    if (supervisorEval.status === "SUBMITTED") {
+      supervisorSubmittedKeys.add(`${supervisorEval.employeeId}:${supervisorEval.evaluatorId}`);
+    }
   }
 
   const assignments = buildSupervisorAssignmentMap(
@@ -321,6 +335,36 @@ export async function buildAdminVerifyData(): Promise<VerifyData | null> {
     };
   });
 
+  const supervisorPendingByEvaluatorId = new Map<string, string[]>();
+  for (const assignment of assignments.values()) {
+    assignment.currentEvaluatorIds.forEach((evaluatorId, index) => {
+      if (supervisorSubmittedKeys.has(`${assignment.employeeId}:${evaluatorId}`)) {
+        return;
+      }
+      const pendingEmployees = supervisorPendingByEvaluatorId.get(evaluatorId) || [];
+      pendingEmployees.push(assignment.employeeName || assignment.currentEvaluatorNames[index] || assignment.employeeId);
+      supervisorPendingByEvaluatorId.set(evaluatorId, pendingEmployees);
+    });
+  }
+
+  const followUpSheetRows: VerifyFollowUpRow[] = allUsers
+    .map((user) => {
+      const pendingPeerReviewRevieweeNames = [...(peerReviewAssignedByReviewer.get(user.id)?.pendingRevieweeNames || [])]
+        .sort((a, b) => a.localeCompare(b));
+      const pendingSupervisorEvalEmployeeNames = [...(supervisorPendingByEvaluatorId.get(user.id) || [])]
+        .sort((a, b) => a.localeCompare(b));
+
+      return {
+        name: user.name,
+        department: user.department,
+        pendingPeerReviewCount: pendingPeerReviewRevieweeNames.length,
+        pendingPeerReviewRevieweeNames,
+        pendingSupervisorEvalCount: pendingSupervisorEvalEmployeeNames.length,
+        pendingSupervisorEvalEmployeeNames,
+      };
+    })
+    .sort((a, b) => (a.department || "").localeCompare(b.department || "") || a.name.localeCompare(b.name));
+
   const summary: VerifySummary = {
     total: EVAL_LIST_NAMES.length,
     inSystem: roster.filter((row) => row.inSystem).length,
@@ -341,5 +385,6 @@ export async function buildAdminVerifyData(): Promise<VerifyData | null> {
     cycleStatus: cycle.status,
     summary,
     roster,
+    followUpSheetRows,
   };
 }

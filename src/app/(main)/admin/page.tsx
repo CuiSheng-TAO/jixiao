@@ -96,6 +96,14 @@ type VerifyData = {
     supervisorIncomplete: number;
   };
   roster: VerifyRow[];
+  followUpSheetRows: Array<{
+    name: string;
+    department: string | null;
+    pendingPeerReviewCount: number;
+    pendingPeerReviewRevieweeNames: string[];
+    pendingSupervisorEvalCount: number;
+    pendingSupervisorEvalEmployeeNames: string[];
+  }>;
 };
 
 const statusFlow = ["DRAFT", "SELF_EVAL", "PEER_REVIEW", "SUPERVISOR_EVAL", "CALIBRATION", "MEETING", "APPEAL", "ARCHIVED"];
@@ -339,7 +347,7 @@ function AdminContent() {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = "进度核验花名册.csv";
+      link.download = "进度核验花名册.xlsx";
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -712,14 +720,14 @@ function AdminContent() {
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <CardTitle className="text-base">花名册逐人核验</CardTitle>
-                      <CardDescription>红色背景 = 有异常项，支持先查看再导出 CSV 跟进</CardDescription>
+                      <CardDescription>红色背景 = 有异常项，支持先查看再导出 Excel 跟进</CardDescription>
                     </div>
                     <div className="flex gap-2">
                       <Button variant="outline" size="sm" onClick={loadVerifyData} disabled={verifyLoading || preview}>
                         {verifyLoading ? "刷新中..." : "刷新"}
                       </Button>
                       <Button size="sm" onClick={downloadVerifyExport} disabled={verifyExporting || preview}>
-                        {verifyExporting ? "导出中..." : "导出CSV花名册"}
+                        {verifyExporting ? "导出中..." : "导出Excel花名册"}
                       </Button>
                     </div>
                   </div>

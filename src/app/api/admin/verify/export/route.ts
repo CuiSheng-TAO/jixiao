@@ -1,11 +1,7 @@
+import * as XLSX from "xlsx";
 import { NextResponse } from "next/server";
 import { buildAdminVerifyData } from "@/lib/admin-verify";
 import { getSessionUser } from "@/lib/session";
-
-function escapeCsv(value: string | number | null | undefined) {
-  const normalized = value == null ? "" : String(value);
-  return `"${normalized.replace(/"/g, '""')}"`;
-}
 
 export async function GET() {
   try {
@@ -37,7 +33,7 @@ export async function GET() {
       "待跟进项",
     ];
 
-    const lines = data.roster.map((row) =>
+    const rosterRows = data.roster.map((row) =>
       [
         row.name,
         row.department || "",
@@ -56,16 +52,38 @@ export async function GET() {
         row.supervisorComplete ? "已完成" : "未完成",
         row.followUpSummary,
       ]
-        .map((value) => escapeCsv(value))
-        .join(",")
     );
 
-    const csv = `\uFEFF${header.map((value) => escapeCsv(value)).join(",")}\n${lines.join("\n")}`;
-    const fileName = `${data.cycleName}-进度核验花名册.csv`;
+    const followUpHeader = [
+      "姓名",
+      "部门",
+      "还需360环评人数",
+      "还需360环评对象",
+      "还需初评人数",
+      "还需初评对象",
+    ];
 
-    return new NextResponse(csv, {
+    const followUpRows = data.followUpSheetRows.map((row) => [
+      row.name,
+      row.department || "",
+      row.pendingPeerReviewCount,
+      row.pendingPeerReviewRevieweeNames.join("、"),
+      row.pendingSupervisorEvalCount,
+      row.pendingSupervisorEvalEmployeeNames.join("、"),
+    ]);
+
+    const workbook = XLSX.utils.book_new();
+    const rosterSheet = XLSX.utils.aoa_to_sheet([header, ...rosterRows]);
+    const followUpSheet = XLSX.utils.aoa_to_sheet([followUpHeader, ...followUpRows]);
+    XLSX.utils.book_append_sheet(workbook, rosterSheet, "Sheet1-数据核验表");
+    XLSX.utils.book_append_sheet(workbook, followUpSheet, "Sheet2-HR催办表");
+
+    const fileBuffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+    const fileName = `${data.cycleName}-进度核验花名册.xlsx`;
+
+    return new NextResponse(fileBuffer, {
       headers: {
-        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`,
         "Cache-Control": "no-store",
       },
