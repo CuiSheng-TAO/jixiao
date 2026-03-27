@@ -1,6 +1,19 @@
 "use client";
 
 import { Suspense, type ReactNode, useCallback, useEffect, useState } from "react";
+import {
+  buildEmployeePriorityGroups,
+  buildLeaderSubmissionSummary,
+  buildScoreBandBuckets,
+} from "@/components/final-review/workspace-view";
+import type {
+  DistributionEntry,
+  EmployeeRow,
+  LeaderEvaluation,
+  LeaderForm,
+  LeaderRow,
+  WorkspacePayload,
+} from "@/components/final-review/types";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,168 +23,6 @@ import { PageHeader } from "@/components/page-header";
 import { Textarea } from "@/components/ui/textarea";
 import { StarRating } from "@/components/star-rating";
 import { toast } from "sonner";
-
-type DistributionEntry = {
-  stars: number;
-  count: number;
-  pct: number;
-  exceeded: boolean;
-  delta: number;
-  names: string[];
-};
-
-type EmployeeOpinion = {
-  reviewerId: string;
-  reviewerName: string;
-  decision: string;
-  decisionLabel: string;
-  suggestedStars: number | null;
-  reason: string;
-  isMine: boolean;
-  updatedAt: string | null;
-};
-
-type EmployeeRow = {
-  id: string;
-  name: string;
-  department: string;
-  jobTitle: string | null;
-  weightedScore: number | null;
-  referenceStars: number | null;
-  referenceSourceLabel: string;
-  officialStars: number | null;
-  officialReason: string;
-  officialConfirmedAt: string | null;
-  officialConfirmerName: string | null;
-  finalizable: boolean;
-  currentEvaluatorNames: string[];
-  currentEvaluatorStatuses: Array<{
-    evaluatorId: string;
-    evaluatorName: string;
-    status: string;
-    weightedScore: number | null;
-  }>;
-  selfEvalStatus: string | null;
-  peerAverage: number | null;
-  handledCount: number;
-  totalReviewerCount: number;
-  anomalyTags: string[];
-  opinions: EmployeeOpinion[];
-};
-
-type LeaderForm = {
-  performanceStars: number | null;
-  performanceComment: string;
-  abilityStars: number | null;
-  abilityComment: string;
-  comprehensiveStars: number | null;
-  learningStars: number | null;
-  adaptabilityStars: number | null;
-  valuesStars: number | null;
-  valuesComment: string;
-  candidStars: number | null;
-  candidComment: string;
-  progressStars: number | null;
-  progressComment: string;
-  altruismStars: number | null;
-  altruismComment: string;
-  rootStars: number | null;
-  rootComment: string;
-};
-
-type LeaderEvaluation = {
-  evaluatorId: string;
-  evaluatorName: string;
-  status: string;
-  weightedScore: number | null;
-  editable: boolean;
-  submittedAt: string | null;
-  form: LeaderForm;
-};
-
-type LeaderRow = {
-  id: string;
-  name: string;
-  department: string;
-  jobTitle: string | null;
-  officialStars: number | null;
-  officialReason: string;
-  officialConfirmedAt: string | null;
-  officialConfirmerName: string | null;
-  finalizable: boolean;
-  evaluations: LeaderEvaluation[];
-  bothSubmitted: boolean;
-};
-
-type WorkspacePayload = {
-  cycle: {
-    id: string;
-    name: string;
-    status: string;
-    calibrationStart: string;
-    calibrationEnd: string;
-  } | null;
-  canAccess: boolean;
-  config: {
-    accessUsers: Array<{ id: string; name: string; department: string }>;
-    finalizers: Array<{ id: string; name: string; department: string }>;
-    leaderEvaluators: Array<{ id: string; name: string; department: string }>;
-    leaderSubjects: Array<{ id: string; name: string; department: string }>;
-  } | null;
-  overview: {
-    principles: string[];
-    chainGuidance: string[];
-    distributionHints: string[];
-    riskSummary: string[];
-    progress: {
-      employeeOpinionDone: number;
-      employeeOpinionTotal: number;
-      employeeConfirmedCount: number;
-      employeeTotalCount: number;
-      leaderSubmittedCounts: Array<{
-        evaluatorId: string;
-        evaluatorName: string;
-        submittedCount: number;
-      }>;
-      leaderConfirmedCount: number;
-      leaderTotalCount: number;
-    };
-  } | null;
-  employeeReview: {
-    overview: {
-      companyCount: number;
-      initialEvalSubmissionRate: number;
-      officialCompletionRate: number;
-      pendingOfficialCount: number;
-    };
-    companyDistribution: DistributionEntry[];
-    employeeDistribution: DistributionEntry[];
-    departmentDistributions: Array<{
-      department: string;
-      total: number;
-      distribution: DistributionEntry[];
-    }>;
-    employees: EmployeeRow[];
-  } | null;
-  leaderReview: {
-    overview: {
-      leaderCount: number;
-      confirmedCount: number;
-      evaluatorProgress: Array<{
-        evaluatorId: string;
-        evaluatorName: string;
-        submittedCount: number;
-      }>;
-    };
-    leaders: LeaderRow[];
-    leaderDistribution: DistributionEntry[];
-    companyDistributions: {
-      all: DistributionEntry[];
-      leaderOnly: DistributionEntry[];
-      employeeOnly: DistributionEntry[];
-    };
-  } | null;
-};
 
 type EmployeeOpinionForm = {
   decision: "PENDING" | "AGREE" | "OVERRIDE";
@@ -622,6 +473,9 @@ function CalibrationContent() {
 
   const selectedLeader = workspace.leaderReview.leaders.find((leader) => leader.id === selectedLeaderId) || workspace.leaderReview.leaders[0] || null;
   const activeCompanyDistribution = workspace.leaderReview.companyDistributions[activeCompanyScope];
+  const scoreBandBuckets = buildScoreBandBuckets(workspace.employeeReview.employees);
+  const employeePriorityGroups = buildEmployeePriorityGroups(workspace.employeeReview.employees);
+  const leaderSubmissionSummary = buildLeaderSubmissionSummary(workspace.leaderReview.leaders);
 
   return (
     <div className="space-y-6">
@@ -637,7 +491,7 @@ function CalibrationContent() {
           <TabsTrigger value="leaders">主管层双人终评</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="battlefield" className="space-y-4">
+        <TabsContent value="battlefield" className="space-y-4" data-score-band-count={scoreBandBuckets.length}>
           <GuideCard description="这一页告诉你本轮终评按什么原则看人、谁参与拍板、现在卡在哪。" />
 
           <Card>
@@ -737,14 +591,14 @@ function CalibrationContent() {
           </div>
         </TabsContent>
 
-        <TabsContent value="employees" className="space-y-4">
+        <TabsContent value="employees" className="space-y-4" data-priority-pending-count={employeePriorityGroups.pending.length}>
           <GuideCard description="这一页处理普通员工终评：先看分布，再逐个员工留下意见，最后由最终确认人拍板。" />
 
           <div className="grid gap-4 lg:grid-cols-4">
             <OverviewMetricCard value={workspace.employeeReview.overview.companyCount} title="公司当前人数" description="本轮参与绩效终评的员工总人数" />
             <OverviewMetricCard value={`${workspace.employeeReview.overview.initialEvalSubmissionRate}%`} title="绩效初评提交率" description="普通员工初评问卷当前已提交的比例" />
             <OverviewMetricCard value={`${workspace.employeeReview.overview.officialCompletionRate}%`} title="当前官方终评完成率" description="已经被最终确认人正式拍板的比例" />
-            <OverviewMetricCard value={workspace.employeeReview.overview.pendingOfficialCount} title="待最终确认人数" description="还没有正式拍板的普通员工人数" />
+            <OverviewMetricCard value={employeePriorityGroups.pending.length} title="待最终确认人数" description="还没有正式拍板的普通员工人数" />
           </div>
 
           <DistributionBlock title="公司当前绩效分布全览" description="普通员工未最终确认前按参考星级进入统计，已确认后按官方结果进入统计" distribution={workspace.employeeReview.companyDistribution} />
@@ -950,7 +804,12 @@ function CalibrationContent() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="leaders" className="space-y-4">
+        <TabsContent
+          value="leaders"
+          className="space-y-4"
+          data-leader-submission-count={leaderSubmissionSummary.length}
+          data-leader-submitted-total={leaderSubmissionSummary.reduce((total, item) => total + item.submittedCount, 0)}
+        >
           <GuideCard description="这一页只处理主管层终评：先由两位填写人分别打分，再由最终确认人统一拍板。" />
 
           <div className="grid gap-4 lg:grid-cols-4">

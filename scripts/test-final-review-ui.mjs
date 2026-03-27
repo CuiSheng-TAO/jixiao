@@ -106,6 +106,17 @@ test("calibration page source includes leader-tab redesign tokens", () => {
   assertSourceContains(source, "主管名单", "leader tab should include the roster token \"主管名单\"");
 });
 
+test("calibration page delegates cockpit shaping to shared final-review helpers", () => {
+  const page = read("src/app/(main)/calibration/page.tsx");
+
+  assert.equal(
+    page.includes('from "@/components/final-review/workspace-view"') &&
+      page.includes('from "@/components/final-review/types"'),
+    true,
+    "the page should stop inlining all workspace types and derived view logic",
+  );
+});
+
 test("navigation and dashboard can surface configured final review access beyond static roles", () => {
   const navSource = read("src/components/nav.tsx");
   const layoutSource = read("src/app/(main)/layout.tsx");
