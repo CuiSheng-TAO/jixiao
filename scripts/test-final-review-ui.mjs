@@ -9,6 +9,14 @@ function read(relativePath) {
   return fs.readFileSync(path.join(rootDir, relativePath), "utf8");
 }
 
+function assertSourceContains(source, token, message) {
+  assert.equal(
+    source.includes(token),
+    true,
+    message,
+  );
+}
+
 test("admin page adds a dedicated final review configuration tab", () => {
   const source = read("src/app/(main)/admin/page.tsx");
 
@@ -77,39 +85,27 @@ test("calibration page becomes a three-tab final review workspace", () => {
 test("calibration page renders the principles tab as a briefing plus overview cockpit", () => {
   const source = read("src/app/(main)/calibration/page.tsx");
 
-  assert.equal(
-    source.includes("原则") &&
-      source.includes("全公司星级分布") &&
-      source.includes("分数带") &&
-      source.includes("一句话解读"),
-    true,
-    "principles tab should combine briefing guidance with a compact visual overview",
-  );
+  assertSourceContains(source, "原则", "principles tab should include the briefing anchor token \"原则\"");
+  assertSourceContains(source, "全公司星级分布", "principles tab should include the overview token \"全公司星级分布\"");
+  assertSourceContains(source, "分数带", "principles tab should include the cockpit metric token \"分数带\"");
+  assertSourceContains(source, "一句话解读", "principles tab should include the summary token \"一句话解读\"");
 });
 
 test("employee final review tab uses chart-led navigation and a fixed decision panel", () => {
   const source = read("src/app/(main)/calibration/page.tsx");
 
-  assert.equal(
-    source.includes("重点名单") &&
-      source.includes("待拍板") &&
-      source.includes("意见分歧大") &&
-      source.includes("最终决策"),
-    true,
-    "employee tab should prioritize queue-based navigation and a right-side decision panel",
-  );
+  assertSourceContains(source, "重点名单", "employee tab should include the navigation token \"重点名单\"");
+  assertSourceContains(source, "待拍板", "employee tab should include the queue status token \"待拍板\"");
+  assertSourceContains(source, "意见分歧大", "employee tab should include the triage token \"意见分歧大\"");
+  assertSourceContains(source, "最终决策", "employee tab should include the decision panel token \"最终决策\"");
 });
 
 test("leader final review tab emphasizes dual-review comparison before final confirmation", () => {
   const source = read("src/app/(main)/calibration/page.tsx");
 
-  assert.equal(
-    source.includes("双人意见对照") &&
-      source.includes("双人提交进度") &&
-      source.includes("主管名单"),
-    true,
-    "leader tab should surface paired reviewer comparison and roster-led navigation",
-  );
+  assertSourceContains(source, "双人意见对照", "leader tab should include the comparison token \"双人意见对照\"");
+  assertSourceContains(source, "双人提交进度", "leader tab should include the progress token \"双人提交进度\"");
+  assertSourceContains(source, "主管名单", "leader tab should include the roster token \"主管名单\"");
 });
 
 test("navigation and dashboard can surface configured final review access beyond static roles", () => {
