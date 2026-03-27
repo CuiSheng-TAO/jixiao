@@ -13,8 +13,6 @@ import {
   Settings,
   LogOut,
   Home,
-  Eye,
-  EyeOff,
   BookOpen,
   Lock,
 } from "lucide-react";
@@ -25,8 +23,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { usePreview } from "@/hooks/use-preview";
-import type { PreviewRole } from "@/lib/preview";
 
 type NavProps = {
   user: {
@@ -49,18 +45,9 @@ const navItems = [
   { href: "/admin", label: "系统管理", icon: Settings, roles: ["ADMIN"] },
 ];
 
-const previewRoles: { role: PreviewRole; label: string }[] = [
-  { role: "EMPLOYEE", label: "员工视角" },
-  { role: "SUPERVISOR", label: "主管视角" },
-  { role: "ADMIN", label: "管理员视角" },
-];
-
 export function Nav({ user }: NavProps) {
   const pathname = usePathname();
-  const { preview, previewRole, enterPreview, exitPreview } = usePreview();
-
-  // 预览模式下用预览角色过滤菜单，否则用真实角色
-  const activeRole = previewRole ?? user.role;
+  const activeRole = user.role;
   const now = new Date();
   const visibleItems = navItems
     .filter((item) => item.roles.includes(activeRole))
@@ -71,12 +58,6 @@ export function Nav({ user }: NavProps) {
       const locked = lockedBefore || lockedAfter;
       return { ...item, locked };
     });
-
-  // 构造带preview参数的链接
-  function buildHref(href: string): string {
-    if (!preview) return href;
-    return `${href}?preview=${previewRole}`;
-  }
 
   return (
     <nav className="flex h-screen w-60 flex-col bg-card shadow-[1px_0_0_0_var(--border),4px_0_16px_rgba(0,0,0,0.03)]">
@@ -121,13 +102,7 @@ export function Nav({ user }: NavProps) {
             const indicator = isActive ? (
               <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-primary" />
             ) : null;
-            return preview ? (
-              <a key={item.href} href={buildHref(item.href)} className={classes}>
-                {indicator}
-                <Icon className={cn("h-[18px] w-[18px] transition-colors duration-[var(--transition-base)]", isActive ? "text-primary" : "text-muted-foreground/70 group-hover:text-foreground")} />
-                {item.label}
-              </a>
-            ) : (
+            return (
               <Link key={item.href} href={item.href} className={classes}>
                 {indicator}
                 <Icon className={cn("h-[18px] w-[18px] transition-colors duration-[var(--transition-base)]", isActive ? "text-primary" : "text-muted-foreground/70 group-hover:text-foreground")} />
@@ -137,52 +112,6 @@ export function Nav({ user }: NavProps) {
           })}
         </div>
       </div>
-
-      {/* 角色预览区域 - 仅管理员可见 */}
-      {user.role === "ADMIN" && (
-        <div className="mx-3 border-t border-border/60 px-1 py-3">
-          <div className="mb-2 flex items-center gap-2 px-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground/60">
-            {preview ? (
-              <EyeOff className="h-3 w-3" />
-            ) : (
-              <Eye className="h-3 w-3" />
-            )}
-            <span>角色预览</span>
-          </div>
-          <div className="space-y-0.5">
-            {previewRoles.map(({ role, label }) => (
-              <button
-                key={role}
-                onClick={() => enterPreview(role)}
-                className={cn(
-                  "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-all duration-[var(--transition-base)]",
-                  previewRole === role
-                    ? "bg-warning/10 text-warning font-medium"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                )}
-              >
-                <span
-                  className={cn(
-                    "h-1.5 w-1.5 rounded-full transition-colors",
-                    previewRole === role
-                      ? "bg-warning"
-                      : "bg-muted-foreground/30"
-                  )}
-                />
-                {label}
-              </button>
-            ))}
-          </div>
-          {preview && (
-            <button
-              onClick={exitPreview}
-              className="mt-2 w-full rounded-md bg-warning/10 px-2 py-1.5 text-xs font-medium text-warning transition-colors hover:bg-warning/15"
-            >
-              退出预览
-            </button>
-          )}
-        </div>
-      )}
 
       {/* User info */}
       <div className="mx-3 border-t border-border/60 p-2 pb-3">
@@ -201,10 +130,10 @@ export function Nav({ user }: NavProps) {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
             <DropdownMenuItem>
-              <a href="/api/auth/signout" className="flex items-center">
+              <Link href="/api/auth/signout" className="flex items-center">
                 <LogOut className="mr-2 h-4 w-4" />
                 退出登录
-              </a>
+              </Link>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

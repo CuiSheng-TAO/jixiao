@@ -62,40 +62,6 @@ type User = {
   department: string;
 };
 
-function ScoreSelector({ value, onChange, disabled, onUnclear }: { value: number | null; onChange: (v: number) => void; disabled: boolean; onUnclear?: () => void }) {
-  return (
-    <div className="flex items-center gap-1.5">
-      {[1, 2, 3, 4, 5].map((n) => (
-        <button
-          key={n}
-          onClick={() => !disabled && onChange(n)}
-          disabled={disabled}
-          className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold transition-all duration-[var(--transition-fast)] ${
-            value === n
-              ? "bg-primary text-primary-foreground shadow-md shadow-primary/25 scale-105"
-              : "border border-border/60 bg-background text-muted-foreground hover:border-primary/40 hover:text-primary hover:bg-primary/5"
-          } ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer active:scale-95"}`}
-        >
-          {n}
-        </button>
-      ))}
-      {onUnclear && (
-        <button
-          onClick={() => !disabled && onUnclear()}
-          disabled={disabled}
-          className={`ml-2 flex h-9 items-center justify-center rounded-full px-3 text-sm transition-all duration-[var(--transition-fast)] ${
-            value === 0
-              ? "bg-gray-500 text-white shadow-md scale-105"
-              : "border border-border/60 bg-background text-muted-foreground hover:border-gray-400 hover:text-gray-600 hover:bg-gray-50"
-          } ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer active:scale-95"}`}
-        >
-          不清楚
-        </button>
-      )}
-    </div>
-  );
-}
-
 function NominationStatusBadges({ nomination }: { nomination: Nomination }) {
   if (nomination.supervisorStatus === "PENDING") {
     return <Badge variant="secondary">待审批</Badge>;
@@ -270,6 +236,7 @@ function PeerReviewContent() {
       (u.name.includes(searchQuery) || u.department.includes(searchQuery)) &&
       !selectedUsers.includes(u.id)
   );
+  const editableCount = reviews.filter(r => r.status !== "SUBMITTED" && r.status !== "DECLINED").length;
 
   if (loading) return <FormPageSkeleton />;
 
@@ -319,7 +286,7 @@ function PeerReviewContent() {
       <Tabs defaultValue="nominate">
         <TabsList>
           <TabsTrigger value="nominate">提名评估人</TabsTrigger>
-          <TabsTrigger value="review">我的环评任务 ({reviews.filter(r => r.status === "DRAFT").length})</TabsTrigger>
+          <TabsTrigger value="review">我的环评任务 ({editableCount})</TabsTrigger>
           {isApprover && <TabsTrigger value="approve">审批提名 ({approvals.filter(a => a.supervisorStatus === "PENDING").length})</TabsTrigger>}
         </TabsList>
 
@@ -456,9 +423,9 @@ function PeerReviewContent() {
               {(() => {
                 const review = reviews.find(r => r.id === selectedReviewId) || reviews[0];
                 if (!review) return null;
-                const isDraft = review.status === "DRAFT";
+                const isDraft = review.status !== "SUBMITTED" && review.status !== "DECLINED";
                 const isDeclined = review.status === "DECLINED";
-                const isDisabled = !isDraft;
+                const isDisabled = review.status === "SUBMITTED" || review.status === "DECLINED";
 
                 return (
                   <Card>

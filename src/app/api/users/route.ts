@@ -12,7 +12,11 @@ export async function GET(req: NextRequest) {
     if (req.nextUrl.searchParams.get("me") === "true") {
       const cycle = await getActiveCycle();
       const pendingPeerReviews = await prisma.peerReview.count({
-        where: { reviewerId: user.id, status: "DRAFT", ...(cycle ? { cycleId: cycle.id } : {}) },
+        where: {
+          reviewerId: user.id,
+          status: { notIn: ["SUBMITTED", "DECLINED"] },
+          ...(cycle ? { cycleId: cycle.id } : {}),
+        },
       });
       const pendingTeamEvals = ["SUPERVISOR", "HRBP", "ADMIN"].includes(user.role) && cycle
         ? await (async () => {

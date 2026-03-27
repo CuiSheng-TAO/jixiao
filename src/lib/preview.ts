@@ -1,17 +1,12 @@
 export type PreviewRole = "EMPLOYEE" | "SUPERVISOR" | "ADMIN";
 
-const VALID_PREVIEW_ROLES: PreviewRole[] = ["EMPLOYEE", "SUPERVISOR", "ADMIN"];
-
 export function isPreviewMode(searchParams: URLSearchParams): boolean {
-  const preview = searchParams.get("preview");
-  return preview !== null && VALID_PREVIEW_ROLES.includes(preview as PreviewRole);
+  void searchParams;
+  return false;
 }
 
 export function getPreviewRole(searchParams: URLSearchParams): PreviewRole | null {
-  const preview = searchParams.get("preview");
-  if (preview && VALID_PREVIEW_ROLES.includes(preview as PreviewRole)) {
-    return preview as PreviewRole;
-  }
+  void searchParams;
   return null;
 }
 

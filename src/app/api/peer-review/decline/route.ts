@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getSessionUser, getActiveCycle } from "@/lib/session";
+import { getSessionUser } from "@/lib/session";
 import { sanitizeText } from "@/lib/validate";
 
 // Decline a peer review
@@ -8,14 +8,6 @@ export async function POST(req: NextRequest) {
   try {
     const user = await getSessionUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-    // 周期阶段验证（ADMIN豁免）
-    if (user.role !== "ADMIN") {
-      const cycle = await getActiveCycle();
-      if (!cycle || cycle.status !== "PEER_REVIEW") {
-        return NextResponse.json({ error: "当前不在互评阶段，无法执行此操作" }, { status: 400 });
-      }
-    }
 
     const body = await req.json();
     const { reviewId, reason } = body as { reviewId: string; reason: string };
