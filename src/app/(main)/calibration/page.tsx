@@ -6,6 +6,9 @@ import {
   buildLeaderSubmissionSummary,
   buildScoreBandBuckets,
 } from "@/components/final-review/workspace-view";
+import { PrinciplesTab } from "@/components/final-review/principles-tab";
+import { ScoreBandChart } from "@/components/final-review/score-band-chart";
+import { StarDistributionChart } from "@/components/final-review/star-distribution-chart";
 import type {
   DistributionEntry,
   EmployeeRow,
@@ -50,15 +53,6 @@ function computeWeightedScore(form: LeaderForm): number | null {
   const valuesStars = computeValuesStars(form);
   if (form.performanceStars == null || abilityStars == null || valuesStars == null) return null;
   return Math.round((form.performanceStars * 0.5 + abilityStars * 0.3 + valuesStars * 0.2) * 10) / 10;
-}
-
-function formatCountdown(end: string | null) {
-  if (!end) return "暂无截止时间";
-  const diff = new Date(end).getTime() - Date.now();
-  if (diff <= 0) return "已截止";
-  const hours = Math.floor(diff / (1000 * 60 * 60));
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-  return `距离截止时间还有 ${hours} 小时 ${minutes} 分钟`;
 }
 
 function formatTime(value: string | null) {
@@ -492,103 +486,37 @@ function CalibrationContent() {
         </TabsList>
 
         <TabsContent value="battlefield" className="space-y-4" data-score-band-count={scoreBandBuckets.length}>
-          <GuideCard description="这一页告诉你本轮终评按什么原则看人、谁参与拍板、现在卡在哪。" />
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">原则与链路</CardTitle>
-              <CardDescription>本轮终评的原则、链路与核心导向</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-4 lg:grid-cols-3">
-              <div className="rounded-xl border p-4">
-                <p className="text-sm font-semibold">核心原则</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {workspace.overview.principles.map((item) => (
-                    <Badge key={item} variant="outline">{item}</Badge>
-                  ))}
-                </div>
-              </div>
-              <div className="rounded-xl border p-4">
-                <p className="text-sm font-semibold">链路提醒</p>
-                <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-                  {workspace.overview.chainGuidance.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-              <div className="rounded-xl border p-4">
-                <p className="text-sm font-semibold">建议分布</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {workspace.overview.distributionHints.map((item) => (
-                    <Badge key={item}>{item}</Badge>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="grid gap-4 lg:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">本轮终评角色</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <div>
-                  <p className="font-medium">终评工作台参与人</p>
-                  <p className="text-muted-foreground">{workspace.config.accessUsers.map((user) => user.name).join("、") || "未配置"}</p>
-                </div>
-                <div>
-                  <p className="font-medium">最终确认人</p>
-                  <p className="text-muted-foreground">{workspace.config.finalizers.map((user) => user.name).join("、") || "未配置"}</p>
-                </div>
-                <div>
-                  <p className="font-medium">主管层双人终评填写人</p>
-                  <p className="text-muted-foreground">{workspace.config.leaderEvaluators.map((user) => user.name).join("、") || "未配置"}</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">倒计时与风险</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-                  <p className="text-sm font-semibold">终评校准倒计时</p>
-                  <p className="mt-2 text-lg font-bold">{formatCountdown(workspace.cycle.calibrationEnd)}</p>
-                </div>
-                <div className="space-y-2">
-                  {workspace.overview.riskSummary.map((item) => (
-                    <div key={item} className="rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-700">
-                      {item}
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="grid gap-4 lg:grid-cols-4">
-            <OverviewMetricCard
-              value={`${workspace.overview.progress.employeeOpinionDone}/${workspace.overview.progress.employeeOpinionTotal}`}
-              title="普通员工意见收集进度"
-              description="5位终评相关人已完成的意见数"
-            />
-            <OverviewMetricCard
-              value={`${workspace.overview.progress.employeeConfirmedCount}/${workspace.overview.progress.employeeTotalCount}`}
-              title="普通员工正式拍板进度"
-              description="最终确认人已完成正式确认的人数"
-            />
-            <OverviewMetricCard
-              value={`${workspace.overview.progress.leaderConfirmedCount}/${workspace.overview.progress.leaderTotalCount}`}
-              title="主管层正式拍板进度"
-              description="主管层已完成官方确认的人数"
-            />
-            <OverviewMetricCard
-              value={workspace.overview.progress.leaderSubmittedCounts.map((item) => `${item.evaluatorName} ${item.submittedCount}`).join(" · ") || "未配置"}
-              title="主管层问卷填写进度"
-              description="吴承霖、邱翔分别已提交多少份主管层问卷"
-            />
-          </div>
+          <PrinciplesTab
+            cycle={workspace.cycle}
+            config={workspace.config}
+            overview={workspace.overview}
+            guideDescription="这一页告诉你本轮终评按什么原则看人、谁参与拍板、现在卡在哪。"
+            summaryLabel="一句话解读"
+            metricCopy={{
+              employeeOpinionTitle: "普通员工意见收集进度",
+              employeeOpinionDescription: "5位终评相关人已完成的意见数",
+              employeeConfirmTitle: "普通员工正式拍板进度",
+              employeeConfirmDescription: "最终确认人已完成正式确认的人数",
+              leaderConfirmTitle: "主管层正式拍板进度",
+              leaderConfirmDescription: "主管层已完成官方确认的人数",
+              leaderSubmissionTitle: "主管层问卷填写进度",
+              leaderSubmissionDescription: "吴承霖、邱翔分别已提交多少份主管层问卷",
+            }}
+            distributionChart={
+              <StarDistributionChart
+                title="全公司星级分布"
+                description="先看公司当前整体星级落点，再决定是否要优先处理偏离建议分布的星级。"
+                distribution={workspace.leaderReview.companyDistributions.all}
+              />
+            }
+            scoreBandChart={
+              <ScoreBandChart
+                title="分数带"
+                description="普通员工当前初评加权分落在哪些分段，能帮助快速识别需要重点翻看的区间。"
+                bands={scoreBandBuckets}
+              />
+            }
+          />
         </TabsContent>
 
         <TabsContent value="employees" className="space-y-4" data-priority-pending-count={employeePriorityGroups.pending.length}>

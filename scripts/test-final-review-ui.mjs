@@ -89,6 +89,26 @@ test("calibration page source includes principles-tab redesign tokens", () => {
   assertSourceContains(source, "一句话解读", "principles tab should include the summary token \"一句话解读\"");
 });
 
+test("calibration page imports dedicated final-review principles helpers", () => {
+  const page = read("src/app/(main)/calibration/page.tsx");
+
+  assert.equal(
+    page.includes('from "@/components/final-review/principles-tab"'),
+    true,
+    "calibration page should import the dedicated principles tab component",
+  );
+  assert.equal(
+    page.includes('from "@/components/final-review/score-band-chart"'),
+    true,
+    "calibration page should import the score band chart helper",
+  );
+  assert.equal(
+    page.includes('from "@/components/final-review/star-distribution-chart"'),
+    true,
+    "calibration page should import the star distribution chart helper",
+  );
+});
+
 test("calibration page source includes employee-tab redesign tokens", () => {
   const source = read("src/app/(main)/calibration/page.tsx");
 
