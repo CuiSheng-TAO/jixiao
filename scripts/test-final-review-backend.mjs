@@ -241,6 +241,7 @@ test("admin final review config seeds empty employee rosters from the default na
 test("final review write routes enforce configured subject scopes and leader dual-review readiness", () => {
   const opinionRoute = read("src/app/api/final-review/opinion/route.ts");
   const confirmRoute = read("src/app/api/final-review/confirm/route.ts");
+  const leaderRoute = read("src/app/api/final-review/leader/route.ts");
   const leaderConfirmRoute = read("src/app/api/final-review/leader/confirm/route.ts");
   const helper = read("src/lib/final-review.ts");
 
@@ -255,9 +256,21 @@ test("final review write routes enforce configured subject scopes and leader dua
     "employee opinion writes should reject targets outside the configured ordinary employee roster",
   );
   assert.equal(
+    opinionRoute.includes("config.finalizerUserIds.includes(user.id)") &&
+      !opinionRoute.includes("config.accessUserIds.includes(user.id)"),
+    true,
+    "ordinary employee opinion writes should be limited to the configured finalizers instead of every workspace viewer",
+  );
+  assert.equal(
     confirmRoute.includes("isOrdinaryEmployeeFinalReviewSubject"),
     true,
     "employee final-confirm writes should reject targets outside the configured ordinary employee roster",
+  );
+  assert.equal(
+    confirmRoute.includes("config.finalizerUserIds.includes(user.id)") &&
+      !confirmRoute.includes('user.role === "ADMIN" || config.finalizerUserIds.includes(user.id)'),
+    true,
+    "ordinary employee final confirmation should stay limited to the configured finalizers, even when admins can still view the workspace",
   );
   assert.equal(
     helper.includes("export function isLeaderFinalReviewReady"),
@@ -273,6 +286,18 @@ test("final review write routes enforce configured subject scopes and leader dua
     leaderConfirmRoute.includes("isLeaderFinalReviewReady"),
     true,
     "leader final-confirm route should keep delegating readiness to the shared helper",
+  );
+  assert.equal(
+    leaderConfirmRoute.includes("config.finalizerUserIds.includes(user.id)") &&
+      !leaderConfirmRoute.includes('user.role === "ADMIN" || config.finalizerUserIds.includes(user.id)'),
+    true,
+    "leader final confirmation should also stay limited to the configured finalizers, leaving non-finalizer admins in view-only mode",
+  );
+  assert.equal(
+    leaderRoute.includes("config.leaderEvaluatorUserIds.includes(user.id)") &&
+      !leaderRoute.includes('user.role === "ADMIN" || config.leaderEvaluatorUserIds.includes(user.id)'),
+    true,
+    "leader questionnaire writes should stay limited to the configured dual-review evaluators, leaving non-evaluator admins in view-only mode",
   );
   assert.equal(
     helper.includes("config.leaderEvaluatorUserIds.length !== 2") &&

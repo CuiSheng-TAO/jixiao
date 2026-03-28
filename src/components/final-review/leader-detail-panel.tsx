@@ -117,16 +117,16 @@ function LeaderQuestionnaire({
             <p className="text-sm font-medium text-[var(--cockpit-foreground)]">个人能力</p>
             <p className="text-xs text-[var(--cockpit-muted-foreground)]">综合能力、学习能力、适应能力等权平均</p>
           </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="space-y-2">
+          <div className="grid gap-4">
+            <div className="space-y-3 rounded-2xl border p-4">
               <p className="text-xs font-medium text-[var(--cockpit-foreground)]">综合能力</p>
               <StarRating value={form.comprehensiveStars} onChange={(value) => onChange("comprehensiveStars", value)} disabled={!editable} />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3 rounded-2xl border p-4">
               <p className="text-xs font-medium text-[var(--cockpit-foreground)]">学习能力</p>
               <StarRating value={form.learningStars} onChange={(value) => onChange("learningStars", value)} disabled={!editable} />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3 rounded-2xl border p-4">
               <p className="text-xs font-medium text-[var(--cockpit-foreground)]">适应能力</p>
               <StarRating value={form.adaptabilityStars} onChange={(value) => onChange("adaptabilityStars", value)} disabled={!editable} />
             </div>

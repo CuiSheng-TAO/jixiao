@@ -1,9 +1,10 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import type { EmployeeOpinion, EmployeeRow } from "./types";
 
 type EmployeeOpinionFormValue = {
@@ -86,6 +87,7 @@ export function EmployeeDetailPanel({
   onSaveOpinion,
   onConfirm,
 }: EmployeeDetailPanelProps) {
+  const [expandedSupervisorCommentEmployeeId, setExpandedSupervisorCommentEmployeeId] = useState<string | null>(null);
   const panelStyle: CSSProperties = {
     background: "var(--cockpit-surface)",
     borderColor: "var(--cockpit-border)",
@@ -103,6 +105,8 @@ export function EmployeeDetailPanel({
   }
 
   const myOpinion = employee.opinions.find((item) => item.isMine);
+  const expandedSupervisorComment = expandedSupervisorCommentEmployeeId === employee.id;
+  const canExpandSupervisorComment = (employee.supervisorCommentSummary?.length || 0) > 180;
   const opinionSummaryText =
     employee.opinionSummary.map((item) => `${item.label} ${item.count} 人`).join(" · ") || "当前还没有形成意见分布。";
   const opinionDecisionOptions: Array<{ value: EmployeeOpinionFormValue["decision"]; label: string }> = [
@@ -223,7 +227,7 @@ export function EmployeeDetailPanel({
           </div>
         )}
 
-        {myOpinion ? (
+        {employee.canSubmitOpinion && myOpinion ? (
           <div className="mt-4 space-y-3 rounded-2xl border border-primary/20 bg-primary/[0.03] p-4">
             <div>
               <p className="text-sm font-semibold text-[var(--cockpit-foreground)]">我的处理动作</p>
@@ -283,9 +287,26 @@ export function EmployeeDetailPanel({
         </div>
         <div className="mt-4 rounded-2xl border px-4 py-3">
           <p className="text-xs text-[var(--cockpit-muted-foreground)]">初评评语摘要</p>
-          <p className="mt-2 text-sm leading-6 text-[var(--cockpit-foreground)]">
+          <p
+            className={cn(
+              "mt-2 text-sm leading-6 text-[var(--cockpit-foreground)]",
+              !expandedSupervisorComment && "line-clamp-4",
+            )}
+          >
             {employee.supervisorCommentSummary || "当前还没有可供参考的初评评语摘要。"}
           </p>
+          {canExpandSupervisorComment ? (
+            <Button
+              type="button"
+              variant="ghost"
+              className="mt-2 h-auto px-0 text-sm text-[var(--cockpit-accent-strong)] hover:bg-transparent"
+              onClick={() =>
+                setExpandedSupervisorCommentEmployeeId((current) => (current === employee.id ? null : employee.id))
+              }
+            >
+              {expandedSupervisorComment ? "收起全文" : "展开全文"}
+            </Button>
+          ) : null}
         </div>
         <div className="mt-4 space-y-2">
           {employee.currentEvaluatorStatuses.map((status) => (

@@ -106,7 +106,7 @@ test("calibration page becomes a three-tab final review workspace", () => {
     "leader tab should explain the workflow in plain language",
   );
   assert.equal(
-    principles.includes("5位终评相关人已完成的意见数"),
+    principles.includes("具名拍板人已完成的意见数"),
     true,
     "top progress cards should explain what the metric actually means",
   );
@@ -481,6 +481,11 @@ test("employee evidence panel shows a concise supervisor comment summary", () =>
     "employee evidence panel should render the new supervisor comment summary field",
   );
   assert.equal(
+    detailPanel.includes("展开全文") && detailPanel.includes("收起全文") && detailPanel.includes("line-clamp-4"),
+    true,
+    "employee evidence panel should keep the supervisor summary collapsed by default and allow expanding it inline",
+  );
+  assert.equal(
     payload.includes("candidComment") &&
       payload.includes("progressComment") &&
       payload.includes("altruismComment") &&
@@ -581,6 +586,28 @@ test("employee cockpit uses a searchable roster rail instead of select controls"
   );
 });
 
+test("ordinary employee opinion panel only gives named slots and write actions to the configured finalizers", () => {
+  const detail = read("src/components/final-review/employee-detail-panel.tsx");
+  const payload = read("src/lib/final-review.ts");
+
+  assert.equal(
+    payload.includes("const employeeOpinionActorIds = [...new Set(config.finalizerUserIds)];"),
+    true,
+    "employee opinion cards should be built from the finalizer roster instead of every workspace viewer",
+  );
+  assert.equal(
+    payload.includes("totalReviewerCount: employeeOpinionActorIds.length") &&
+      payload.includes("employeeOpinionTotal: employeeRows.length * Math.max(employeeOpinionActorIds.length, 1)"),
+    true,
+    "employee opinion totals should track only the named finalizers who are allowed to participate",
+  );
+  assert.equal(
+    detail.includes("employee.canSubmitOpinion && myOpinion ? ("),
+    true,
+    "employee detail panel should only render the write-action card for users who are allowed to participate in named employee opinions",
+  );
+});
+
 test("leader cockpit uses a searchable roster rail and gates detailed dual-review content", () => {
   const cockpit = read("src/components/final-review/leader-cockpit.tsx");
   const detail = read("src/components/final-review/leader-detail-panel.tsx");
@@ -599,6 +626,16 @@ test("leader cockpit uses a searchable roster rail and gates detailed dual-revie
     detail.includes("<select"),
     false,
     "leader detail panel should stop using raw select controls for confirmation",
+  );
+  assert.equal(
+    detail.includes("grid gap-4") && detail.includes("space-y-3 rounded-2xl border p-4"),
+    true,
+    "leader detail panel should render the dual-review ability block in a stacked layout that fits the narrow right-side panel",
+  );
+  assert.equal(
+    detail.includes("md:grid-cols-3"),
+    false,
+    "leader detail panel should stop forcing the three personal-ability ratings into a cramped three-column layout",
   );
 });
 

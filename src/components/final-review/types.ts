@@ -31,6 +31,7 @@ export type EmployeeRow = {
   officialConfirmedAt: string | null;
   officialConfirmerName: string | null;
   finalizable: boolean;
+  canSubmitOpinion: boolean;
   canViewOpinionDetails: boolean;
   currentEvaluatorNames: string[];
   currentEvaluatorStatuses: Array<{

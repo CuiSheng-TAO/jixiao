@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
 
     const configRecord = await prisma.finalReviewConfig.findUnique({ where: { cycleId: cycle.id } });
     const config = getFinalReviewConfigValue(cycle.id, configRecord);
-    const canFinalize = user.role === "ADMIN" || config.finalizerUserIds.includes(user.id);
+    const canFinalize = config.finalizerUserIds.includes(user.id);
     if (!canFinalize) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }

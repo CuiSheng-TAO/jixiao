@@ -134,7 +134,7 @@ export function PrinciplesTab({
     {
       title: "普通员工意见收集进度",
       value: `${overview.progress.employeeOpinionDone}/${overview.progress.employeeOpinionTotal}`,
-      description: "5位终评相关人已完成的意见数",
+      description: "具名拍板人已完成的意见数",
     },
     {
       title: "普通员工正式拍板进度",

@@ -494,10 +494,12 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
       officialStars,
     };
   });
-  const canFinalize = user.role === "ADMIN" || config.finalizerUserIds.includes(user.id);
-  const canViewOpinionDetails = canFinalize;
+  const employeeOpinionActorIds = [...new Set(config.finalizerUserIds)];
+  const canFinalize = config.finalizerUserIds.includes(user.id);
+  const canSubmitOpinion = employeeOpinionActorIds.includes(user.id);
+  const canViewOpinionDetails = user.role === "ADMIN" || canFinalize;
   const canViewLeaderEvaluationDetails =
-    canFinalize || config.leaderEvaluatorUserIds.includes(user.id);
+    user.role === "ADMIN" || canFinalize || config.leaderEvaluatorUserIds.includes(user.id);
 
   const employeeRows = employeeUsers.map((employee) => {
     const assignment = assignments.get(employee.id);
@@ -510,16 +512,18 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
       ? roundToOneDecimal(scoredCurrentEvals.reduce((sum, item) => sum + Number(item.weightedScore), 0) / scoredCurrentEvals.length)
       : null;
     const referenceStars = mapScoreToReferenceStars(weightedScore, config.referenceStarRanges);
-    const employeeOpinions = opinionsByEmployee.get(employee.id) || [];
+    const employeeOpinions = (opinionsByEmployee.get(employee.id) || []).filter((item) =>
+      employeeOpinionActorIds.includes(item.reviewerId),
+    );
     const latestConfirmation = latestConfirmationMap.get(`EMPLOYEE:${employee.id}`);
     const handledCount = employeeOpinions.filter((item) => item.decision !== "PENDING").length;
     const officialStars = latestConfirmation?.officialStars ?? calibrationMap.get(employee.id) ?? null;
     const currentStars = officialStars ?? referenceStars;
     const overrideOpinionCount = employeeOpinions.filter((item) => item.decision === "OVERRIDE").length;
-    const pendingOpinionCount = Math.max(0, config.accessUserIds.length - handledCount);
+    const pendingOpinionCount = Math.max(0, employeeOpinionActorIds.length - handledCount);
     const scoreSpread = getWeightedScoreSpread(currentEvals.map((item) => item.weightedScore != null ? Number(item.weightedScore) : null));
     const supervisorCommentSummary = buildSupervisorCommentSummary(currentEvals);
-    const opinionCards = config.accessUserIds.map((reviewerId) => {
+    const opinionCards = employeeOpinionActorIds.map((reviewerId) => {
       const reviewer = usersById.get(reviewerId);
       const opinion = employeeOpinions.find((item) => item.reviewerId === reviewerId);
       const meta = pickOpinionStatusMeta(opinion?.decision || "PENDING", opinion?.suggestedStars ?? referenceStars);
@@ -555,6 +559,7 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
       officialConfirmedAt: latestConfirmation?.createdAt.toISOString() || null,
       officialConfirmerName: latestConfirmation ? usersById.get(latestConfirmation.confirmerId)?.name || latestConfirmation.confirmerId : null,
       finalizable: canFinalize,
+      canSubmitOpinion,
       canViewOpinionDetails,
       currentEvaluatorNames: assignment?.currentEvaluatorNames || [],
       currentEvaluatorStatuses: currentEvals.map((item) => ({
@@ -567,10 +572,10 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
       peerAverage: peerReviewAverageByEmployee.get(employee.id) ?? null,
       supervisorCommentSummary: supervisorCommentSummary,
       handledCount,
-      totalReviewerCount: config.accessUserIds.length,
+      totalReviewerCount: employeeOpinionActorIds.length,
       summaryStats: {
         handledCount,
-        totalReviewerCount: config.accessUserIds.length,
+        totalReviewerCount: employeeOpinionActorIds.length,
         pendingCount: pendingOpinionCount,
         overrideCount: overrideOpinionCount,
       },
@@ -602,7 +607,7 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
         evaluatorName: evaluator?.name || "未配置",
         status: existing?.status || "DRAFT",
         weightedScore: existing?.weightedScore != null ? Number(existing.weightedScore) : null,
-        editable: user.role === "ADMIN" || evaluatorId === user.id,
+        editable: evaluatorId === user.id,
         submittedAt: existing?.submittedAt?.toISOString() || null,
         form: {
           performanceStars: existing?.performanceStars ?? null,
@@ -718,7 +723,7 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
       ],
       progress: {
         employeeOpinionDone: employeeRows.reduce((sum, item) => sum + item.handledCount, 0),
-        employeeOpinionTotal: employeeRows.length * Math.max(config.accessUserIds.length, 1),
+        employeeOpinionTotal: employeeRows.length * Math.max(employeeOpinionActorIds.length, 1),
         employeeConfirmedCount: employeeRows.filter((item) => item.officialStars != null).length,
         employeeTotalCount: employeeRows.length,
         leaderSubmittedCounts: buildLeaderEvaluatorProgress(

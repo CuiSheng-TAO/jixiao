@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
 
     const configRecord = await prisma.finalReviewConfig.findUnique({ where: { cycleId: cycle.id } });
     const config = getFinalReviewConfigValue(cycle.id, configRecord);
-    const canReview = user.role === "ADMIN" || config.accessUserIds.includes(user.id);
+    const canReview = config.finalizerUserIds.includes(user.id);
     if (!canReview) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
