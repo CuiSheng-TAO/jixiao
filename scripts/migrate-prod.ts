@@ -84,6 +84,15 @@ async function main() {
   `);
   console.log("ENSURE: FinalReviewConfig");
 
+  const finalReviewConfigInfo = await db.execute("PRAGMA table_info(FinalReviewConfig)");
+  const finalReviewConfigCols = new Set(finalReviewConfigInfo.rows.map(r => r.name as string));
+  if (finalReviewConfigCols.has("employeeSubjectUserIds")) {
+    console.log("SKIP: FinalReviewConfig.employeeSubjectUserIds already exists");
+  } else {
+    await db.execute("ALTER TABLE FinalReviewConfig ADD COLUMN employeeSubjectUserIds TEXT NOT NULL DEFAULT '[]'");
+    console.log("ADD: FinalReviewConfig.employeeSubjectUserIds");
+  }
+
   await db.execute(`
     CREATE TABLE IF NOT EXISTS FinalReviewOpinion (
       id TEXT PRIMARY KEY NOT NULL,
