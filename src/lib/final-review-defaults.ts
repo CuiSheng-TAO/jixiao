@@ -56,6 +56,6 @@ export const DEFAULT_EMPLOYEE_FINAL_REVIEW_NAMES = [
 ] as const;
 
 export function resolveDefaultEmployeeSubjectIds(users: Array<{ id: string; name: string }>) {
-  const wanted = new Set(DEFAULT_EMPLOYEE_FINAL_REVIEW_NAMES);
+  const wanted = new Set<string>(DEFAULT_EMPLOYEE_FINAL_REVIEW_NAMES);
   return users.filter((user) => wanted.has(user.name)).map((user) => user.id);
 }

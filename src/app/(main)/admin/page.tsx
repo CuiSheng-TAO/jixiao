@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { PageHeader } from "@/components/page-header";
+import { MemberRosterCard } from "@/components/final-review/member-roster-card";
 import { toast } from "sonner";
 import { usePreview } from "@/hooks/use-preview";
 
@@ -118,6 +119,7 @@ type FinalReviewConfigForm = {
   finalizerUserIds: string[];
   leaderEvaluatorUserIds: string[];
   leaderSubjectUserIds: string[];
+  employeeSubjectUserIds: string[];
   referenceStarRanges: ReferenceStarRange[];
 };
 
@@ -140,6 +142,43 @@ const statusLabels: Record<string, string> = {
   APPEAL: "申诉",
   ARCHIVED: "已归档",
 };
+
+type FinalReviewRosterField = keyof Omit<FinalReviewConfigForm, "cycleId" | "referenceStarRanges">;
+
+type FinalReviewRosterGroup = {
+  field: FinalReviewRosterField;
+  label: string;
+  ids: string[];
+};
+
+function getOverlapLabelsByUserId(groups: FinalReviewRosterGroup[], currentField: FinalReviewRosterField) {
+  const labelsByUserId = new Map<string, string[]>();
+
+  groups.forEach(({ label, ids }) => {
+    ids.forEach((id) => {
+      const existing = labelsByUserId.get(id) || [];
+      if (!existing.includes(label)) {
+        labelsByUserId.set(id, [...existing, label]);
+      }
+    });
+  });
+
+  const currentGroup = groups.find((group) => group.field === currentField);
+  const overlapLabelsByUserId: Record<string, string[]> = {};
+
+  if (!currentGroup) {
+    return overlapLabelsByUserId;
+  }
+
+  currentGroup.ids.forEach((id) => {
+    const overlapLabels = (labelsByUserId.get(id) || []).filter((label) => label !== currentGroup.label);
+    if (overlapLabels.length > 0) {
+      overlapLabelsByUserId[id] = overlapLabels;
+    }
+  });
+
+  return overlapLabelsByUserId;
+}
 
 function AdminContent() {
   const { preview, previewRole, getData } = usePreview();
@@ -411,6 +450,7 @@ function AdminContent() {
         finalizerUserIds: data.config.finalizerUserIds || [],
         leaderEvaluatorUserIds: data.config.leaderEvaluatorUserIds || [],
         leaderSubjectUserIds: data.config.leaderSubjectUserIds || [],
+        employeeSubjectUserIds: data.config.employeeSubjectUserIds || [],
         referenceStarRanges: data.config.referenceStarRanges || defaultReferenceStarRanges,
       });
     } catch (e) {
@@ -462,6 +502,14 @@ function AdminContent() {
       )),
     } : prev);
   };
+
+  const finalReviewRosterGroups: FinalReviewRosterGroup[] = finalReviewConfig ? [
+    { field: "accessUserIds", label: "终评工作台权限名单", ids: finalReviewConfig.accessUserIds },
+    { field: "finalizerUserIds", label: "最终确认名单", ids: finalReviewConfig.finalizerUserIds },
+    { field: "leaderEvaluatorUserIds", label: "主管层双人终评填写人", ids: finalReviewConfig.leaderEvaluatorUserIds },
+    { field: "leaderSubjectUserIds", label: "主管层终评名单", ids: finalReviewConfig.leaderSubjectUserIds },
+    { field: "employeeSubjectUserIds", label: "普通员工终评名单", ids: finalReviewConfig.employeeSubjectUserIds },
+  ] : [];
 
   return (
     <div className="space-y-6">
@@ -783,7 +831,7 @@ function AdminContent() {
             <CardHeader>
               <CardTitle className="text-base">终评配置</CardTitle>
               <CardDescription>
-                为指定考核周期配置终评工作台权限、主管层名单，以及参考星级分数区间
+                为指定考核周期配置终评工作台权限、主管层名单、普通员工终评名单，以及参考星级分数区间
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -825,35 +873,21 @@ function AdminContent() {
                 <CardHeader>
                   <CardTitle className="text-base">终评工作台名单</CardTitle>
                   <CardDescription>
-                    工作台访问名单、最终确认人、主管层双人终评填写人、主管层终评名单都按周期配置
+                    工作台访问名单、最终确认人、主管层双人终评填写人、主管层终评名单、普通员工终评名单都按周期配置
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="grid gap-4 lg:grid-cols-2">
-                  {[
-                    ["accessUserIds", "终评工作台权限名单"],
-                    ["finalizerUserIds", "最终确认名单"],
-                    ["leaderEvaluatorUserIds", "主管层双人终评填写人"],
-                    ["leaderSubjectUserIds", "主管层终评名单"],
-                  ].map(([field, label]) => (
-                    <div key={field} className="space-y-2">
-                      <label className="text-sm font-medium">{label}</label>
-                      <select
-                        multiple
-                        value={finalReviewConfig[field as keyof Omit<FinalReviewConfigForm, "cycleId" | "referenceStarRanges">]}
-                        onChange={(e) => {
-                          const selected = Array.from(e.target.selectedOptions).map((option) => option.value);
-                          updateFinalReviewIds(field as keyof Omit<FinalReviewConfigForm, "cycleId" | "referenceStarRanges">, selected);
-                        }}
-                        className="min-h-[200px] w-full rounded-lg border border-border/60 bg-background px-3 py-2 text-sm"
-                        disabled={preview}
-                      >
-                        {users.map((userItem) => (
-                          <option key={userItem.id} value={userItem.id}>
-                            {userItem.name} · {userItem.department || "未分配部门"} · {userItem.role}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                <CardContent className="grid gap-4 xl:grid-cols-2">
+                  {finalReviewRosterGroups.map((group) => (
+                    <MemberRosterCard
+                      key={group.field}
+                      title={group.label}
+                      description="只能通过搜索添加成员，选中的成员会直接显示在卡片顶部。"
+                      members={users}
+                      selectedIds={group.ids}
+                      onChange={(selectedIds) => updateFinalReviewIds(group.field, selectedIds)}
+                      disabled={preview}
+                      overlapLabelsByUserId={getOverlapLabelsByUserId(finalReviewRosterGroups, group.field)}
+                    />
                   ))}
                 </CardContent>
               </Card>

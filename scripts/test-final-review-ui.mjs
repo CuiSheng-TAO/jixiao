@@ -37,6 +37,31 @@ test("admin page adds a dedicated final review configuration tab", () => {
   );
 });
 
+test("admin final review config uses roster cards instead of multi-select lists", () => {
+  const source = read("src/app/(main)/admin/page.tsx");
+
+  assert.equal(
+    source.includes('from "@/components/final-review/member-roster-card"'),
+    true,
+    "admin final review config should use the reusable member roster card",
+  );
+  assert.equal(
+    source.includes("employeeSubjectUserIds"),
+    true,
+    "admin final review config should include the ordinary employee final-review roster",
+  );
+  assert.equal(
+    source.includes("普通员工终评名单"),
+    true,
+    "admin final review config should label the ordinary employee roster clearly",
+  );
+  assert.equal(
+    source.includes("<select multiple>"),
+    false,
+    "admin final review config should stop using native multi-select lists for member management",
+  );
+});
+
 test("calibration page becomes a three-tab final review workspace", () => {
   const page = read("src/app/(main)/calibration/page.tsx");
   const principles = read("src/components/final-review/principles-tab.tsx");
