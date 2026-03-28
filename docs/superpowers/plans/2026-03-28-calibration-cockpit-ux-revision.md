@@ -148,7 +148,7 @@ test("workspace builder filters ordinary employees to the configured employee ro
 
 Run: `node --test scripts/test-final-review-ui.mjs scripts/test-final-review-backend.mjs`
 
-Expected: FAIL with missing symbols such as `employeeSubjectUserIds`, `搜索添加成员`, `processDetailsVisible`, or the absence of the new visibility flags.
+Expected: FAIL with missing symbols such as `employeeSubjectUserIds`, `搜索添加成员`, `canViewOpinionDetails`, or the absence of the new visibility flags.
 
 - [ ] **Step 4: Commit the red checkpoint**
 
