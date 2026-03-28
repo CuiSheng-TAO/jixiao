@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { resolveDefaultEmployeeSubjectIds } from "@/lib/final-review-defaults";
 import { getActiveCycle, type SessionUser } from "@/lib/session";
 import { buildSupervisorAssignmentMap } from "@/lib/supervisor-assignments";
 
@@ -22,6 +23,7 @@ export type FinalReviewConfigValue = {
   finalizerUserIds: string[];
   leaderEvaluatorUserIds: string[];
   leaderSubjectUserIds: string[];
+  employeeSubjectUserIds: string[];
   referenceStarRanges: ReferenceStarRange[];
 };
 
@@ -113,11 +115,13 @@ export function getFinalReviewConfigValue(
     finalizerUserIds: string;
     leaderEvaluatorUserIds: string;
     leaderSubjectUserIds: string;
+    employeeSubjectUserIds?: string;
     referenceStarRanges: string;
   } | null,
   users: WorkspaceConfigUsers[] = [],
 ): FinalReviewConfigValue {
   const fallbackLeaderIds = users.filter((user) => user.role === "SUPERVISOR").map((user) => user.id);
+  const parsedEmployeeSubjectUserIds = parseJsonArray(record?.employeeSubjectUserIds);
 
   return {
     cycleId,
@@ -127,6 +131,9 @@ export function getFinalReviewConfigValue(
     leaderSubjectUserIds: parseJsonArray(record?.leaderSubjectUserIds).length > 0
       ? parseJsonArray(record?.leaderSubjectUserIds)
       : fallbackLeaderIds,
+    employeeSubjectUserIds: parsedEmployeeSubjectUserIds.length > 0
+      ? parsedEmployeeSubjectUserIds
+      : resolveDefaultEmployeeSubjectIds(users),
     referenceStarRanges: parseJsonRanges(record?.referenceStarRanges),
   };
 }
@@ -263,6 +270,14 @@ function pickOpinionStatusMeta(decision: string, suggestedStars: number | null) 
     return { label: "已更改", tone: "warning", suggestedStars };
   }
   return { label: "待处理", tone: "muted", suggestedStars: null };
+}
+
+function buildOpinionSummary(opinions: Array<{ decision: string }>) {
+  return [
+    { label: "待处理", count: opinions.filter((item) => item.decision === "PENDING").length },
+    { label: "同意参考星级", count: opinions.filter((item) => item.decision === "AGREE").length },
+    { label: "主张改星", count: opinions.filter((item) => item.decision === "OVERRIDE").length },
+  ];
 }
 
 export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
@@ -425,7 +440,13 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
     peerReviewAverageByEmployee.set(employeeId, roundToOneDecimal(total / (reviews.length * 3)) || 0);
   }
 
-  const companyPeople = reviewUsers.map((item) => {
+  const leaderSubjectIds = new Set(config.leaderSubjectUserIds);
+  const employeeSubjectIds = new Set(config.employeeSubjectUserIds);
+  const employeeUsers = reviewUsers.filter((item) =>
+    employeeSubjectIds.has(item.id) && !leaderSubjectIds.has(item.id),
+  );
+  const leaderUsers = reviewUsers.filter((item) => leaderSubjectIds.has(item.id));
+  const companyPeople = [...employeeUsers, ...leaderUsers].map((item) => {
     const latestEmployeeConfirmation = latestConfirmationMap.get(`EMPLOYEE:${item.id}`);
     const latestLeaderConfirmation = latestConfirmationMap.get(`LEADER:${item.id}`);
     const officialStars = latestLeaderConfirmation?.officialStars
@@ -437,10 +458,10 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
       officialStars,
     };
   });
-
-  const leaderSubjectIds = new Set(config.leaderSubjectUserIds);
-  const employeeUsers = reviewUsers.filter((item) => !leaderSubjectIds.has(item.id));
-  const leaderUsers = reviewUsers.filter((item) => leaderSubjectIds.has(item.id));
+  const canFinalize = user.role === "ADMIN" || config.finalizerUserIds.includes(user.id);
+  const canViewOpinionDetails = canFinalize;
+  const canViewLeaderEvaluationDetails =
+    canFinalize || config.leaderEvaluatorUserIds.includes(user.id);
 
   const employeeRows = employeeUsers.map((employee) => {
     const assignment = assignments.get(employee.id);
@@ -459,6 +480,7 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
     const officialStars = latestConfirmation?.officialStars ?? calibrationMap.get(employee.id) ?? null;
     const currentStars = officialStars ?? referenceStars;
     const overrideOpinionCount = employeeOpinions.filter((item) => item.decision === "OVERRIDE").length;
+    const pendingOpinionCount = Math.max(0, config.accessUserIds.length - handledCount);
     const scoreSpread = getWeightedScoreSpread(currentEvals.map((item) => item.weightedScore != null ? Number(item.weightedScore) : null));
     const supervisorCommentSummary = buildSupervisorCommentSummary(currentEvals);
     const opinionCards = config.accessUserIds.map((reviewerId) => {
@@ -467,11 +489,11 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
       const meta = pickOpinionStatusMeta(opinion?.decision || "PENDING", opinion?.suggestedStars ?? referenceStars);
       return {
         reviewerId,
-        reviewerName: reviewer?.name || "未配置",
+        reviewerName: canViewOpinionDetails ? reviewer?.name || "未配置" : "终评相关人",
         decision: opinion?.decision || "PENDING",
         decisionLabel: meta.label,
-        suggestedStars: opinion?.suggestedStars ?? meta.suggestedStars,
-        reason: opinion?.reason || "",
+        suggestedStars: canViewOpinionDetails ? opinion?.suggestedStars ?? meta.suggestedStars : null,
+        reason: canViewOpinionDetails ? opinion?.reason || "" : "",
         isMine: reviewerId === user.id,
         updatedAt: opinion?.updatedAt?.toISOString() || null,
       };
@@ -496,7 +518,8 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
       officialReason: latestConfirmation?.reason || "",
       officialConfirmedAt: latestConfirmation?.createdAt.toISOString() || null,
       officialConfirmerName: latestConfirmation ? usersById.get(latestConfirmation.confirmerId)?.name || latestConfirmation.confirmerId : null,
-      finalizable: user.role === "ADMIN" || config.finalizerUserIds.includes(user.id),
+      finalizable: canFinalize,
+      canViewOpinionDetails,
       currentEvaluatorNames: assignment?.currentEvaluatorNames || [],
       currentEvaluatorStatuses: currentEvals.map((item) => ({
         evaluatorId: item.evaluatorId,
@@ -509,6 +532,13 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
       supervisorCommentSummary: supervisorCommentSummary,
       handledCount,
       totalReviewerCount: config.accessUserIds.length,
+      summaryStats: {
+        handledCount,
+        totalReviewerCount: config.accessUserIds.length,
+        pendingCount: pendingOpinionCount,
+        overrideCount: overrideOpinionCount,
+      },
+      opinionSummary: buildOpinionSummary(opinionCards.map((opinion) => ({ decision: opinion.decision }))),
       anomalyTags,
       opinions: opinionCards,
       distributionStars: currentStars,
@@ -570,8 +600,32 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
       officialReason: latestConfirmation?.reason || "",
       officialConfirmedAt: latestConfirmation?.createdAt.toISOString() || null,
       officialConfirmerName: latestConfirmation ? usersById.get(latestConfirmation.confirmerId)?.name || latestConfirmation.confirmerId : null,
-      finalizable: user.role === "ADMIN" || config.finalizerUserIds.includes(user.id),
-      evaluations,
+      finalizable: canFinalize,
+      canViewLeaderEvaluationDetails,
+      evaluations: evaluations.map((evaluation) => ({
+        ...evaluation,
+        form: canViewLeaderEvaluationDetails
+          ? evaluation.form
+          : {
+              performanceStars: null,
+              performanceComment: "",
+              abilityStars: null,
+              abilityComment: "",
+              comprehensiveStars: null,
+              learningStars: null,
+              adaptabilityStars: null,
+              valuesStars: null,
+              valuesComment: "",
+              candidStars: null,
+              candidComment: "",
+              progressStars: null,
+              progressComment: "",
+              altruismStars: null,
+              altruismComment: "",
+              rootStars: null,
+              rootComment: "",
+            },
+      })),
       bothSubmitted: evaluations.every((item) => item.status === "SUBMITTED"),
     };
   });
@@ -589,7 +643,7 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
     employeeRows.map((item) => ({ name: item.name, stars: item.officialStars ?? item.referenceStars })),
   );
 
-  const assignmentEmployeeIds = reviewUsers
+  const assignmentEmployeeIds = employeeUsers
     .filter((item) => assignments.has(item.id))
     .map((item) => item.id);
   const submittedEmployeeCount = assignmentEmployeeIds.filter((employeeId) => {

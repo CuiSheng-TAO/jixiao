@@ -147,6 +147,8 @@ test("final review config includes a dedicated ordinary employee roster field", 
 
 test("workspace builder filters ordinary employees to the configured employee roster and emits visibility flags", () => {
   const source = read("src/lib/final-review.ts");
+  const types = read("src/components/final-review/types.ts");
+  const workspaceView = read("src/components/final-review/workspace-view.ts");
 
   assert.equal(
     source.includes("employeeSubjectUserIds"),
@@ -157,6 +159,26 @@ test("workspace builder filters ordinary employees to the configured employee ro
     source.includes("canViewOpinionDetails") && source.includes("canViewLeaderEvaluationDetails"),
     true,
     "workspace rows should include explicit visibility flags instead of forcing the UI to guess",
+  );
+  assert.equal(
+    source.includes("resolveDefaultEmployeeSubjectIds"),
+    true,
+    "workspace builder should fall back to the default roster when the stored employee roster is empty",
+  );
+  assert.equal(
+    types.includes("summaryStats") && types.includes("opinionSummary"),
+    true,
+    "shared employee row types should include summary-first fields for later UI work",
+  );
+  assert.equal(
+    types.includes("canViewOpinionDetails") && types.includes("canViewLeaderEvaluationDetails"),
+    true,
+    "shared workspace row types should carry the explicit visibility flags",
+  );
+  assert.equal(
+    workspaceView.includes("summaryStats.overrideCount"),
+    true,
+    "workspace helpers should use summary-first employee stats when building priority queues",
   );
 });
 

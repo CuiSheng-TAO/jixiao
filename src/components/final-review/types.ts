@@ -31,6 +31,7 @@ export type EmployeeRow = {
   officialConfirmedAt: string | null;
   officialConfirmerName: string | null;
   finalizable: boolean;
+  canViewOpinionDetails: boolean;
   currentEvaluatorNames: string[];
   currentEvaluatorStatuses: Array<{
     evaluatorId: string;
@@ -43,6 +44,16 @@ export type EmployeeRow = {
   supervisorCommentSummary: string | null;
   handledCount: number;
   totalReviewerCount: number;
+  summaryStats: {
+    handledCount: number;
+    totalReviewerCount: number;
+    pendingCount: number;
+    overrideCount: number;
+  };
+  opinionSummary: Array<{
+    label: string;
+    count: number;
+  }>;
   anomalyTags: string[];
   opinions: EmployeeOpinion[];
 };
@@ -87,6 +98,7 @@ export type LeaderRow = {
   officialConfirmedAt: string | null;
   officialConfirmerName: string | null;
   finalizable: boolean;
+  canViewLeaderEvaluationDetails: boolean;
   evaluations: LeaderEvaluation[];
   bothSubmitted: boolean;
 };
@@ -101,6 +113,7 @@ export type WorkspacePayload = {
   } | null;
   canAccess: boolean;
   config: {
+    employeeSubjectUserIds: string[];
     accessUsers: Array<{ id: string; name: string; department: string }>;
     finalizers: Array<{ id: string; name: string; department: string }>;
     leaderEvaluators: Array<{ id: string; name: string; department: string }>;
