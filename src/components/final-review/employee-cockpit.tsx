@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { DistributionDrawer } from "./distribution-drawer";
 import { QueueTabs } from "./queue-tabs";
@@ -41,11 +41,34 @@ export function EmployeeCockpit({
   detailPanel,
 }: EmployeeCockpitProps) {
   const [activeQueueKey, setActiveQueueKey] = useState<"pending" | "disagreement" | "all">("pending");
+  const [queuePanelHeight, setQueuePanelHeight] = useState<number | null>(null);
+  const detailPanelRef = useRef<HTMLDivElement | null>(null);
   const panelStyle: CSSProperties = {
     background: "var(--cockpit-surface)",
     borderColor: "var(--cockpit-border)",
     boxShadow: "var(--shadow-xs)",
   };
+  const queuePanelStyle = {
+    ...panelStyle,
+    "--queue-panel-height": queuePanelHeight ? `${queuePanelHeight}px` : undefined,
+  } as CSSProperties;
+
+  useEffect(() => {
+    const node = detailPanelRef.current;
+    if (!node) return;
+
+    const syncHeight = () => {
+      const nextHeight = Math.ceil(node.getBoundingClientRect().height);
+      setQueuePanelHeight((current) => (current === nextHeight ? current : nextHeight));
+    };
+
+    syncHeight();
+
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => syncHeight());
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [selectedEmployeeId]);
 
   const queueGroups = useMemo(() => buildEmployeeQueueGroups(allEmployees), [allEmployees]);
   const selectedEmployee = allEmployees.find((employee) => employee.id === selectedEmployeeId) || null;
@@ -104,8 +127,11 @@ export function EmployeeCockpit({
         />
       </DistributionDrawer>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(360px,0.42fr)_minmax(0,1fr)] xl:items-stretch">
-        <section className="space-y-4 rounded-[28px] border p-5 md:p-6 xl:flex xl:min-h-full xl:flex-col" style={panelStyle}>
+      <div className="grid gap-5 xl:grid-cols-[minmax(340px,0.38fr)_minmax(0,1fr)] xl:items-start">
+        <section
+          className="space-y-4 rounded-[28px] border p-5 md:p-6 xl:flex xl:h-[var(--queue-panel-height)] xl:flex-col xl:overflow-hidden"
+          style={queuePanelStyle}
+        >
           <div className="flex items-center justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold text-[var(--cockpit-foreground)]">处理队列</h2>
@@ -133,7 +159,7 @@ export function EmployeeCockpit({
           />
         </section>
 
-        {detailPanel}
+        <div ref={detailPanelRef}>{detailPanel}</div>
       </div>
     </div>
   );

@@ -413,10 +413,13 @@ test("employee cockpit keeps a reachable all-employee roster alongside queue tab
     "the employee cockpit should include queue tabs plus a dedicated all-employee roster so confirmed employees stay reachable",
   );
   assert.equal(
-    cockpit.includes("xl:grid-cols-[minmax(360px,0.42fr)_minmax(0,1fr)]") &&
-      cockpit.includes("xl:flex xl:min-h-full xl:flex-col"),
+    cockpit.includes("queuePanelHeight") &&
+      cockpit.includes("detailPanelRef") &&
+      cockpit.includes("ResizeObserver") &&
+      cockpit.includes("ref={detailPanelRef}") &&
+      cockpit.includes("xl:overflow-hidden"),
     true,
-    "the employee cockpit should let the left queue rail stretch into a full-height working column beside the detail panel",
+    "the employee cockpit should sync the left queue rail height to the current right-side panel and keep the roster scrolling inside it",
   );
   assert.equal(
     roster.includes("max-h-[420px]"),
@@ -525,16 +528,25 @@ test("principles tab packs role and risk guidance into one dense side panel", ()
     false,
     "the principles tab should stop splitting the side rail into two separate sparse cards",
   );
+  assert.equal(
+    principles.includes("CardContent className=\"grid gap-4 xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]\"") &&
+      principles.includes("xl:grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)]"),
+    true,
+    "the principles tab should repack role and reminder content into a denser two-column side panel to reduce blank space",
+  );
 });
 
 test("leader cockpit mirrors the taller left rail layout used in the employee cockpit", () => {
   const cockpit = read("src/components/final-review/leader-cockpit.tsx");
 
   assert.equal(
-    cockpit.includes("xl:grid-cols-[minmax(360px,0.42fr)_minmax(0,1fr)]") &&
-      cockpit.includes("xl:flex xl:min-h-full xl:flex-col"),
+    cockpit.includes("queuePanelHeight") &&
+      cockpit.includes("detailPanelRef") &&
+      cockpit.includes("ResizeObserver") &&
+      cockpit.includes("ref={detailPanelRef}") &&
+      cockpit.includes("xl:overflow-hidden"),
     true,
-    "the leader cockpit should use the same full-height left rail treatment so the queue does not look cut short",
+    "the leader cockpit should also sync the left queue rail height to the active right-side panel and keep the roster scrolling inside it",
   );
 });
 
