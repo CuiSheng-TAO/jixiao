@@ -405,11 +405,28 @@ test("leader detail panel gates final confirmation on dual submission readiness"
 
 test("employee cockpit keeps a reachable all-employee roster alongside queue tabs", () => {
   const cockpit = read("src/components/final-review/employee-cockpit.tsx");
+  const roster = read("src/components/final-review/roster-search-list.tsx");
 
   assert.equal(
     cockpit.includes("全部员工") && cockpit.includes("待拍板") && cockpit.includes("有分歧"),
     true,
     "the employee cockpit should include queue tabs plus a dedicated all-employee roster so confirmed employees stay reachable",
+  );
+  assert.equal(
+    cockpit.includes("xl:grid-cols-[minmax(360px,0.42fr)_minmax(0,1fr)]") &&
+      cockpit.includes("xl:flex xl:min-h-full xl:flex-col"),
+    true,
+    "the employee cockpit should let the left queue rail stretch into a full-height working column beside the detail panel",
+  );
+  assert.equal(
+    roster.includes("max-h-[420px]"),
+    false,
+    "the roster search list should stop hard-capping its visible height to a short scroll box",
+  );
+  assert.equal(
+    roster.includes("xl:flex-1 xl:overflow-auto"),
+    true,
+    "the roster search list should only become scrollable after it has stretched to fill the taller queue rail",
   );
 });
 
@@ -492,6 +509,32 @@ test("employee evidence panel shows a concise supervisor comment summary", () =>
       payload.includes("rootComment"),
     true,
     "supervisor comment summary should pull from the real per-value comments written in supervisor reviews",
+  );
+});
+
+test("principles tab packs role and risk guidance into one dense side panel", () => {
+  const principles = read("src/components/final-review/principles-tab.tsx");
+
+  assert.equal(
+    principles.includes("本轮终评角色与提醒"),
+    true,
+    "the principles tab should combine roles and reminders into one denser side panel to reduce empty space",
+  );
+  assert.equal(
+    principles.includes(">本轮终评角色</CardTitle>") || principles.includes(">风险与推进提醒</CardTitle>"),
+    false,
+    "the principles tab should stop splitting the side rail into two separate sparse cards",
+  );
+});
+
+test("leader cockpit mirrors the taller left rail layout used in the employee cockpit", () => {
+  const cockpit = read("src/components/final-review/leader-cockpit.tsx");
+
+  assert.equal(
+    cockpit.includes("xl:grid-cols-[minmax(360px,0.42fr)_minmax(0,1fr)]") &&
+      cockpit.includes("xl:flex xl:min-h-full xl:flex-col"),
+    true,
+    "the leader cockpit should use the same full-height left rail treatment so the queue does not look cut short",
   );
 });
 

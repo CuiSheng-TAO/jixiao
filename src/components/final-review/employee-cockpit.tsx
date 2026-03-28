@@ -104,8 +104,8 @@ export function EmployeeCockpit({
         />
       </DistributionDrawer>
 
-      <div className="grid gap-5 xl:grid-cols-[320px_minmax(0,1fr)] xl:items-start">
-        <section className="space-y-4 rounded-[28px] border p-5 md:p-6" style={panelStyle}>
+      <div className="grid gap-5 xl:grid-cols-[minmax(360px,0.42fr)_minmax(0,1fr)] xl:items-stretch">
+        <section className="space-y-4 rounded-[28px] border p-5 md:p-6 xl:flex xl:min-h-full xl:flex-col" style={panelStyle}>
           <div className="flex items-center justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold text-[var(--cockpit-foreground)]">处理队列</h2>

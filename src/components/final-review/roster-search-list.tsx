@@ -38,7 +38,7 @@ export function RosterSearchList({
   );
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 xl:flex xl:min-h-0 xl:flex-1 xl:flex-col">
       <Input
         value={query}
         onChange={(event) => setQuery(event.target.value)}
@@ -53,7 +53,7 @@ export function RosterSearchList({
         </span>
       </div>
 
-      <div className="max-h-[420px] space-y-2 overflow-auto pr-1">
+      <div className="space-y-2 xl:min-h-0 xl:flex-1 xl:overflow-auto xl:pr-1">
         {visibleItems.length === 0 ? (
           <div className="rounded-2xl border border-dashed px-4 py-6 text-sm text-[var(--cockpit-muted-foreground)]">{emptyText}</div>
         ) : null}

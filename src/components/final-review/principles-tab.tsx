@@ -177,54 +177,52 @@ export function PrinciplesTab({
         </div>
       }
       aside={
-        <>
-          <Card className="rounded-[var(--radius-2xl)] border shadow-none" style={panelStyle}>
-            <CardHeader>
-              <CardTitle className="text-base text-[var(--cockpit-foreground)]">本轮终评角色</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 text-sm">
-              <div>
+        <Card className="rounded-[var(--radius-2xl)] border shadow-none" style={panelStyle}>
+          <CardHeader>
+            <CardTitle className="text-base text-[var(--cockpit-foreground)]">本轮终评角色与提醒</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-1">
+              <div className="rounded-[var(--radius-xl)] border px-4 py-3">
                 <p className="font-medium text-[var(--cockpit-foreground)]">终评工作台参与人</p>
-                <p className="mt-1 leading-6 text-[var(--cockpit-muted-foreground)]">{config.accessUsers.map((user) => user.name).join("、") || "未配置"}</p>
-              </div>
-              <div>
-                <p className="font-medium text-[var(--cockpit-foreground)]">最终确认人</p>
-                <p className="mt-1 leading-6 text-[var(--cockpit-muted-foreground)]">{config.finalizers.map((user) => user.name).join("、") || "未配置"}</p>
-              </div>
-              <div>
-                <p className="font-medium text-[var(--cockpit-foreground)]">主管层双人终评填写人</p>
-                <p className="mt-1 leading-6 text-[var(--cockpit-muted-foreground)]">{leaderEvaluatorLabel}</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-[var(--radius-2xl)] border shadow-none" style={panelStyle}>
-            <CardHeader>
-              <CardTitle className="text-base text-[var(--cockpit-foreground)]">风险与推进提醒</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="rounded-[var(--radius-xl)] border p-4" style={strongPanelStyle}>
-                <p className="text-sm font-semibold text-[var(--cockpit-foreground)]">校准截止</p>
-                <p className="mt-2 text-lg font-semibold text-[var(--cockpit-foreground)]">{deadline.shortLabel}</p>
-                <p className="mt-2 text-xs leading-5 text-[var(--cockpit-muted-foreground)]">
-                  {deadline.overdue ? "当前已过截止时间，请优先补齐未完成拍板。" : "双人提交进度："}
-                  {!deadline.overdue ? leaderSubmissionText : null}
+                <p className="mt-2 leading-6 text-[var(--cockpit-muted-foreground)]">
+                  {config.accessUsers.map((user) => user.name).join("、") || "未配置"}
                 </p>
               </div>
-
-              <div className="space-y-2">
-                {(overview.riskSummary.length > 0 ? overview.riskSummary : ["当前没有额外风险提醒。"]).map((item) => (
-                  <div
-                    key={item}
-                    className="rounded-[var(--radius-xl)] border border-[color:rgba(179,76,40,0.14)] bg-[color:rgba(255,237,230,0.7)] px-3 py-2 text-sm text-[color:#8c3b21]"
-                  >
-                    {item}
-                  </div>
-                ))}
+              <div className="rounded-[var(--radius-xl)] border px-4 py-3">
+                <p className="font-medium text-[var(--cockpit-foreground)]">最终确认人</p>
+                <p className="mt-2 leading-6 text-[var(--cockpit-muted-foreground)]">
+                  {config.finalizers.map((user) => user.name).join("、") || "未配置"}
+                </p>
               </div>
-            </CardContent>
-          </Card>
-        </>
+              <div className="rounded-[var(--radius-xl)] border px-4 py-3 sm:col-span-2 xl:col-span-1">
+                <p className="font-medium text-[var(--cockpit-foreground)]">主管层双人终评填写人</p>
+                <p className="mt-2 leading-6 text-[var(--cockpit-muted-foreground)]">{leaderEvaluatorLabel}</p>
+              </div>
+            </div>
+
+            <div className="rounded-[var(--radius-xl)] border p-4" style={strongPanelStyle}>
+              <p className="text-sm font-semibold text-[var(--cockpit-foreground)]">校准截止</p>
+              <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
+                <p className="text-lg font-semibold text-[var(--cockpit-foreground)]">{deadline.shortLabel}</p>
+                <p className="text-xs leading-5 text-[var(--cockpit-muted-foreground)]">
+                  {deadline.overdue ? "当前已过截止时间，请优先补齐未完成拍板。" : `双人提交进度：${leaderSubmissionText}`}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+              {(overview.riskSummary.length > 0 ? overview.riskSummary : ["当前没有额外风险提醒。"]).map((item) => (
+                <div
+                  key={item}
+                  className="rounded-[var(--radius-xl)] border border-[color:rgba(179,76,40,0.14)] bg-[color:rgba(255,237,230,0.7)] px-3 py-2 text-sm text-[color:#8c3b21]"
+                >
+                  {item}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       }
     />
   );
