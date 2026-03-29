@@ -396,7 +396,7 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
   const configRecord = await prisma.finalReviewConfig.findUnique({
     where: { cycleId: cycle.id },
   });
-  const config = getFinalReviewConfigValue(cycle.id, configRecord, reviewUsers);
+  const config = getFinalReviewConfigValue(cycle.id, configRecord, directoryUsers);
   const canAccess = await canAccessFinalReviewWorkspace(user, cycle.id);
   if (!canAccess) {
     return {

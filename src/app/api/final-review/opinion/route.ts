@@ -25,8 +25,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "employeeId is required" }, { status: 400 });
     }
 
-    const configRecord = await prisma.finalReviewConfig.findUnique({ where: { cycleId: cycle.id } });
-    const config = getFinalReviewConfigValue(cycle.id, configRecord);
+    const [configRecord, allUsers] = await Promise.all([
+      prisma.finalReviewConfig.findUnique({ where: { cycleId: cycle.id } }),
+      prisma.user.findMany({
+        select: { id: true, name: true, department: true, role: true },
+      }),
+    ]);
+    const config = getFinalReviewConfigValue(cycle.id, configRecord, allUsers);
     const canReview = config.finalizerUserIds.includes(user.id);
     if (!canReview) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });

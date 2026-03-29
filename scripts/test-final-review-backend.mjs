@@ -58,6 +58,11 @@ test("final review helper centralizes config parsing, access checks, and referen
     "final review helper should split review subjects from the directory used for config-name resolution",
   );
   assert.equal(
+    source.includes("const config = getFinalReviewConfigValue(cycle.id, configRecord, directoryUsers);"),
+    true,
+    "workspace config should be resolved from the full directory so fixed company calibrators like 吴承霖、邱翔 are not lost when they are admins",
+  );
+  assert.equal(
     source.includes("const usersById = new Map(directoryUsers.map((item) => [item.id, item]));"),
     true,
     "final review helper should resolve configured users from directoryUsers so admin reviewers render with names",
@@ -146,6 +151,13 @@ test("final review routes expose config, workspace, opinion, leader review, and 
     "opinion route should support agree and override employee-review decisions",
   );
   assert.equal(
+    opinionRoute.includes("const [configRecord, allUsers] = await Promise.all([") &&
+      opinionRoute.includes("prisma.user.findMany({") &&
+      opinionRoute.includes("const config = getFinalReviewConfigValue(cycle.id, configRecord, allUsers);"),
+    true,
+    "opinion route should resolve fixed company calibrators from the full user directory instead of stale stored ids",
+  );
+  assert.equal(
     confirmRoute.includes("自动生成"),
     true,
     "employee confirmation route should explain that ordinary employee official results are auto-generated now",
@@ -154,6 +166,13 @@ test("final review routes expose config, workspace, opinion, leader review, and 
     leaderRoute.includes("weightedScore"),
     true,
     "leader route should persist the questionnaire weighted score",
+  );
+  assert.equal(
+    leaderRoute.includes("const [configRecord, allUsers] = await Promise.all([") &&
+      leaderRoute.includes("prisma.user.findMany({") &&
+      leaderRoute.includes("const config = getFinalReviewConfigValue(cycle.id, configRecord, allUsers);"),
+    true,
+    "leader route should also resolve the fixed dual reviewers from the full directory so permissions stay on 吴承霖、邱翔",
   );
   assert.equal(
     leaderConfirmRoute.includes("自动生成"),
