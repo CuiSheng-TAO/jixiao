@@ -354,6 +354,8 @@ function buildLeaderEvaluatorProgress(
   }));
 }
 
+const NAMED_PEER_REVIEW_VIEWER_NAMES = new Set(["吴承霖", "邱翔", "禹聪琪"]);
+
 export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
   const cycle = await getActiveCycle();
   if (!cycle) {
@@ -515,6 +517,7 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
 
   const selfEvalMap = new Map(selfEvals.map((item) => [item.userId, item]));
   const latestConfirmationMap = getLatestConfirmationMap(confirmations);
+  const canViewNamedPeerReviewers = NAMED_PEER_REVIEW_VIEWER_NAMES.has(user.name);
 
   const opinionsByEmployee = new Map<string, typeof opinions>();
   for (const opinion of opinions) {
@@ -579,8 +582,10 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
       ability: categorySummary.ability,
       values: categorySummary.values,
       count: reviews.length,
-      reviews: reviews.map((review) => ({
-        reviewerName: review.reviewer?.name || "未配置",
+      reviews: reviews.map((review, index) => ({
+        reviewerName: canViewNamedPeerReviewers
+          ? review.reviewer?.name || "未配置"
+          : `匿名反馈 ${index + 1}`,
         performanceStars: getPeerReviewPerformanceAverage(review),
         performanceComment: review.performanceComment || review.outputComment || "",
         abilityAverage: getPeerReviewAbilityAverage(review),
@@ -684,6 +689,7 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
       agreementState: consensus.agreed ? "AGREED" : consensus.disagreed ? "DISAGREED" : "PENDING",
       canSubmitOpinion,
       canViewOpinionDetails,
+      canViewNamedPeerReviewers,
       currentEvaluatorNames: assignment?.currentEvaluatorNames || [],
       currentEvaluatorStatuses: currentEvals.map((item) => ({
         evaluatorId: item.evaluatorId,

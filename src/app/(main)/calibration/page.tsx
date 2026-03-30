@@ -319,7 +319,6 @@ function CalibrationContent() {
                 title="最终决策"
                 comparisonTitle="双人结果对照"
                 questionnaireTitle="详细双人问卷"
-                auditTrailTitle="过程留痕"
                 leader={selectedLeader}
                 leaderForms={leaderForms}
                 savingEvaluationKey={savingKey}

@@ -16,7 +16,6 @@ export type LeaderDetailPanelProps = {
   title: string;
   comparisonTitle: string;
   questionnaireTitle: string;
-  auditTrailTitle: string;
   leader: LeaderRow | null;
   leaderForms: Record<string, LeaderForm>;
   savingEvaluationKey: string;
@@ -40,11 +39,6 @@ function computeWeightedScore(form: LeaderForm): number | null {
     altruismStars: form.altruismStars,
     rootStars: form.rootStars,
   });
-}
-
-function formatTime(value: string | null) {
-  if (!value) return "—";
-  return new Date(value).toLocaleString();
 }
 
 function renderStars(value: number | null, fallback: string) {
@@ -180,7 +174,6 @@ export function LeaderDetailPanel({
   title,
   comparisonTitle,
   questionnaireTitle,
-  auditTrailTitle,
   leader,
   leaderForms,
   savingEvaluationKey,
@@ -343,37 +336,6 @@ export function LeaderDetailPanel({
             详细双人问卷只对具备查看权限的终评角色开放，当前页面继续保留双人结果对照和官方结论摘要。
           </div>
         )}
-      </section>
-
-      <section className="rounded-[28px] border p-5" style={panelStyle}>
-        <p className="text-sm font-semibold text-[var(--cockpit-foreground)]">{auditTrailTitle || "过程留痕"}</p>
-        <div className="mt-4 space-y-3 text-sm">
-          <div className="rounded-2xl border px-4 py-3">
-            <p className="text-xs text-[var(--cockpit-muted-foreground)]">系统生成说明</p>
-            <p className="mt-2 leading-6 text-[var(--cockpit-foreground)]">{leader.officialReason || "当前还没有形成主管层自动结果说明。"}</p>
-          </div>
-          <div className="rounded-2xl border px-4 py-3">
-            <p className="text-xs text-[var(--cockpit-muted-foreground)]">最后自动生成时间</p>
-            <p className="mt-2 text-[var(--cockpit-foreground)]">{formatTime(leader.officialConfirmedAt)}</p>
-          </div>
-          {leader.canViewLeaderEvaluationDetails ? (
-            <div className="space-y-2">
-              {leader.evaluations.map((evaluation) => (
-                <div key={`${evaluation.evaluatorId}:audit`} className="flex items-center justify-between rounded-2xl border px-4 py-3">
-                  <div>
-                    <p className="text-[var(--cockpit-foreground)]">{evaluation.evaluatorName}</p>
-                    <p className="mt-1 text-xs text-[var(--cockpit-muted-foreground)]">{evaluation.status === "SUBMITTED" ? "已提交终评问卷" : "仍是草稿"}</p>
-                  </div>
-                  <span className="text-[var(--cockpit-muted-foreground)]">{formatTime(evaluation.submittedAt)}</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-2xl border border-dashed px-4 py-4 text-sm leading-6 text-[var(--cockpit-muted-foreground)]">
-              当前视图只保留官方结论和双人提交摘要，不展示每位填写人的留痕。
-            </div>
-          )}
-        </div>
       </section>
     </aside>
   );

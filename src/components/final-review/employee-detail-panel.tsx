@@ -344,7 +344,10 @@ export function EmployeeDetailPanel({
               <div>
                 <p className="text-sm font-semibold text-[var(--cockpit-foreground)]">360反馈详情</p>
                 <p className="mt-1 text-xs text-[var(--cockpit-muted-foreground)]">
-                  已收到 {employee.peerReviewSummary.count} 份 360 反馈。终评界面按实名展示反馈人与对应评语。
+                  已收到 {employee.peerReviewSummary.count} 份 360 反馈。
+                  {employee.canViewNamedPeerReviewers
+                    ? " 当前视图按实名展示反馈人与对应评语。"
+                    : " 当前视图仅展示匿名反馈内容，不显示反馈人姓名。"}
                 </p>
               </div>
               <Button
@@ -389,7 +392,7 @@ export function EmployeeDetailPanel({
                 return (
                   <div key={`${employee.id}:peer:${index}`} className="rounded-2xl border px-4 py-4">
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--cockpit-muted-foreground)]">
-                      {review.reviewerName}
+                      {employee.canViewNamedPeerReviewers ? review.reviewerName : `匿名反馈 ${index + 1}`}
                     </p>
                     {dimensions.length > 0 ? (
                       <div className="mt-3 space-y-2">{dimensions}</div>

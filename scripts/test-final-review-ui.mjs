@@ -270,9 +270,9 @@ test("leader detail panel keeps dual-review comparisons summary-only until the p
   );
   assert.equal(
     detailPanel.includes("leader.canViewLeaderEvaluationDetails ? (") &&
-      detailPanel.includes("当前视图只保留官方结论和双人提交摘要，不展示每位填写人的留痕。"),
+      !detailPanel.includes("过程留痕"),
     true,
-    "leader detail panel should hide the named audit trail behind the same permission gate as the rest of the detailed dual-review content",
+    "leader detail panel should drop the old audit-trail section instead of keeping it behind a permission gate",
   );
 });
 
@@ -488,6 +488,7 @@ test("employee evidence panel shows direct initial-review details plus named 360
       types.includes("performance: number | null;") &&
       types.includes("ability: number | null;") &&
       types.includes("values: number | null;") &&
+      types.includes("canViewNamedPeerReviewers: boolean;") &&
       types.includes("reviewerName: string;") &&
       types.includes("reviews: Array<{"),
     true,
@@ -497,10 +498,16 @@ test("employee evidence panel shows direct initial-review details plus named 360
     detailPanel.includes("点击查看360详情") &&
       detailPanel.includes("收起360详情") &&
       detailPanel.includes("360反馈详情") &&
-      detailPanel.includes("review.reviewerName") &&
+      detailPanel.includes("employee.canViewNamedPeerReviewers") &&
+      detailPanel.includes("匿名反馈") &&
       detailPanel.includes("employee.peerReviewSummary"),
     true,
-    "employee evidence panel should let users click the 360 average card to expand named 360 details inline for calibrators",
+    "employee evidence panel should expand 360 details inline and switch between named and anonymous labels based on the viewer",
+  );
+  assert.equal(
+    payload.includes('new Set(["吴承霖", "邱翔", "禹聪琪"])'),
+    true,
+    "final review payload should only expose named 360 reviewers to the three approved viewers",
   );
 });
 
@@ -788,7 +795,7 @@ test("leader cockpit uses a searchable roster rail, queue tabs, and a single-per
     "leader cockpit should expose a searchable roster rail and queue-first navigation",
   );
   assert.equal(
-    detail.includes("当前结论") && detail.includes("双人结果对照") && detail.includes("过程留痕"),
+    detail.includes("当前结论") && detail.includes("双人结果对照") && !detail.includes("过程留痕"),
     true,
     "leader detail panel should follow the single-person decision flow",
   );

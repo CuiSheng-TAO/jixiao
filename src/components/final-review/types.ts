@@ -32,6 +32,7 @@ export type EmployeeRow = {
   agreementState: "PENDING" | "AGREED" | "DISAGREED";
   canSubmitOpinion: boolean;
   canViewOpinionDetails: boolean;
+  canViewNamedPeerReviewers: boolean;
   currentEvaluatorNames: string[];
   currentEvaluatorStatuses: Array<{
     evaluatorId: string;
