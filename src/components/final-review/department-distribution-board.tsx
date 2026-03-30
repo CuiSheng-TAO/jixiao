@@ -131,11 +131,7 @@ export function DepartmentDistributionBoard({ departments }: DepartmentDistribut
         <CardTitle className="text-lg text-[var(--cockpit-foreground)]">按团队分布</CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-xs text-[var(--cockpit-muted-foreground)]">点击卡片切换视角；可左右滑动查看全部部门</p>
-        </div>
-
-        <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">
           <button
             type="button"
             onClick={() => {
@@ -144,8 +140,8 @@ export function DepartmentDistributionBoard({ departments }: DepartmentDistribut
             }}
             className={
               activeDepartmentKey === "all"
-                ? "min-w-[148px] rounded-[22px] border border-[color:#231f1a] bg-[color:#231f1a] px-4 py-3 text-left text-white shadow-sm"
-                : "min-w-[148px] rounded-[22px] border bg-white px-4 py-3 text-left text-[var(--cockpit-foreground)] shadow-none transition-colors hover:bg-[color:rgba(191,127,65,0.06)]"
+                ? "rounded-[22px] border border-[color:#231f1a] bg-[color:#231f1a] px-4 py-3 text-left text-white shadow-sm"
+                : "rounded-[22px] border bg-white px-4 py-3 text-left text-[var(--cockpit-foreground)] shadow-none transition-colors hover:bg-[color:rgba(191,127,65,0.06)]"
             }
           >
             <p className="text-sm font-semibold">员工层名单（不含主管层）</p>
@@ -178,8 +174,8 @@ export function DepartmentDistributionBoard({ departments }: DepartmentDistribut
                 }}
                 className={
                   active
-                    ? "min-w-[148px] rounded-[22px] border border-[color:#a56a2d] bg-[color:#f8ecdf] px-4 py-3 text-left shadow-sm"
-                    : "min-w-[148px] rounded-[22px] border bg-white px-4 py-3 text-left shadow-none transition-colors hover:bg-[color:rgba(191,127,65,0.06)]"
+                    ? "rounded-[22px] border border-[color:#a56a2d] bg-[color:#f8ecdf] px-4 py-3 text-left shadow-sm"
+                    : "rounded-[22px] border bg-white px-4 py-3 text-left shadow-none transition-colors hover:bg-[color:rgba(191,127,65,0.06)]"
                 }
               >
                 <p className="truncate text-sm font-semibold text-[var(--cockpit-foreground)]">{department.department}</p>

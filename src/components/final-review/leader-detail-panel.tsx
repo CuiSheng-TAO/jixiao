@@ -87,6 +87,12 @@ function LeaderQuestionnaire({
       </div>
 
       <div className="mt-5 space-y-6">
+        {editable && evaluation.prefillSourceLabel && !evaluation.hasSavedEvaluation ? (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm leading-6 text-amber-900">
+            已根据你之前的{evaluation.prefillSourceLabel}预填草稿，确认保存后才会成为主管层终评。
+          </div>
+        ) : null}
+
         <div className="space-y-2">
           <p className="text-sm font-medium text-[var(--cockpit-foreground)]">业绩产出</p>
           <StarRating value={form.performanceStars} onChange={(value) => onChange("performanceStars", value)} disabled={!editable} />

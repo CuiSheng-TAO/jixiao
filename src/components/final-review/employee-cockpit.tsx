@@ -12,6 +12,7 @@ import { buildEmployeeQueueGroups } from "./workspace-view";
 type EmployeeCockpitProps = {
   companyCount: number;
   initialEvalSubmissionRate: number;
+  pendingInitialReviewNames: string[];
   officialCompletionRate: number;
   pendingOfficialCount: number;
   companyDistribution: DistributionEntry[];
@@ -39,6 +40,7 @@ type EmployeeCockpitProps = {
 export function EmployeeCockpit({
   companyCount,
   initialEvalSubmissionRate,
+  pendingInitialReviewNames,
   officialCompletionRate,
   pendingOfficialCount,
   companyDistribution,
@@ -122,6 +124,11 @@ export function EmployeeCockpit({
               <div className="rounded-2xl border px-4 py-3">
                 <p className="text-xs text-[var(--cockpit-muted-foreground)]">绩效初评提交率</p>
                 <p className="mt-2 text-sm font-medium text-[var(--cockpit-foreground)]">{initialEvalSubmissionRate}%</p>
+                <p className="mt-2 text-xs leading-5 text-[var(--cockpit-muted-foreground)]">
+                  {pendingInitialReviewNames.length > 0
+                    ? `未提交：${pendingInitialReviewNames.join("、")}`
+                    : "当前没有未提交初评的人。"}
+                </p>
               </div>
               <div className="rounded-2xl border px-4 py-3">
                 <p className="text-xs text-[var(--cockpit-muted-foreground)]">绩效校准进度</p>

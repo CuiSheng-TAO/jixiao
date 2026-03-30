@@ -57,6 +57,12 @@ function areLeaderFormsEqual(left: LeaderForm, right: LeaderForm) {
   return JSON.stringify(left) === JSON.stringify(right);
 }
 
+function buildDefaultLeaderForm(evaluation: LeaderEvaluation): LeaderForm {
+  if (evaluation.hasSavedEvaluation) return evaluation.form;
+  if (evaluation.prefillForm) return evaluation.prefillForm;
+  return evaluation.form;
+}
+
 function buildLeaderFormSnapshot(leaders: LeaderRow[]): Record<string, LeaderForm> {
   const snapshot: Record<string, LeaderForm> = {};
 
@@ -97,6 +103,12 @@ function CalibrationContent() {
       }
 
       const serverLeaderForms = buildLeaderFormSnapshot(data.leaderReview?.leaders || []);
+      const leaderEvaluationsByKey = new Map<string, LeaderEvaluation>();
+      (data.leaderReview?.leaders || []).forEach((leader: LeaderRow) => {
+        leader.evaluations.forEach((evaluation) => {
+          leaderEvaluationsByKey.set(`${leader.id}:${evaluation.evaluatorId}`, evaluation);
+        });
+      });
       const previousLeaderServerForms = leaderServerFormsRef.current;
       setWorkspace(data);
       setError("");
@@ -120,6 +132,11 @@ function CalibrationContent() {
 
           if (localForm && !areLeaderFormsEqual(localForm, previousServerForm)) {
             next[key] = localForm;
+          } else if (!localForm) {
+            const evaluation = leaderEvaluationsByKey.get(key);
+            if (evaluation) {
+              next[key] = buildDefaultLeaderForm(evaluation);
+            }
           }
         });
 
@@ -279,13 +296,14 @@ function CalibrationContent() {
       <Tabs defaultValue="employees">
         <TabsList>
           <TabsTrigger value="employees">员工层绩效校准</TabsTrigger>
-          <TabsTrigger value="leaders">主管层双人终评</TabsTrigger>
+          <TabsTrigger value="leaders">主管层绩效终评校准</TabsTrigger>
         </TabsList>
 
         <TabsContent value="employees" className="space-y-4" data-priority-pending-count={pendingPriorityCount}>
           <EmployeeCockpit
             companyCount={workspace.employeeReview.overview.companyCount}
             initialEvalSubmissionRate={workspace.employeeReview.overview.initialEvalSubmissionRate}
+            pendingInitialReviewNames={workspace.employeeReview.overview.pendingInitialReviewNames}
             officialCompletionRate={workspace.employeeReview.overview.officialCompletionRate}
             pendingOfficialCount={workspace.employeeReview.overview.pendingOfficialCount}
             companyDistribution={workspace.leaderReview.companyDistributions.all}

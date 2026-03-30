@@ -113,7 +113,7 @@ export function LeaderCockpit({
       <section className="rounded-[28px] border p-5 md:p-6" style={panelStyle}>
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-[var(--cockpit-foreground)]">主管层双人终评总览</h2>
+            <h2 className="text-lg font-semibold text-[var(--cockpit-foreground)]">主管层绩效终评校准</h2>
           </div>
           <Badge variant="outline" className="w-fit">
             主管层终评只围绕承霖、邱翔两份问卷

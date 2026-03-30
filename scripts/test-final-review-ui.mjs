@@ -84,7 +84,7 @@ test("calibration page becomes a two-tab workspace centered on employees and lea
   );
   assert.equal(
     page.includes("<TabsTrigger value=\"employees\">员工层绩效校准</TabsTrigger>") &&
-      page.includes("<TabsTrigger value=\"leaders\">主管层双人终评</TabsTrigger>"),
+      page.includes("<TabsTrigger value=\"leaders\">主管层绩效终评校准</TabsTrigger>"),
     true,
     "calibration page should only expose the employee and leader calibration tabs",
   );
@@ -564,10 +564,10 @@ test("employee calibration page follows the latest redline simplification", () =
 
   assert.equal(
     cockpit.includes("绩效初评等级（加权）") &&
-      board.includes("可左右滑动查看全部部门") &&
+      cockpit.includes("未提交：") &&
       board.includes("员工层名单（不含主管层）"),
     true,
-    "employee roster results should show weighted initial stars and the department rail should clarify the horizontal swipe behavior",
+    "employee roster results should show weighted initial stars, and the top metrics should expose the names behind the missing initial-review submissions",
   );
 
   assert.equal(
@@ -610,9 +610,11 @@ test("department distribution board uses department cards to switch one clean ch
       !board.includes("部门图例") &&
       !board.includes("departmentColors") &&
       !board.includes("读图提示") &&
+      !board.includes("overflow-x-auto") &&
+      !board.includes("可左右滑动查看全部部门") &&
       !board.includes("默认先看全公司。点击部门卡片后，下方同一张图会切到该部门视角；这样能快速看全局，也不会把页面拉得很长。"),
     true,
-    "the department distribution board should keep one shared chart but remove the long teaching copy and side explanations",
+    "the department distribution board should keep one shared chart, remove the long teaching copy, and stop relying on a horizontally scrolling card rail",
   );
 });
 
@@ -803,11 +805,18 @@ test("ordinary employee opinion panel only gives named slots and write actions t
 test("leader cockpit uses a searchable roster rail, queue tabs, and a single-person detail flow", () => {
   const cockpit = read("src/components/final-review/leader-cockpit.tsx");
   const detail = read("src/components/final-review/leader-detail-panel.tsx");
+  const page = read("src/app/(main)/calibration/page.tsx");
 
   assert.equal(
     cockpit.includes("搜索主管") && cockpit.includes("待双人提交") && cockpit.includes("待生成结果") && cockpit.includes("全部主管"),
     true,
     "leader cockpit should expose a searchable roster rail and queue-first navigation",
+  );
+  assert.equal(
+    page.includes("<TabsTrigger value=\"leaders\">主管层绩效终评校准</TabsTrigger>") &&
+      cockpit.includes("主管层绩效终评校准"),
+    true,
+    "leader tab and header should use the renamed company-facing label",
   );
   assert.equal(
     detail.includes("当前结论") && detail.includes("双人结果对照") && !detail.includes("过程留痕"),

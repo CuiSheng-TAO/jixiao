@@ -19,7 +19,12 @@ import {
 } from "@/lib/peer-review-summary";
 import { getActiveCycle, type SessionUser } from "@/lib/session";
 import { buildSupervisorAssignmentMap } from "@/lib/supervisor-assignments";
-import { computeWeightedScore, computeWeightedScoreFromDimensions } from "@/lib/weighted-score";
+import {
+  computeRoundedAbilityStars,
+  computeRoundedValuesStars,
+  computeWeightedScore,
+  computeWeightedScoreFromDimensions,
+} from "@/lib/weighted-score";
 
 export {
   buildDistributionComplianceChecks,
@@ -233,6 +238,10 @@ function normalizeSummaryText(value: string | null | undefined): string | null {
   return normalized ? normalized : null;
 }
 
+function normalizeFormText(value: string | null | undefined): string {
+  return normalizeSummaryText(value) ?? "";
+}
+
 function formatSelfEvalStatus(selfEval: { status: string; importedAt: Date | null } | null): string {
   if (!selfEval) return "未导入";
   if (selfEval.status === "SUBMITTED") return "已提交";
@@ -277,6 +286,31 @@ type OpinionPrefillDraft = {
   suggestedStars: number | null;
   reason: string;
   sourceLabel: string;
+};
+
+type LeaderReviewPrefillDraft = {
+  weightedScore: number | null;
+  referenceStars: number | null;
+  sourceLabel: string;
+  form: {
+    performanceStars: number | null;
+    performanceComment: string;
+    abilityStars: number | null;
+    abilityComment: string;
+    comprehensiveStars: number | null;
+    learningStars: number | null;
+    adaptabilityStars: number | null;
+    valuesStars: number | null;
+    valuesComment: string;
+    candidStars: number | null;
+    candidComment: string;
+    progressStars: number | null;
+    progressComment: string;
+    altruismStars: number | null;
+    altruismComment: string;
+    rootStars: number | null;
+    rootComment: string;
+  };
 };
 
 function buildOpinionPrefillFromSupervisorEval(
@@ -434,6 +468,209 @@ function resolveEmployeeOpinionPrefill(args: {
       args.referenceStars,
       args.ranges,
     );
+  }
+
+  return null;
+}
+
+function buildLeaderReviewPrefillFromSupervisorEval(
+  evaluation: {
+    performanceStars: number | null;
+    performanceComment: string;
+    abilityStars: number | null;
+    abilityComment: string;
+    comprehensiveStars: number | null;
+    learningStars: number | null;
+    adaptabilityStars: number | null;
+    valuesStars: number | null;
+    valuesComment: string;
+    candidStars: number | null;
+    candidComment: string;
+    progressStars: number | null;
+    progressComment: string;
+    altruismStars: number | null;
+    altruismComment: string;
+    rootStars: number | null;
+    rootComment: string;
+    weightedScore: number | null;
+  },
+  ranges: ReferenceStarRange[],
+): LeaderReviewPrefillDraft | null {
+  const referenceStars = mapScoreToReferenceStars(
+    evaluation.weightedScore != null ? Number(evaluation.weightedScore) : null,
+    ranges,
+  );
+
+  if (referenceStars == null) return null;
+
+  return {
+    weightedScore: evaluation.weightedScore != null ? Number(evaluation.weightedScore) : null,
+    referenceStars,
+    sourceLabel: "已提交的直属上级绩效初评",
+    form: {
+      performanceStars: evaluation.performanceStars,
+      performanceComment: normalizeFormText(evaluation.performanceComment),
+      abilityStars: evaluation.abilityStars,
+      abilityComment: normalizeFormText(evaluation.abilityComment),
+      comprehensiveStars: evaluation.comprehensiveStars,
+      learningStars: evaluation.learningStars,
+      adaptabilityStars: evaluation.adaptabilityStars,
+      valuesStars: evaluation.valuesStars,
+      valuesComment: normalizeFormText(buildValuesReviewComment(evaluation)),
+      candidStars: evaluation.candidStars,
+      candidComment: normalizeFormText(evaluation.candidComment),
+      progressStars: evaluation.progressStars,
+      progressComment: normalizeFormText(evaluation.progressComment),
+      altruismStars: evaluation.altruismStars,
+      altruismComment: normalizeFormText(evaluation.altruismComment),
+      rootStars: evaluation.rootStars,
+      rootComment: normalizeFormText(evaluation.rootComment),
+    },
+  };
+}
+
+function buildLeaderReviewPrefillFromPeerReview(
+  review: {
+    performanceStars: number | null;
+    comprehensiveStars: number | null;
+    learningStars: number | null;
+    adaptabilityStars: number | null;
+    candidStars: number | null;
+    progressStars: number | null;
+    altruismStars: number | null;
+    rootStars: number | null;
+    performanceComment: string;
+    comprehensiveComment: string;
+    learningComment: string;
+    adaptabilityComment: string;
+    candidComment: string;
+    progressComment: string;
+    altruismComment: string;
+    rootComment: string;
+  },
+  ranges: ReferenceStarRange[],
+): LeaderReviewPrefillDraft | null {
+  const weightedScore = computeWeightedScoreFromDimensions({
+    performanceStars: review.performanceStars,
+    comprehensiveStars: review.comprehensiveStars,
+    learningStars: review.learningStars,
+    adaptabilityStars: review.adaptabilityStars,
+    candidStars: review.candidStars,
+    progressStars: review.progressStars,
+    altruismStars: review.altruismStars,
+    rootStars: review.rootStars,
+  });
+  const referenceStars = mapScoreToReferenceStars(weightedScore, ranges);
+
+  if (referenceStars == null) return null;
+
+  return {
+    weightedScore,
+    referenceStars,
+    sourceLabel: "已提交的360环评",
+    form: {
+      performanceStars: review.performanceStars,
+      performanceComment: normalizeFormText(review.performanceComment),
+      abilityStars: computeRoundedAbilityStars(
+        review.comprehensiveStars,
+        review.learningStars,
+        review.adaptabilityStars,
+      ),
+      abilityComment: combinePrefillComments([
+        { label: "综合能力", comment: review.comprehensiveComment },
+        { label: "学习能力", comment: review.learningComment },
+        { label: "适应能力", comment: review.adaptabilityComment },
+      ]),
+      comprehensiveStars: review.comprehensiveStars,
+      learningStars: review.learningStars,
+      adaptabilityStars: review.adaptabilityStars,
+      valuesStars: computeRoundedValuesStars(
+        review.candidStars,
+        review.progressStars,
+        review.altruismStars,
+        review.rootStars,
+      ),
+      valuesComment: combinePrefillComments([
+        { label: "坦诚真实", comment: review.candidComment },
+        { label: "极致进取", comment: review.progressComment },
+        { label: "成就利他", comment: review.altruismComment },
+        { label: "ROOT", comment: review.rootComment },
+      ]),
+      candidStars: review.candidStars,
+      candidComment: normalizeFormText(review.candidComment),
+      progressStars: review.progressStars,
+      progressComment: normalizeFormText(review.progressComment),
+      altruismStars: review.altruismStars,
+      altruismComment: normalizeFormText(review.altruismComment),
+      rootStars: review.rootStars,
+      rootComment: normalizeFormText(review.rootComment),
+    },
+  };
+}
+
+function resolveLeaderEvaluationPrefill(args: {
+  evaluatorId: string;
+  employeeId: string;
+  ranges: ReferenceStarRange[];
+  supervisorEvals: Array<{
+    employeeId: string;
+    evaluatorId: string;
+    status: string;
+    performanceStars: number | null;
+    performanceComment: string;
+    abilityStars: number | null;
+    abilityComment: string;
+    comprehensiveStars: number | null;
+    learningStars: number | null;
+    adaptabilityStars: number | null;
+    valuesStars: number | null;
+    valuesComment: string;
+    candidStars: number | null;
+    candidComment: string;
+    progressStars: number | null;
+    progressComment: string;
+    altruismStars: number | null;
+    altruismComment: string;
+    rootStars: number | null;
+    rootComment: string;
+    weightedScore: number | null;
+  }>;
+  peerReviews: Array<{
+    revieweeId: string;
+    reviewerId: string;
+    performanceStars: number | null;
+    comprehensiveStars: number | null;
+    learningStars: number | null;
+    adaptabilityStars: number | null;
+    candidStars: number | null;
+    progressStars: number | null;
+    altruismStars: number | null;
+    rootStars: number | null;
+    performanceComment: string;
+    comprehensiveComment: string;
+    learningComment: string;
+    adaptabilityComment: string;
+    candidComment: string;
+    progressComment: string;
+    altruismComment: string;
+    rootComment: string;
+  }>;
+}): LeaderReviewPrefillDraft | null {
+  const submittedSupervisorEval = args.supervisorEvals.find((item) =>
+    item.employeeId === args.employeeId
+    && item.evaluatorId === args.evaluatorId
+    && item.status === "SUBMITTED",
+  );
+  if (submittedSupervisorEval) {
+    return buildLeaderReviewPrefillFromSupervisorEval(submittedSupervisorEval, args.ranges);
+  }
+
+  const submittedPeerReview = args.peerReviews.find((item) =>
+    item.revieweeId === args.employeeId
+    && item.reviewerId === args.evaluatorId,
+  );
+  if (submittedPeerReview) {
+    return buildLeaderReviewPrefillFromPeerReview(submittedPeerReview, args.ranges);
   }
 
   return null;
@@ -964,14 +1201,26 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
     const evaluations = config.leaderEvaluatorUserIds.map((evaluatorId) => {
       const evaluator = usersById.get(evaluatorId);
       const existing = leaderEvalRows.find((item) => item.evaluatorId === evaluatorId) || null;
+      const prefill = !existing && evaluatorId === user.id
+        ? resolveLeaderEvaluationPrefill({
+          evaluatorId,
+          employeeId: leader.id,
+          ranges: config.referenceStarRanges,
+          supervisorEvals: allSupervisorEvals,
+          peerReviews,
+        })
+        : null;
       return {
         evaluatorId,
         evaluatorName: evaluator?.name || "未配置",
         status: existing?.status || "DRAFT",
-        weightedScore: existing?.weightedScore != null ? Number(existing.weightedScore) : null,
+        weightedScore: existing?.weightedScore != null ? Number(existing.weightedScore) : prefill?.weightedScore ?? null,
         editable: evaluatorId === user.id,
         submittedAt: existing?.submittedAt?.toISOString() || null,
-        referenceStars: mapScoreToReferenceStars(existing?.weightedScore != null ? Number(existing.weightedScore) : null, config.referenceStarRanges),
+        referenceStars: mapScoreToReferenceStars(existing?.weightedScore != null ? Number(existing.weightedScore) : null, config.referenceStarRanges) ?? prefill?.referenceStars ?? null,
+        hasSavedEvaluation: Boolean(existing),
+        prefillForm: prefill?.form ?? null,
+        prefillSourceLabel: prefill?.sourceLabel ?? null,
         form: {
           performanceStars: existing?.performanceStars ?? null,
           performanceComment: existing?.performanceComment ?? "",
@@ -1059,6 +1308,17 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
   const assignmentEmployeeIds = employeeUsers
     .filter((item) => assignments.has(item.id))
     .map((item) => item.id);
+  const pendingInitialReviewNames = assignmentEmployeeIds
+    .filter((employeeId) => {
+      const assignment = assignments.get(employeeId);
+      const currentEvalIds = assignment?.currentEvaluatorIds || [];
+      return currentEvalIds.length > 0
+        && currentEvalIds.some((evaluatorId) => {
+          const existing = allSupervisorEvals.find((item) => item.employeeId === employeeId && item.evaluatorId === evaluatorId);
+          return existing?.status !== "SUBMITTED";
+        });
+    })
+    .map((employeeId) => usersById.get(employeeId)?.name || employeeId);
   const submittedEmployeeCount = assignmentEmployeeIds.filter((employeeId) => {
     const assignment = assignments.get(employeeId);
     const currentEvalIds = assignment?.currentEvaluatorIds || [];
@@ -1156,6 +1416,7 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
       overview: {
         companyCount: companyPeople.length,
         initialEvalSubmissionRate: assignmentEmployeeIds.length > 0 ? Math.round((submittedEmployeeCount / assignmentEmployeeIds.length) * 100) : 0,
+        pendingInitialReviewNames,
         officialCompletionRate: companyPeople.length > 0
           ? Math.round((companyPeople.filter((item) => item.officialStars != null).length / companyPeople.length) * 100)
           : 0,

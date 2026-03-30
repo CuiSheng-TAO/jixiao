@@ -144,6 +144,9 @@ export type LeaderEvaluation = {
   referenceStars: number | null;
   editable: boolean;
   submittedAt: string | null;
+  hasSavedEvaluation: boolean;
+  prefillForm: LeaderForm | null;
+  prefillSourceLabel: string | null;
   form: LeaderForm;
 };
 
@@ -229,6 +232,7 @@ export type WorkspacePayload = {
     overview: {
       companyCount: number;
       initialEvalSubmissionRate: number;
+      pendingInitialReviewNames: string[];
       officialCompletionRate: number;
       pendingOfficialCount: number;
     };

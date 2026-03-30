@@ -186,6 +186,41 @@ test("final review workspace exposes same-person prior reviews as local prefills
   );
 });
 
+test("leader final review workspace also exposes same-person prior reviews as local prefills", () => {
+  const source = read("src/lib/final-review.ts");
+  const page = read("src/app/(main)/calibration/page.tsx");
+  const types = read("src/components/final-review/types.ts");
+  const detail = read("src/components/final-review/leader-detail-panel.tsx");
+
+  assert.equal(
+    source.includes("function buildLeaderReviewPrefillFromSupervisorEval(") &&
+      source.includes("function buildLeaderReviewPrefillFromPeerReview(") &&
+      source.includes("function resolveLeaderEvaluationPrefill("),
+    true,
+    "leader final review should derive local draft prefills from prior supervisor or peer reviews",
+  );
+  assert.equal(
+    types.includes("hasSavedEvaluation: boolean;") &&
+      types.includes("prefillForm: LeaderForm | null;") &&
+      types.includes("prefillSourceLabel: string | null;"),
+    true,
+    "leader evaluations should carry explicit prefill metadata so the UI can initialize a local draft without persisting it",
+  );
+  assert.equal(
+    page.includes("buildDefaultLeaderForm") &&
+      page.includes("evaluation.prefillForm"),
+    true,
+    "leader page should initialize unsaved local forms from the prefill draft when no saved evaluation exists yet",
+  );
+  assert.equal(
+    detail.includes("已根据你之前的") &&
+      detail.includes("预填草稿") &&
+      detail.includes("确认保存后才会成为主管层终评"),
+    true,
+    "leader questionnaire should explicitly warn that the imported same-person content is only a local draft until saved",
+  );
+});
+
 test("final review routes expose config, workspace, opinion, leader review, and confirmation entrypoints", () => {
   const adminConfigRoute = read("src/app/api/admin/final-review-config/route.ts");
   const workspaceRoute = read("src/app/api/final-review/workspace/route.ts");
