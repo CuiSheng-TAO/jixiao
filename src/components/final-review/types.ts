@@ -42,6 +42,35 @@ export type EmployeeRow = {
   selfEvalStatus: string | null;
   selfEvalSourceUrl: string | null;
   peerAverage: number | null;
+  peerReviewSummary: {
+    overall: number | null;
+    performance: number | null;
+    ability: number | null;
+    values: number | null;
+    count: number;
+    reviews: Array<{
+      performanceStars: number | null;
+      performanceComment: string;
+      abilityAverage: number | null;
+      comprehensiveStars: number | null;
+      comprehensiveComment: string;
+      learningStars: number | null;
+      learningComment: string;
+      adaptabilityStars: number | null;
+      adaptabilityComment: string;
+      valuesAverage: number | null;
+      candidStars: number | null;
+      candidComment: string;
+      progressStars: number | null;
+      progressComment: string;
+      altruismStars: number | null;
+      altruismComment: string;
+      rootStars: number | null;
+      rootComment: string;
+      innovationScore: number | null;
+      innovationComment: string;
+    }>;
+  } | null;
   supervisorCommentSummary: string | null;
   handledCount: number;
   totalReviewerCount: number;

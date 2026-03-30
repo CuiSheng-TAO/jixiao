@@ -10,7 +10,13 @@ import {
   resolveEmployeeConsensus,
   resolveLeaderFinalDecision,
 } from "@/lib/final-review-logic";
-import { computePeerReviewAverageFromReviews } from "@/lib/peer-review-summary";
+import {
+  buildPeerReviewCategorySummary,
+  computePeerReviewAverageFromReviews,
+  getPeerReviewAbilityAverage,
+  getPeerReviewPerformanceAverage,
+  getPeerReviewValuesAverage,
+} from "@/lib/peer-review-summary";
 import { getActiveCycle, type SessionUser } from "@/lib/session";
 import { buildSupervisorAssignmentMap } from "@/lib/supervisor-assignments";
 import { computeWeightedScore } from "@/lib/weighted-score";
@@ -446,16 +452,29 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
       select: {
         revieweeId: true,
         outputScore: true,
+        outputComment: true,
         collaborationScore: true,
+        collaborationComment: true,
         valuesScore: true,
+        valuesComment: true,
+        innovationScore: true,
+        innovationComment: true,
         performanceStars: true,
+        performanceComment: true,
         comprehensiveStars: true,
+        comprehensiveComment: true,
         learningStars: true,
+        learningComment: true,
         adaptabilityStars: true,
+        adaptabilityComment: true,
         candidStars: true,
+        candidComment: true,
         progressStars: true,
+        progressComment: true,
         altruismStars: true,
+        altruismComment: true,
         rootStars: true,
+        rootComment: true,
       },
     }),
     prisma.finalReviewOpinion.findMany({
@@ -512,6 +531,35 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
   }
 
   const peerReviewAverageByEmployee = new Map<string, number>();
+  const peerReviewSummaryByEmployee = new Map<string, {
+    overall: number | null;
+    performance: number | null;
+    ability: number | null;
+    values: number | null;
+    count: number;
+    reviews: Array<{
+      performanceStars: number | null;
+      performanceComment: string;
+      abilityAverage: number | null;
+      comprehensiveStars: number | null;
+      comprehensiveComment: string;
+      learningStars: number | null;
+      learningComment: string;
+      adaptabilityStars: number | null;
+      adaptabilityComment: string;
+      valuesAverage: number | null;
+      candidStars: number | null;
+      candidComment: string;
+      progressStars: number | null;
+      progressComment: string;
+      altruismStars: number | null;
+      altruismComment: string;
+      rootStars: number | null;
+      rootComment: string;
+      innovationScore: number | null;
+      innovationComment: string;
+    }>;
+  }>();
   const peerReviewGroups = new Map<string, typeof peerReviews>();
   for (const review of peerReviews) {
     const current = peerReviewGroups.get(review.revieweeId) || [];
@@ -523,6 +571,36 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
     if (average != null) {
       peerReviewAverageByEmployee.set(employeeId, average);
     }
+    const categorySummary = buildPeerReviewCategorySummary(reviews);
+    peerReviewSummaryByEmployee.set(employeeId, {
+      overall: categorySummary.overall,
+      performance: categorySummary.performance,
+      ability: categorySummary.ability,
+      values: categorySummary.values,
+      count: reviews.length,
+      reviews: reviews.map((review) => ({
+        performanceStars: getPeerReviewPerformanceAverage(review),
+        performanceComment: review.performanceComment || review.outputComment || "",
+        abilityAverage: getPeerReviewAbilityAverage(review),
+        comprehensiveStars: review.comprehensiveStars ?? null,
+        comprehensiveComment: review.comprehensiveComment || "",
+        learningStars: review.learningStars ?? null,
+        learningComment: review.learningComment || "",
+        adaptabilityStars: review.adaptabilityStars ?? null,
+        adaptabilityComment: review.adaptabilityComment || "",
+        valuesAverage: getPeerReviewValuesAverage(review),
+        candidStars: review.candidStars ?? null,
+        candidComment: review.candidComment || "",
+        progressStars: review.progressStars ?? null,
+        progressComment: review.progressComment || "",
+        altruismStars: review.altruismStars ?? null,
+        altruismComment: review.altruismComment || "",
+        rootStars: review.rootStars ?? null,
+        rootComment: review.rootComment || "",
+        innovationScore: review.innovationScore ?? null,
+        innovationComment: review.innovationComment || "",
+      })),
+    });
   }
 
   const leaderSubjectIds = new Set(config.leaderSubjectUserIds);
@@ -614,6 +692,7 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
       selfEvalStatus: formatSelfEvalStatus(selfEvalMap.get(employee.id) ?? null),
       selfEvalSourceUrl: selfEvalMap.get(employee.id)?.sourceUrl || null,
       peerAverage: peerReviewAverageByEmployee.get(employee.id) ?? null,
+      peerReviewSummary: peerReviewSummaryByEmployee.get(employee.id) ?? null,
       supervisorCommentSummary: supervisorCommentSummary,
       handledCount,
       totalReviewerCount: employeeOpinionActorIds.length,

@@ -123,6 +123,15 @@ test("final review helper keeps full supervisor summaries and normalizes self-ev
     "final review should compute 360 averages from the unified peer-review summary helper instead of the legacy three fields",
   );
   assert.equal(
+    source.includes("peerReviewSummaryByEmployee") &&
+      source.includes("buildPeerReviewCategorySummary(reviews)") &&
+      source.includes("getPeerReviewPerformanceAverage(review)") &&
+      source.includes("getPeerReviewAbilityAverage(review)") &&
+      source.includes("getPeerReviewValuesAverage(review)"),
+    true,
+    "final review payload should carry expandable 360 detail data built from the current review fields",
+  );
+  assert.equal(
     supervisorRoute.includes("buildPeerReviewCategorySummary(reviews)") &&
       supervisorRoute.includes("getPeerReviewPerformanceAverage(review)") &&
       supervisorRoute.includes("getPeerReviewAbilityAverage(review)") &&

@@ -568,6 +568,23 @@ test("employee evidence panel shows a concise supervisor comment summary", () =>
     true,
     "supervisor comment summary should pull from the real per-value comments written in supervisor reviews",
   );
+  assert.equal(
+    types.includes("peerReviewSummary: {") &&
+      types.includes("performance: number | null;") &&
+      types.includes("ability: number | null;") &&
+      types.includes("values: number | null;") &&
+      types.includes("reviews: Array<{"),
+    true,
+    "employee payload type should include an expandable 360 summary model instead of just a flat average number",
+  );
+  assert.equal(
+    detailPanel.includes("点击查看360详情") &&
+      detailPanel.includes("收起360详情") &&
+      detailPanel.includes("匿名360详情") &&
+      detailPanel.includes("employee.peerReviewSummary"),
+    true,
+    "employee evidence panel should let users click the 360 average card to expand anonymous 360 details inline",
+  );
 });
 
 test("employee detail panel switches from third-person final confirmation to dual-calibrator alignment", () => {

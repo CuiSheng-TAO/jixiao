@@ -38,6 +38,21 @@ function renderStars(value: number | null, fallback: string) {
   return `${value} 星`;
 }
 
+function renderPeerDimension(label: string, score: number | null, comment: string) {
+  if (score == null && !comment) return null;
+  return (
+    <div className="rounded-2xl border px-3 py-2">
+      <p className="text-xs text-[var(--cockpit-muted-foreground)]">
+        {label}
+        {score != null ? ` · ${score.toFixed(1)}分` : ""}
+      </p>
+      <p className="mt-1 text-sm leading-6 text-[var(--cockpit-foreground)]">
+        {comment || "当前没有展开的匿名评语，仅保留评分。"}
+      </p>
+    </div>
+  );
+}
+
 function findOpinionByReviewerName(opinions: EmployeeOpinion[], keyword: string) {
   return opinions.find((opinion) => opinion.reviewerName.includes(keyword)) || null;
 }
@@ -79,6 +94,7 @@ export function EmployeeDetailPanel({
   onSaveOpinion,
 }: EmployeeDetailPanelProps) {
   const [expandedSupervisorCommentEmployeeId, setExpandedSupervisorCommentEmployeeId] = useState<string | null>(null);
+  const [expandedPeerReviewEmployeeId, setExpandedPeerReviewEmployeeId] = useState<string | null>(null);
   const panelStyle: CSSProperties = {
     background: "var(--cockpit-surface)",
     borderColor: "var(--cockpit-border)",
@@ -97,7 +113,9 @@ export function EmployeeDetailPanel({
 
   const myOpinion = employee.opinions.find((item) => item.isMine);
   const expandedSupervisorComment = expandedSupervisorCommentEmployeeId === employee.id;
+  const expandedPeerReview = expandedPeerReviewEmployeeId === employee.id;
   const canExpandSupervisorComment = (employee.supervisorCommentSummary?.length || 0) > 120;
+  const hasPeerReviewSummary = Boolean(employee.peerReviewSummary && employee.peerReviewSummary.count > 0);
   const opinionSummaryText =
     employee.opinionSummary.map((item) => `${item.label} ${item.count} 人`).join(" · ") || "当前还没有形成意见分布。";
   const opinionDecisionOptions: Array<{ value: EmployeeOpinionFormValue["decision"]; label: string }> = [
@@ -182,7 +200,25 @@ export function EmployeeDetailPanel({
         <p className="text-sm font-semibold text-[var(--cockpit-foreground)]">证据摘要</p>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <SummaryCard label="初评加权分" value={employee.weightedScore?.toFixed(1) ?? "—"} />
-          <SummaryCard label="360 均分" value={employee.peerAverage?.toFixed(1) ?? "—"} />
+          {hasPeerReviewSummary ? (
+            <button
+              type="button"
+              onClick={() =>
+                setExpandedPeerReviewEmployeeId((current) => (current === employee.id ? null : employee.id))
+              }
+              className="rounded-2xl border px-4 py-3 text-left transition-colors hover:border-[var(--cockpit-accent-strong)] hover:bg-[var(--cockpit-accent-subtle)]/30"
+            >
+              <p className="text-xs text-[var(--cockpit-muted-foreground)]">360 均分</p>
+              <p className="mt-2 text-sm font-medium text-[var(--cockpit-foreground)]">
+                {employee.peerAverage?.toFixed(1) ?? "—"}
+              </p>
+              <p className="mt-2 text-xs text-[var(--cockpit-accent-strong)]">
+                {expandedPeerReview ? "收起360详情" : "点击查看360详情"}
+              </p>
+            </button>
+          ) : (
+            <SummaryCard label="360 均分" value={employee.peerAverage?.toFixed(1) ?? "—"} />
+          )}
           {employee.selfEvalSourceUrl && employee.selfEvalStatus && employee.selfEvalStatus !== "未导入" ? (
             <a
               href={employee.selfEvalSourceUrl}
@@ -199,6 +235,72 @@ export function EmployeeDetailPanel({
           )}
           <SummaryCard label="初评人" value={employee.currentEvaluatorNames.join("、") || "未配置"} />
         </div>
+        {expandedPeerReview && employee.peerReviewSummary ? (
+          <div className="mt-4 rounded-2xl border px-4 py-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-[var(--cockpit-foreground)]">匿名360详情</p>
+                <p className="mt-1 text-xs text-[var(--cockpit-muted-foreground)]">
+                  已收到 {employee.peerReviewSummary.count} 份匿名反馈。这里只展开聚合均分和匿名评语，不展示评估人身份。
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-auto px-0 text-sm text-[var(--cockpit-accent-strong)] hover:bg-transparent"
+                onClick={() => setExpandedPeerReviewEmployeeId(null)}
+              >
+                收起360详情
+              </Button>
+            </div>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <SummaryCard
+                label="业绩产出"
+                value={employee.peerReviewSummary.performance?.toFixed(1) ?? "—"}
+              />
+              <SummaryCard
+                label="个人能力"
+                value={employee.peerReviewSummary.ability?.toFixed(1) ?? "—"}
+              />
+              <SummaryCard
+                label="价值观"
+                value={employee.peerReviewSummary.values?.toFixed(1) ?? "—"}
+              />
+            </div>
+
+            <div className="mt-4 space-y-3">
+              {employee.peerReviewSummary.reviews.map((review, index) => {
+                const dimensions = [
+                  renderPeerDimension("业绩产出", review.performanceStars, review.performanceComment),
+                  renderPeerDimension("综合能力", review.comprehensiveStars, review.comprehensiveComment),
+                  renderPeerDimension("学习能力", review.learningStars, review.learningComment),
+                  renderPeerDimension("适应能力", review.adaptabilityStars, review.adaptabilityComment),
+                  renderPeerDimension("坦诚真实", review.candidStars, review.candidComment),
+                  renderPeerDimension("极致进取", review.progressStars, review.progressComment),
+                  renderPeerDimension("成就利他", review.altruismStars, review.altruismComment),
+                  renderPeerDimension("ROOT", review.rootStars, review.rootComment),
+                  renderPeerDimension("其他补充", review.innovationScore, review.innovationComment),
+                ].filter(Boolean);
+
+                return (
+                  <div key={`${employee.id}:peer:${index}`} className="rounded-2xl border px-4 py-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--cockpit-muted-foreground)]">
+                      匿名反馈 {index + 1}
+                    </p>
+                    {dimensions.length > 0 ? (
+                      <div className="mt-3 space-y-2">{dimensions}</div>
+                    ) : (
+                      <p className="mt-3 text-sm leading-6 text-[var(--cockpit-muted-foreground)]">
+                        当前这份匿名反馈没有展开的评语内容，只保留了评分。
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
         <div className="mt-4 rounded-2xl border px-4 py-3">
           <p className="text-xs text-[var(--cockpit-muted-foreground)]">参考说明</p>
           <p className="mt-2 text-sm leading-6 text-[var(--cockpit-foreground)]">{employee.referenceSourceLabel}</p>
