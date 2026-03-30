@@ -653,6 +653,22 @@ test("department distribution board uses department cards to switch one clean ch
   );
 });
 
+test("department distribution board renders the chosen light narrow-bar style", () => {
+  const board = read("src/components/final-review/department-distribution-board.tsx");
+
+  assert.equal(
+    board.includes("mx-auto w-[46%]") &&
+      board.includes("rounded-[10px] rounded-b-[6px]") &&
+      board.includes("bg-[color:#e97a73]") &&
+      board.includes("bg-[color:#d8c0a3]") &&
+      board.includes("strokeWidth=\"1.6\"") &&
+      !board.includes("bg-gradient-to-b") &&
+      !board.includes("shadow-[0_16px_28px_rgba(168,93,37,0.18)]"),
+    true,
+    "the team distribution chart should use the lighter narrow-bar treatment instead of heavy rounded gradient blocks",
+  );
+});
+
 test("leader cockpit mirrors the taller left rail layout used in the employee cockpit", () => {
   const cockpit = read("src/components/final-review/leader-cockpit.tsx");
 

@@ -102,7 +102,7 @@ export function DepartmentDistributionBoard({ departments }: DepartmentDistribut
     1,
     ...selectedSummaries.map((item) => Math.max(item.count, item.suggestedCount)),
   );
-  const chartHeight = 220;
+  const chartHeight = 196;
   const polylinePoints = selectedSummaries
     .map((item, index) => {
       const x = 10 + index * 20;
@@ -190,7 +190,7 @@ export function DepartmentDistributionBoard({ departments }: DepartmentDistribut
             <div className="mt-5 rounded-[24px] border bg-[linear-gradient(180deg,rgba(249,244,237,0.92),rgba(255,255,255,0.98))] px-4 py-5">
               <div className="relative">
                 <svg
-                  className="pointer-events-none absolute inset-x-0 top-9 h-[220px] w-full overflow-visible"
+                  className="pointer-events-none absolute inset-x-0 top-12 h-[196px] w-full overflow-visible"
                   viewBox={`0 0 100 ${chartHeight}`}
                   preserveAspectRatio="none"
                   aria-hidden="true"
@@ -202,20 +202,20 @@ export function DepartmentDistributionBoard({ departments }: DepartmentDistribut
                     strokeDasharray="5 5"
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    strokeWidth="1.8"
+                    strokeWidth="1.6"
                   />
                   {selectedSummaries.map((item, index) => {
                     const x = 10 + index * 20;
                     const y = chartHeight - (item.suggestedCount / tallestValue) * chartHeight;
-                    return <circle key={`point:${item.stars}`} cx={x} cy={y} fill="#b7791f" r="2.4" />;
+                    return <circle key={`point:${item.stars}`} cx={x} cy={y} fill="#b7791f" r="2.2" />;
                   })}
                 </svg>
 
                 <div className="grid gap-4 md:grid-cols-5">
                   {selectedSummaries.map((item) => {
-                    const barHeight = Math.max((item.count / tallestValue) * chartHeight, item.count > 0 ? 28 : 0);
+                    const barHeight = Math.max((item.count / tallestValue) * chartHeight, item.count > 0 ? 24 : 0);
                     const barTone =
-                      item.deltaCount > 0 ? "from-[color:#f37c74] to-[color:#ee6b64]" : item.deltaCount < 0 ? "from-[color:#d4a15c] to-[color:#c38742]" : "from-[color:#d9b58d] to-[color:#cb9a63]";
+                      item.deltaCount > 0 ? "bg-[color:#e97a73]" : item.deltaCount < 0 ? "bg-[color:#c89153]" : "bg-[color:#d8c0a3]";
 
                     return (
                       <div key={`bar:${item.stars}`} className="flex flex-col">
@@ -237,23 +237,23 @@ export function DepartmentDistributionBoard({ departments }: DepartmentDistribut
                           </span>
                         </div>
 
-                        <div className="relative flex h-[220px] flex-col justify-end rounded-[22px] border bg-white/70 px-3 py-3">
+                        <div className="relative flex h-[196px] flex-col justify-end rounded-[22px] border bg-white/70 px-3 py-3">
                           <div className="absolute inset-x-4 top-4 h-px bg-[color:rgba(191,127,65,0.12)]" />
                           <div className="absolute inset-x-4 top-[37%] h-px bg-[color:rgba(191,127,65,0.12)]" />
                           <div className="absolute inset-x-4 top-[70%] h-px bg-[color:rgba(191,127,65,0.12)]" />
 
-                          <div className="flex h-full items-end">
+                          <div className="flex h-full items-end justify-center">
                             {item.count === 0 ? (
                               <div className="w-full rounded-[16px] bg-[color:rgba(191,127,65,0.08)] py-3 text-center text-xs text-[var(--cockpit-muted-foreground)]">
                                 当前没有员工
                               </div>
                             ) : (
                               <div
-                                className={`w-full rounded-[18px] bg-gradient-to-b ${barTone} px-3 py-3 text-left text-white shadow-[0_16px_28px_rgba(168,93,37,0.18)]`}
+                                className={`mx-auto w-[46%] rounded-[10px] rounded-b-[6px] ${barTone} px-2 py-2 text-left text-white`}
                                 style={{ height: `${barHeight}px` }}
                                 title={`${item.stars}星 · ${item.count}人：${item.names.join("、")}`}
                               >
-                                <div className="line-clamp-3 text-xs font-medium leading-5">{compactNames(item.names)}</div>
+                                <div className="line-clamp-3 text-[11px] font-medium leading-4">{compactNames(item.names)}</div>
                               </div>
                             )}
                           </div>
