@@ -3,11 +3,11 @@ import { prisma } from "@/lib/db";
 import { getSessionUser, getActiveCycle } from "@/lib/session";
 import { sanitizeText, validateStars } from "@/lib/validate";
 import { buildSupervisorAssignmentMap, isEvalListUser } from "@/lib/supervisor-assignments";
-
-function computeWeightedScore(performanceStars: number | null, abilityStars: number | null, valuesStars: number | null): number | null {
-  if (performanceStars == null || abilityStars == null || valuesStars == null) return null;
-  return performanceStars * 0.5 + abilityStars * 0.3 + valuesStars * 0.2;
-}
+import {
+  computeRoundedAbilityStars,
+  computeRoundedValuesStars,
+  computeWeightedScoreFromDimensions,
+} from "@/lib/weighted-score";
 
 export async function GET() {
   try {
@@ -251,17 +251,22 @@ export async function POST(req: NextRequest) {
     const comprehensiveStars = validateStars(body.comprehensiveStars);
     const learningStars = validateStars(body.learningStars);
     const adaptabilityStars = validateStars(body.adaptabilityStars);
-    const abilityStars = (comprehensiveStars != null && learningStars != null && adaptabilityStars != null)
-      ? Math.round((comprehensiveStars + learningStars + adaptabilityStars) / 3)
-      : null;
+    const abilityStars = computeRoundedAbilityStars(comprehensiveStars, learningStars, adaptabilityStars);
     const candidStars = validateStars(body.candidStars);
     const progressStars = validateStars(body.progressStars);
     const altruismStars = validateStars(body.altruismStars);
     const rootStars = validateStars(body.rootStars);
-    const valuesStars = (candidStars != null && progressStars != null && altruismStars != null && rootStars != null)
-      ? Math.round((candidStars + progressStars + altruismStars + rootStars) / 4)
-      : null;
-    const weightedScore = computeWeightedScore(performanceStars, abilityStars, valuesStars);
+    const valuesStars = computeRoundedValuesStars(candidStars, progressStars, altruismStars, rootStars);
+    const weightedScore = computeWeightedScoreFromDimensions({
+      performanceStars,
+      comprehensiveStars,
+      learningStars,
+      adaptabilityStars,
+      candidStars,
+      progressStars,
+      altruismStars,
+      rootStars,
+    });
 
     if (isSubmit) {
       if (!performanceStars || !comprehensiveStars || !learningStars || !adaptabilityStars || !candidStars || !progressStars || !altruismStars || !rootStars) {

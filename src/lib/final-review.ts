@@ -12,6 +12,7 @@ import {
 } from "@/lib/final-review-logic";
 import { getActiveCycle, type SessionUser } from "@/lib/session";
 import { buildSupervisorAssignmentMap } from "@/lib/supervisor-assignments";
+import { computeWeightedScore } from "@/lib/weighted-score";
 
 export {
   buildDistributionComplianceChecks,
@@ -135,8 +136,7 @@ export function computeSupervisorWeightedScore(
   abilityStars: number | null,
   valuesStars: number | null,
 ): number | null {
-  if (performanceStars == null || abilityStars == null || valuesStars == null) return null;
-  return performanceStars * 0.5 + abilityStars * 0.3 + valuesStars * 0.2;
+  return computeWeightedScore(performanceStars, abilityStars, valuesStars);
 }
 
 export function getFinalReviewConfigValue(

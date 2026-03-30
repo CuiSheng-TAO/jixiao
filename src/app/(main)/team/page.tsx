@@ -11,6 +11,11 @@ import { PageHeader } from "@/components/page-header";
 import { UserCheck } from "lucide-react";
 import { toast } from "sonner";
 import { usePreview } from "@/hooks/use-preview";
+import {
+  computeAbilityAverage,
+  computeValuesAverage,
+  computeWeightedScoreFromDimensions,
+} from "@/lib/weighted-score";
 
 type TeamEval = {
   employee: { id: string; name: string; department: string; jobTitle: string | null };
@@ -99,21 +104,17 @@ type TeamResponse = {
   items: TeamEval[];
 };
 
-function computeAbilityStars(fd: FormData): number | null {
-  if (fd.comprehensiveStars == null || fd.learningStars == null || fd.adaptabilityStars == null) return null;
-  return Math.round((fd.comprehensiveStars + fd.learningStars + fd.adaptabilityStars) / 3);
-}
-
-function computeValuesStars(fd: FormData): number | null {
-  if (fd.candidStars == null || fd.progressStars == null || fd.altruismStars == null || fd.rootStars == null) return null;
-  return Math.round((fd.candidStars + fd.progressStars + fd.altruismStars + fd.rootStars) / 4);
-}
-
 function computeWeightedScore(fd: FormData): number | null {
-  const abilityStars = computeAbilityStars(fd);
-  const valuesStars = computeValuesStars(fd);
-  if (fd.performanceStars == null || abilityStars == null || valuesStars == null) return null;
-  return fd.performanceStars * 0.5 + abilityStars * 0.3 + valuesStars * 0.2;
+  return computeWeightedScoreFromDimensions({
+    performanceStars: fd.performanceStars,
+    comprehensiveStars: fd.comprehensiveStars,
+    learningStars: fd.learningStars,
+    adaptabilityStars: fd.adaptabilityStars,
+    candidStars: fd.candidStars,
+    progressStars: fd.progressStars,
+    altruismStars: fd.altruismStars,
+    rootStars: fd.rootStars,
+  });
 }
 
 function normalizeTeamResponse(data: unknown): TeamResponse {
@@ -550,8 +551,12 @@ function TeamContent() {
                           <span className="text-xs text-muted-foreground">权重30%（三项等权1:1:1）</span>
                           <a href="https://deepwisdom.feishu.cn/wiki/FPUDw7LHmi0OYbkLZAKcjMgBnmU" target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">考核方案</a>
                           {(() => {
-                            const ab = computeAbilityStars(formData[selected!] || {} as FormData);
-                            return ab != null ? <span className="text-xs font-medium text-primary">{ab}星</span> : null;
+                            const average = computeAbilityAverage(
+                              formData[selected!]?.comprehensiveStars ?? null,
+                              formData[selected!]?.learningStars ?? null,
+                              formData[selected!]?.adaptabilityStars ?? null,
+                            );
+                            return average != null ? <span className="text-xs font-medium text-primary">均分 {average.toFixed(1)}</span> : null;
                           })()}
                         </div>
 
@@ -603,8 +608,20 @@ function TeamContent() {
                           <h3 className="text-sm font-semibold">价值观</h3>
                           <span className="text-xs text-muted-foreground">权重20%（4项等权平均）</span>
                           <a href="https://deepwisdom.feishu.cn/wiki/FPUDw7LHmi0OYbkLZAKcjMgBnmU" target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">考核方案</a>
-                          {computeValuesStars(formData[selected!]) != null && (
-                            <Badge variant="outline" className="text-xs">均分 {computeValuesStars(formData[selected!])}</Badge>
+                          {computeValuesAverage(
+                            formData[selected!]?.candidStars ?? null,
+                            formData[selected!]?.progressStars ?? null,
+                            formData[selected!]?.altruismStars ?? null,
+                            formData[selected!]?.rootStars ?? null,
+                          ) != null && (
+                            <Badge variant="outline" className="text-xs">
+                              均分 {computeValuesAverage(
+                                formData[selected!]?.candidStars ?? null,
+                                formData[selected!]?.progressStars ?? null,
+                                formData[selected!]?.altruismStars ?? null,
+                                formData[selected!]?.rootStars ?? null,
+                              )?.toFixed(1)}
+                            </Badge>
                           )}
                         </div>
                         <p className="text-[11px] text-muted-foreground/70 leading-relaxed">请针对以下4条价值观分别评分和评语，需提供数据/案例作证和描述</p>

@@ -2,11 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getActiveCycle, getSessionUser } from "@/lib/session";
 import {
-  computeSupervisorWeightedScore,
   getFinalReviewConfigValue,
   resolveLeaderFinalDecision,
 } from "@/lib/final-review";
 import { sanitizeText, validateStars } from "@/lib/validate";
+import {
+  computeRoundedAbilityStars,
+  computeRoundedValuesStars,
+  computeWeightedScoreFromDimensions,
+} from "@/lib/weighted-score";
 
 export async function POST(req: NextRequest) {
   try {
@@ -48,13 +52,18 @@ export async function POST(req: NextRequest) {
     const progressStars = validateStars(body.progressStars);
     const altruismStars = validateStars(body.altruismStars);
     const rootStars = validateStars(body.rootStars);
-    const abilityStars = (comprehensiveStars != null && learningStars != null && adaptabilityStars != null)
-      ? Math.round((comprehensiveStars + learningStars + adaptabilityStars) / 3)
-      : null;
-    const valuesStars = (candidStars != null && progressStars != null && altruismStars != null && rootStars != null)
-      ? Math.round((candidStars + progressStars + altruismStars + rootStars) / 4)
-      : null;
-    const weightedScore = computeSupervisorWeightedScore(performanceStars, abilityStars, valuesStars);
+    const abilityStars = computeRoundedAbilityStars(comprehensiveStars, learningStars, adaptabilityStars);
+    const valuesStars = computeRoundedValuesStars(candidStars, progressStars, altruismStars, rootStars);
+    const weightedScore = computeWeightedScoreFromDimensions({
+      performanceStars,
+      comprehensiveStars,
+      learningStars,
+      adaptabilityStars,
+      candidStars,
+      progressStars,
+      altruismStars,
+      rootStars,
+    });
 
     if (isSubmit) {
       if (

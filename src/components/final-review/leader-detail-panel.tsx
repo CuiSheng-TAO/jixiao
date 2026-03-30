@@ -6,6 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { StarRating } from "@/components/star-rating";
 import type { LeaderEvaluation, LeaderForm, LeaderRow } from "./types";
+import {
+  computeAbilityAverage,
+  computeValuesAverage,
+  computeWeightedScoreFromDimensions,
+} from "@/lib/weighted-score";
 
 export type LeaderDetailPanelProps = {
   title: string;
@@ -24,21 +29,17 @@ export type LeaderDetailPanelProps = {
   onSaveEvaluation: (leader: LeaderRow, evaluation: LeaderEvaluation, action: "save" | "submit") => void;
 };
 
-function computeAbilityStars(form: LeaderForm): number | null {
-  if (form.comprehensiveStars == null || form.learningStars == null || form.adaptabilityStars == null) return null;
-  return Math.round((form.comprehensiveStars + form.learningStars + form.adaptabilityStars) / 3);
-}
-
-function computeValuesStars(form: LeaderForm): number | null {
-  if (form.candidStars == null || form.progressStars == null || form.altruismStars == null || form.rootStars == null) return null;
-  return Math.round((form.candidStars + form.progressStars + form.altruismStars + form.rootStars) / 4);
-}
-
 function computeWeightedScore(form: LeaderForm): number | null {
-  const abilityStars = computeAbilityStars(form);
-  const valuesStars = computeValuesStars(form);
-  if (form.performanceStars == null || abilityStars == null || valuesStars == null) return null;
-  return Math.round((form.performanceStars * 0.5 + abilityStars * 0.3 + valuesStars * 0.2) * 10) / 10;
+  return computeWeightedScoreFromDimensions({
+    performanceStars: form.performanceStars,
+    comprehensiveStars: form.comprehensiveStars,
+    learningStars: form.learningStars,
+    adaptabilityStars: form.adaptabilityStars,
+    candidStars: form.candidStars,
+    progressStars: form.progressStars,
+    altruismStars: form.altruismStars,
+    rootStars: form.rootStars,
+  });
 }
 
 function formatTime(value: string | null) {
@@ -286,11 +287,11 @@ export function LeaderDetailPanel({
                     </div>
                     <div className="flex items-center justify-between gap-3">
                       <span>个人能力均值</span>
-                      <span>{renderStars(computeAbilityStars(form), "—")}</span>
+                      <span>{computeAbilityAverage(form.comprehensiveStars, form.learningStars, form.adaptabilityStars)?.toFixed(1) ?? "—"}</span>
                     </div>
                     <div className="flex items-center justify-between gap-3">
                       <span>价值观均值</span>
-                      <span>{renderStars(computeValuesStars(form), "—")}</span>
+                      <span>{computeValuesAverage(form.candidStars, form.progressStars, form.altruismStars, form.rootStars)?.toFixed(1) ?? "—"}</span>
                     </div>
                   </div>
                 </div>
