@@ -128,10 +128,7 @@ export function DepartmentDistributionBoard({ departments }: DepartmentDistribut
   return (
     <Card className="rounded-[28px] border shadow-none">
       <CardHeader>
-        <CardTitle className="text-lg text-[var(--cockpit-foreground)]">第二步：按团队分布</CardTitle>
-        <p className="text-sm leading-6 text-[var(--cockpit-muted-foreground)]">
-          默认先看全公司。点击部门卡片后，下方同一张图会切到该部门视角；这样能快速看全局，也不会把页面拉得很长。
-        </p>
+        <CardTitle className="text-lg text-[var(--cockpit-foreground)]">按团队分布</CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
         <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
@@ -191,21 +188,16 @@ export function DepartmentDistributionBoard({ departments }: DepartmentDistribut
           })}
         </div>
 
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_280px]">
-          <section className="rounded-[24px] border p-5">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <p className="text-sm font-semibold text-[var(--cockpit-foreground)]">当前视角</p>
-                <h3 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--cockpit-foreground)]">{selectedScopeLabel}</h3>
-                <p className="mt-2 text-sm text-[var(--cockpit-muted-foreground)]">
-                  共 {selectedTotal} 人，当前最集中的档位是 {dominantBucket.count > 0 ? `${dominantBucket.stars}星` : "暂无"}
-                </p>
-              </div>
-
-              <div className="rounded-[18px] border bg-[color:rgba(191,127,65,0.05)] px-4 py-3 text-sm text-[var(--cockpit-muted-foreground)]">
-                悬停柱体可看具体名单
-              </div>
+        <section className="rounded-[24px] border p-5">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs text-[var(--cockpit-muted-foreground)]">当前视角</p>
+              <h3 className="mt-1 text-2xl font-semibold tracking-tight text-[var(--cockpit-foreground)]">{selectedScopeLabel}</h3>
             </div>
+            <p className="text-sm text-[var(--cockpit-muted-foreground)]">
+              共 {selectedTotal} 人，当前最集中的档位是 {dominantBucket.count > 0 ? `${dominantBucket.stars}星` : "暂无"}
+            </p>
+          </div>
 
             <div className="mt-5 rounded-[24px] border bg-[linear-gradient(180deg,rgba(249,244,237,0.92),rgba(255,255,255,0.98))] px-4 py-5">
               <div className="relative">
@@ -324,33 +316,7 @@ export function DepartmentDistributionBoard({ departments }: DepartmentDistribut
                 )}
               </div>
             </div>
-          </section>
-
-          <section className="space-y-3 rounded-[24px] border p-5">
-            <div>
-              <p className="text-sm font-semibold text-[var(--cockpit-foreground)]">读图提示</p>
-              <p className="mt-1 text-sm leading-6 text-[var(--cockpit-muted-foreground)]">
-                先看当前视角里哪几个星级明显高于或低于建议人数，再决定是否切到具体部门看原因。
-              </p>
-            </div>
-
-            {selectedSummaries.map((item) => (
-              <div key={`summary:${item.stars}`} className="rounded-[20px] border bg-[color:rgba(191,127,65,0.04)] px-4 py-3">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-sm font-medium text-[var(--cockpit-foreground)]">{item.stars}星</span>
-                  <span className="text-sm text-[var(--cockpit-muted-foreground)]">{item.count} 人</span>
-                </div>
-                <p className="mt-2 text-xs leading-5 text-[var(--cockpit-muted-foreground)]">
-                  {item.deltaCount === 0
-                    ? `当前人数与建议人数基本一致，建议约 ${item.suggestedCount} 人。`
-                    : item.deltaCount > 0
-                      ? `当前比建议人数多 ${item.deltaCount} 人，建议约 ${item.suggestedCount} 人。`
-                      : `当前比建议人数少 ${Math.abs(item.deltaCount)} 人，建议约 ${item.suggestedCount} 人。`}
-                </p>
-              </div>
-            ))}
-          </section>
-        </div>
+        </section>
       </CardContent>
     </Card>
   );

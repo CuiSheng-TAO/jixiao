@@ -9,6 +9,7 @@ export type RosterSearchItem = {
   id: string;
   name: string;
   meta: string;
+  detail?: string;
   status: string;
   tone?: "default" | "outline" | "secondary" | "destructive";
 };
@@ -34,7 +35,7 @@ export function RosterSearchList({
   const visibleItems = items.filter((item) =>
     normalizedQuery.length === 0
       ? true
-      : `${item.name} ${item.meta} ${item.status}`.toLowerCase().includes(normalizedQuery),
+      : `${item.name} ${item.meta} ${item.detail || ""} ${item.status}`.toLowerCase().includes(normalizedQuery),
   );
 
   return (
@@ -78,6 +79,13 @@ export function RosterSearchList({
                 <div>
                   <p className="text-sm font-medium text-[var(--cockpit-foreground)]">{item.name}</p>
                   <p className="mt-1 text-xs text-[var(--cockpit-muted-foreground)]">{item.meta}</p>
+                  {item.detail ? (
+                    <p className="mt-2 text-xs font-medium text-[var(--cockpit-foreground)]">
+                      <span className="text-[var(--cockpit-muted-foreground)]">绩效初评等级（加权）</span>
+                      {" "}
+                      {item.detail}
+                    </p>
+                  ) : null}
                 </div>
                 <Badge variant={item.tone || "outline"}>{item.status}</Badge>
               </div>

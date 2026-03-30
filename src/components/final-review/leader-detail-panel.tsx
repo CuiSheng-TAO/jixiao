@@ -223,8 +223,8 @@ export function LeaderDetailPanel({
 
         <div className="mt-4 rounded-2xl border px-4 py-3">
           <p className="text-sm font-semibold text-[var(--cockpit-foreground)]">当前结论</p>
-          <p className="mt-2 text-sm leading-6 text-[var(--cockpit-muted-foreground)]">
-            主管层只看承霖、邱翔两份终评问卷。两份都提交后，系统会按 50/50 形成加权后结果，并映射为最终星级。
+          <p className="mt-2 text-sm font-medium text-[var(--cockpit-foreground)]">
+            {leader.bothSubmitted ? `双人已齐备 · ${renderStars(leader.officialStars, "待自动生成")}` : "待双人提交"}
           </p>
         </div>
 
@@ -254,7 +254,7 @@ export function LeaderDetailPanel({
                 ? pendingReviewCount > 0
                   ? `还有 ${pendingReviewCount} 份问卷待提交`
                   : "两位填写人的问卷都已经提交"
-                : "当前视图只保留双人摘要，不展开每位填写人的姓名和分数。"}
+                : "当前视图只保留双人摘要。"}
             </p>
           </div>
           <Badge variant={leader.bothSubmitted ? "default" : "outline"}>
@@ -312,7 +312,7 @@ export function LeaderDetailPanel({
             <p className="mt-1 text-xs text-[var(--cockpit-muted-foreground)]">
               {leader.canViewLeaderEvaluationDetails
                 ? "只有对应的填写人可以编辑自己的问卷，其他人始终只读。"
-                : "当前视图只展示双人摘要，不展开详细双人问卷。"}
+                : "当前视图不展开详细双人问卷。"}
             </p>
           </div>
           <Badge variant={leader.canViewLeaderEvaluationDetails ? "secondary" : "outline"}>

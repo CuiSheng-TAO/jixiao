@@ -12,7 +12,6 @@ import { buildLeaderQueueGroups } from "./workspace-view";
 type CompanyScope = "all" | "leaderOnly" | "employeeOnly";
 
 type LeaderCockpitProps = {
-  guideDescription: string;
   progressTitle: string;
   progressDescription: string;
   leaderCount: number;
@@ -33,7 +32,6 @@ type LeaderCockpitProps = {
 };
 
 export function LeaderCockpit({
-  guideDescription,
   progressTitle,
   progressDescription,
   leaderCount,
@@ -115,8 +113,7 @@ export function LeaderCockpit({
       <section className="rounded-[28px] border p-5 md:p-6" style={panelStyle}>
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-[var(--cockpit-foreground)]">第一步：主管层双人终评总览</h2>
-            <p className="mt-2 text-sm leading-7 text-[var(--cockpit-muted-foreground)]">{guideDescription}</p>
+            <h2 className="text-lg font-semibold text-[var(--cockpit-foreground)]">主管层双人终评总览</h2>
           </div>
           <Badge variant="outline" className="w-fit">
             主管层终评只围绕承霖、邱翔两份问卷
@@ -197,7 +194,7 @@ export function LeaderCockpit({
         >
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold text-[var(--cockpit-foreground)]">第二步：逐个查看主管</h2>
+              <h2 className="text-lg font-semibold text-[var(--cockpit-foreground)]">逐个查看主管</h2>
               <p className="mt-1 text-sm leading-6 text-[var(--cockpit-muted-foreground)]">{queueDescription}</p>
             </div>
             <Badge variant="outline" className="w-fit">

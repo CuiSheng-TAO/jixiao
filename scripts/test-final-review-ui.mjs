@@ -68,140 +68,40 @@ test("admin final review config uses roster cards instead of multi-select lists"
   );
 });
 
-test("calibration page becomes a three-tab final review workspace", () => {
+test("calibration page becomes a two-tab workspace centered on employees and leaders", () => {
   const page = read("src/app/(main)/calibration/page.tsx");
-  const principles = read("src/components/final-review/principles-tab.tsx");
+  const globals = read("src/app/globals.css");
 
-  assertSourceContains(page, "原则", "calibration page should include the tab label \"原则\"");
-  assertSourceContains(page, "非主管员工终评", "calibration page should include the tab label \"非主管员工终评\"");
-  assertSourceContains(page, "主管层双人终评", "calibration page should include the tab label \"主管层双人终评\"");
   assert.equal(
-    page.includes("参考星级由初评加权分换算"),
+    page.includes('from "@/components/final-review/principles-tab"'),
+    false,
+    "calibration page should stop importing the standalone principles tab",
+  );
+  assert.equal(
+    page.includes("<TabsTrigger value=\"battlefield\">"),
+    false,
+    "calibration page should drop the standalone principles tab trigger",
+  );
+  assert.equal(
+    page.includes("<TabsTrigger value=\"employees\">员工层绩效校准</TabsTrigger>") &&
+      page.includes("<TabsTrigger value=\"leaders\">主管层双人终评</TabsTrigger>"),
     true,
-    "employee final review rows should explain where the reference star comes from",
+    "calibration page should only expose the employee and leader calibration tabs",
+  );
+  assert.equal(
+    page.includes("非主管员工终评") || page.includes("<TabsTrigger value=\"battlefield\">原则</TabsTrigger>"),
+    false,
+    "calibration page should stop showing the old first-page and non-supervisor tab labels",
   );
   assert.equal(
     page.includes("setInterval(loadWorkspace, 30000)"),
     true,
-    "final review workspace should auto-refresh every 30 seconds",
-  );
-  assert.equal(
-    principles.includes("这一页先统一原则、链路和校准提醒，再判断分布是否偏离建议区间。"),
-    true,
-    "principles tab should explain its purpose as a principle-check page instead of a generic operator console",
-  );
-  assert.equal(
-    page.includes("这一页先统一原则、链路和校准提醒，再判断分布是否偏离建议区间。"),
-    false,
-    "calibration page should not keep the principles briefing copy inline",
-  );
-  assert.equal(
-    page.includes("第一步看公司分布，第二步看团队分布，第三步再让承霖、邱翔逐一校准普通员工。"),
-    true,
-    "employee tab should explain the author-intended company/team/individual calibration flow in plain language",
-  );
-  assert.equal(
-    page.includes("这一页先看主管层双人终评总览，再逐个查看主管的双人结果和问卷。"),
-    true,
-    "leader tab should explain the summary-first leader workflow in plain language",
-  );
-  assert.equal(
-    principles.includes("具名拍板人已完成的意见数"),
-    false,
-    "principles tab should stop describing ordinary employee calibration as a generic named-opinion collection process",
-  );
-  assert.equal(
-    principles.includes("主管层问卷填写进度"),
-    true,
-    "leader submission card should use plain-language wording",
-  );
-  assert.equal(
-    principles.includes("吴承霖、邱翔分别已提交多少份主管层问卷"),
-    false,
-    "principles tab should not hardcode named leader reviewers into summary copy that ordinary viewers can see",
-  );
-  assert.equal(
-    principles.includes("公司级绩效终评校准人") &&
-      principles.includes("初评维度检查") &&
-      principles.includes("分布符合性检查"),
-    true,
-    "principles tab should surface the company calibrators and the two explicit principle-check sections",
-  );
-  assert.equal(
-    principles.includes("终评工作台查看人"),
-    false,
-    "principles tab should stop exposing generic workspace viewer roles in the author-facing briefing",
-  );
-});
-
-test("principles-tab source includes redesign tokens", () => {
-  const source = read("src/components/final-review/principles-tab.tsx");
-
-  assertSourceContains(source, "原则", "principles tab should include the briefing anchor token \"原则\"");
-  assertSourceContains(source, "全公司星级分布", "principles tab should include the overview token \"全公司星级分布\"");
-  assertSourceContains(source, "分数带", "principles tab should include the cockpit metric token \"分数带\"");
-  assertSourceContains(source, "一句话解读", "principles tab should include the summary token \"一句话解读\"");
-});
-
-test("principles tab owns chart composition while the page stays a data container", () => {
-  const page = read("src/app/(main)/calibration/page.tsx");
-  const principles = read("src/components/final-review/principles-tab.tsx");
-
-  assert.equal(
-    page.includes('from "@/components/final-review/principles-tab"'),
-    true,
-    "calibration page should import the dedicated principles tab component",
-  );
-  assert.equal(
-    page.includes('from "@/components/final-review/score-band-chart"'),
-    false,
-    "calibration page should stop importing the score band chart helper directly",
-  );
-  assert.equal(
-    page.includes('from "@/components/final-review/star-distribution-chart"'),
-    false,
-    "calibration page should stop importing the star distribution chart helper directly",
-  );
-  assert.equal(
-    principles.includes('from "./score-band-chart"') && principles.includes('from "./star-distribution-chart"'),
-    true,
-    "principles tab should own the chart helper composition",
-  );
-  assert.equal(
-    page.includes("全公司星级分布") || page.includes("一句话解读"),
-    false,
-    "calibration page should not keep principles-only chart or summary wording inline",
-  );
-});
-
-test("principles-tab handles overdue wording and globals keep cockpit styling token-based", () => {
-  const principles = read("src/components/final-review/principles-tab.tsx");
-  const globals = read("src/app/globals.css");
-
-  assert.equal(
-    principles.includes("距离截止还有 ${formatCountdown(cycle.calibrationEnd)}"),
-    false,
-    "principles summary should not produce awkward overdue wording by prefixing all countdown states the same way",
-  );
-  assert.equal(
-    principles.includes("已过校准截止时间"),
-    true,
-    "principles summary should include an overdue-specific phrase after the deadline passes",
+    "final review workspace should keep auto-refreshing every 30 seconds",
   );
   assert.equal(
     globals.includes("--cockpit-surface") && globals.includes("--cockpit-border"),
     true,
-    "globals should keep a minimal set of cockpit tokens",
-  );
-  assert.equal(
-    globals.includes("--color-cockpit-"),
-    false,
-    "globals should not add extra app-wide cockpit color aliases",
-  );
-  assert.equal(
-    globals.includes(".final-review-cockpit-"),
-    false,
-    "globals should not add component-specific cockpit utility classes",
+    "globals should keep the shared cockpit tokens after the tab reduction",
   );
 });
 
@@ -210,15 +110,43 @@ test("calibration page source includes employee-tab redesign tokens", () => {
   const cockpit = read("src/components/final-review/employee-cockpit.tsx");
   const departmentBoard = read("src/components/final-review/department-distribution-board.tsx");
   const detailPanel = read("src/components/final-review/employee-detail-panel.tsx");
+  const roster = read("src/components/final-review/roster-search-list.tsx");
 
-  assertSourceContains(cockpit, "第一步：公司分布总览", "employee tab should explicitly mark the company-overview step");
-  assertSourceContains(departmentBoard, "第二步：按团队分布", "employee tab should explicitly mark the team-distribution step");
-  assertSourceContains(cockpit, "第三步：逐一校准", "employee tab should explicitly mark the one-by-one calibration step");
+  assert.equal(
+    cockpit.includes("第一步：公司分布总览") || cockpit.includes("第三步：逐一校准") || departmentBoard.includes("第二步：按团队分布"),
+    false,
+    "employee calibration should stop using step-by-step tutorial titles",
+  );
+  assert.equal(
+    cockpit.includes("距离截止") && cockpit.includes("分布偏离") && cockpit.includes("初评缺口"),
+    true,
+    "employee tab should surface the former first-page content as a compact summary strip",
+  );
+  assert.equal(
+    roster.includes("绩效初评等级（加权）"),
+    true,
+    "employee search results should show the weighted initial-review star label",
+  );
   assertSourceContains(cockpit, "待双人校准", "employee tab should use the new dual-calibration pending label");
   assertSourceContains(cockpit, "两人不一致", "employee tab should call out disagreement as a first-class queue");
   assertSourceContains(source, "最终决策", "employee tab should include the decision panel token \"最终决策\"");
   assertSourceContains(detailPanel, "承霖校准", "employee detail panel should surface Chenglin's current calibration state");
   assertSourceContains(detailPanel, "邱翔校准", "employee detail panel should surface Qiuxiang's current calibration state");
+  assert.equal(
+    cockpit.includes("全公司绩效分布") && !cockpit.includes("员工层实时分布"),
+    true,
+    "employee page should end with a whole-company distribution chart instead of an employee-only temporary chart",
+  );
+  assert.equal(
+    detailPanel.includes("参考星级来自初评加权分换算。普通员工终评只看承霖、邱翔两位校准人的结论；两人一致时，系统会自动形成官方结果。"),
+    false,
+    "employee detail panel should drop the extra explanatory sentence under the current decision block",
+  );
+  assert.equal(
+    detailPanel.includes("承霖、邱翔尚未都完成当前员工的校准动作，系统暂时只保留参考星级。"),
+    false,
+    "employee detail panel should drop the extra explanatory paragraph under the agreement summary block",
+  );
 });
 
 test("calibration page source includes leader-tab redesign tokens", () => {
@@ -226,8 +154,11 @@ test("calibration page source includes leader-tab redesign tokens", () => {
   const cockpit = read("src/components/final-review/leader-cockpit.tsx");
 
   assertSourceContains(source, "双人结果对照", "leader tab should include the comparison token \"双人结果对照\"");
-  assertSourceContains(cockpit, "第一步：主管层双人终评总览", "leader tab should explicitly mark the leader-summary step");
-  assertSourceContains(cockpit, "第二步：逐个查看主管", "leader tab should explicitly mark the per-leader step");
+  assert.equal(
+    cockpit.includes("第一步：主管层双人终评总览") || cockpit.includes("第二步：逐个查看主管"),
+    false,
+    "leader tab should stop using step-by-step tutorial titles",
+  );
   assertSourceContains(cockpit, "待双人提交", "leader tab should include the dual-submission waiting label");
   assertSourceContains(cockpit, "待生成结果", "leader tab should include the automatic-result waiting label");
   assertSourceContains(cockpit, "全公司最终分布", "leader tab should keep the company-final-distribution chart visible");
@@ -345,7 +276,7 @@ test("leader detail panel keeps dual-review comparisons summary-only until the p
 test("employee detail panel collapses opinion process rows until the permission gate", () => {
   const detailPanel = read("src/components/final-review/employee-detail-panel.tsx");
   const processStart = detailPanel.indexOf('过程留痕');
-  const permissionGate = detailPanel.indexOf('employee.canViewOpinionDetails ? (', processStart);
+  const permissionGate = detailPanel.indexOf('canShowNamedOpinions ? (', processStart);
   const opinionRows = detailPanel.indexOf('employee.opinions.map((opinion) => (', processStart);
   const summarySlice = detailPanel.slice(processStart, permissionGate === -1 ? detailPanel.length : permissionGate);
 
@@ -442,9 +373,9 @@ test("leader detail panel explains auto-generation after dual submission", () =>
   const detailPanel = read("src/components/final-review/leader-detail-panel.tsx");
 
   assert.equal(
-    detailPanel.includes("系统会按 50/50 形成加权后结果"),
+    detailPanel.includes('leader.bothSubmitted ? `双人已齐备 · ${renderStars(leader.officialStars, "待自动生成")}` : "待双人提交"'),
     true,
-    "leader detail panel should explain that the official result is auto-generated after both questionnaires are submitted",
+    "leader detail panel should summarize the dual-review state directly in the current-decision block",
   );
   assert.equal(
     detailPanel.includes('leader.bothSubmitted ? "待生成结果" : "待双人提交"'),
@@ -617,42 +548,6 @@ test("leader detail panel switches from third-person confirmation to dual-review
   );
 });
 
-test("principles tab packs role and risk guidance into one dense side panel", () => {
-  const principles = read("src/components/final-review/principles-tab.tsx");
-
-  assert.equal(
-    principles.includes("本轮终评角色与提醒"),
-    true,
-    "the principles tab should combine roles and reminders into one denser side panel to reduce empty space",
-  );
-  assert.equal(
-    principles.includes(">本轮终评角色</CardTitle>") || principles.includes(">风险与推进提醒</CardTitle>"),
-    false,
-    "the principles tab should stop splitting the side rail into two separate sparse cards",
-  );
-  assert.equal(
-    principles.includes("CardContent className=\"grid gap-4 xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]\"") &&
-      principles.includes("xl:grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)]"),
-    true,
-    "the principles tab should repack role and reminder content into a denser two-column side panel to reduce blank space",
-  );
-});
-
-test("principles tab keeps the initial-dimension gap list in a scrollable area", () => {
-  const principles = read("src/components/final-review/principles-tab.tsx");
-
-  assert.equal(
-    principles.includes("max-h-96 overflow-y-auto pr-1"),
-    true,
-    "the initial-dimension gap list should use an internal scroll area so all pending people remain reachable without stretching the whole page",
-  );
-  assert.equal(
-    principles.includes("slice(0, 6)"),
-    false,
-    "the initial-dimension gap list should stop truncating the roster to the first six people once the section becomes scrollable",
-  );
-});
-
 test("department distribution board uses department cards to switch one clean chart view", () => {
   const board = read("src/components/final-review/department-distribution-board.tsx");
 
@@ -660,13 +555,14 @@ test("department distribution board uses department cards to switch one clean ch
     board.includes('useState<"all" | string>("all")') &&
       board.includes("全公司") &&
       board.includes("setActiveDepartmentKey") &&
-      board.includes("当前视角") &&
       board.includes("selectedDepartment") &&
       board.includes("polyline") &&
       !board.includes("部门图例") &&
-      !board.includes("departmentColors"),
+      !board.includes("departmentColors") &&
+      !board.includes("读图提示") &&
+      !board.includes("默认先看全公司。点击部门卡片后，下方同一张图会切到该部门视角；这样能快速看全局，也不会把页面拉得很长。"),
     true,
-    "the department distribution board should switch one clean chart between all-company and per-department views instead of mixing every department into one noisy graphic",
+    "the department distribution board should keep one shared chart but remove the long teaching copy and side explanations",
   );
 });
 
@@ -701,6 +597,21 @@ test("department distribution board keeps names out of bars and moves them into 
       !board.includes("line-clamp-3"),
     true,
     "the team distribution chart should keep bars clean and show the selected star's names in a separate detail area below",
+  );
+});
+
+test("employee detail panel keeps non-calibrator viewers on read-only dual-review summaries", () => {
+  const detailPanel = read("src/components/final-review/employee-detail-panel.tsx");
+
+  assert.equal(
+    detailPanel.includes("这里直接看承霖、邱翔各自的校准结论；只有具备权限的人才展开改星理由。"),
+    false,
+    "employee detail panel should remove the extra instructional copy above the dual-review summary",
+  );
+  assert.equal(
+    detailPanel.includes("当前视图只保留汇总口径，不展开承霖、邱翔的补充理由原文。"),
+    false,
+    "employee detail panel should stop explaining the permission model with extra prose",
   );
 });
 

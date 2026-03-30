@@ -38,6 +38,11 @@ function renderStars(value: number | null, fallback: string) {
   return `${value} 星`;
 }
 
+function renderOpinionSummary(opinion: EmployeeOpinion | null, pendingLabel: string) {
+  if (!opinion || opinion.decision === "PENDING") return pendingLabel;
+  return `${opinion.decisionLabel} · ${renderStars(opinion.suggestedStars, "—")}`;
+}
+
 function renderPeerDimension(label: string, score: number | null, comment: string) {
   if (score == null && !comment) return null;
   return (
@@ -127,10 +132,11 @@ export function EmployeeDetailPanel({
   const qiuxiangOpinion = findOpinionByReviewerName(employee.opinions, "邱翔");
   const agreementSummary =
     employee.agreementState === "AGREED"
-      ? `两位校准人已经一致，同意形成 ${renderStars(employee.officialStars, "—")} 的官方结果。`
+      ? `已一致 · ${renderStars(employee.officialStars, "—")}`
       : employee.agreementState === "DISAGREED"
-        ? "两位校准人都已经处理，但当前结论不一致，暂时不会形成官方结果。"
-        : "承霖、邱翔尚未都完成当前员工的校准动作，系统暂时只保留参考星级。";
+        ? "两人不一致"
+        : "待两位完成";
+  const canShowNamedOpinions = employee.canSubmitOpinion;
 
   return (
     <aside className="sticky top-6 space-y-4">
@@ -151,9 +157,7 @@ export function EmployeeDetailPanel({
 
         <div className="mt-4 rounded-2xl border px-4 py-3">
           <p className="text-sm font-semibold text-[var(--cockpit-foreground)]">当前结论</p>
-          <p className="mt-2 text-sm leading-6 text-[var(--cockpit-muted-foreground)]">
-            参考星级来自初评加权分换算。普通员工终评只看承霖、邱翔两位校准人的结论；两人一致时，系统会自动形成官方结果。
-          </p>
+          <p className="mt-2 text-sm font-medium text-[var(--cockpit-foreground)]">{agreementSummary}</p>
         </div>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -170,13 +174,13 @@ export function EmployeeDetailPanel({
           <div className="rounded-2xl border px-4 py-3">
             <p className="text-xs text-[var(--cockpit-muted-foreground)]">承霖校准</p>
             <p className="mt-2 text-sm font-medium text-[var(--cockpit-foreground)]">
-              {chenglinOpinion ? `${chenglinOpinion.decisionLabel} · ${renderStars(chenglinOpinion.suggestedStars, "—")}` : "待处理"}
+              {renderOpinionSummary(chenglinOpinion, employee.canSubmitOpinion ? "待处理" : "尚未提交")}
             </p>
           </div>
           <div className="rounded-2xl border px-4 py-3">
             <p className="text-xs text-[var(--cockpit-muted-foreground)]">邱翔校准</p>
             <p className="mt-2 text-sm font-medium text-[var(--cockpit-foreground)]">
-              {qiuxiangOpinion ? `${qiuxiangOpinion.decisionLabel} · ${renderStars(qiuxiangOpinion.suggestedStars, "—")}` : "待处理"}
+              {renderOpinionSummary(qiuxiangOpinion, employee.canSubmitOpinion ? "待处理" : "尚未提交")}
             </p>
           </div>
         </div>
@@ -184,8 +188,7 @@ export function EmployeeDetailPanel({
         <div className="mt-4 rounded-2xl border px-4 py-3">
           <p className="text-xs text-[var(--cockpit-muted-foreground)]">校准结论</p>
           <p className="mt-2 text-sm leading-6 text-[var(--cockpit-foreground)]">
-            {agreementSummary}
-            {employee.anomalyTags.length > 0 ? ` 当前风险信号：${employee.anomalyTags.join("、")}。` : " 当前没有额外风险信号。"}
+            {employee.anomalyTags.length > 0 ? `当前风险信号：${employee.anomalyTags.join("、")}` : "当前没有额外风险信号。"}
           </p>
         </div>
 
@@ -358,18 +361,13 @@ export function EmployeeDetailPanel({
         <div className="mt-4 rounded-2xl border px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm font-semibold text-[var(--cockpit-foreground)]">两位校准人</p>
-            <Badge variant={employee.canViewOpinionDetails ? "secondary" : "outline"}>
-              {employee.canViewOpinionDetails ? "已开放" : "已隐藏"}
+            <Badge variant={canShowNamedOpinions ? "secondary" : "outline"}>
+              {canShowNamedOpinions ? "已开放" : "只读摘要"}
             </Badge>
           </div>
-          <p className="mt-2 text-sm leading-6 text-[var(--cockpit-muted-foreground)]">
-            {employee.canViewOpinionDetails
-              ? "这里直接看承霖、邱翔各自的校准结论；只有具备权限的人才展开改星理由。"
-              : "当前视图只保留汇总口径，不展开承霖、邱翔的补充理由原文。"}
-          </p>
         </div>
 
-        {employee.canViewOpinionDetails ? (
+        {canShowNamedOpinions ? (
           <div className="mt-4 space-y-3">
             {employee.opinions.map((opinion) => (
               <OpinionCard key={opinion.reviewerId} opinion={opinion} />
@@ -438,7 +436,7 @@ export function EmployeeDetailPanel({
             <p className="text-xs text-[var(--cockpit-muted-foreground)]">最后自动生成时间</p>
             <p className="mt-2 text-[var(--cockpit-foreground)]">{formatTime(employee.officialConfirmedAt)}</p>
           </div>
-          {employee.canViewOpinionDetails ? (
+          {canShowNamedOpinions ? (
             <div className="space-y-2">
               {employee.opinions.map((opinion) => (
                 <div key={`${opinion.reviewerId}:audit`} className="flex items-center justify-between rounded-2xl border px-4 py-3">

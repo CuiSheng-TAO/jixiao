@@ -3,13 +3,11 @@
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import {
   buildLeaderSubmissionSummary,
-  buildScoreBandBuckets,
 } from "@/components/final-review/workspace-view";
 import { EmployeeCockpit } from "@/components/final-review/employee-cockpit";
 import { EmployeeDetailPanel } from "@/components/final-review/employee-detail-panel";
 import { LeaderCockpit } from "@/components/final-review/leader-cockpit";
 import { LeaderDetailPanel } from "@/components/final-review/leader-detail-panel";
-import { PrinciplesTab } from "@/components/final-review/principles-tab";
 import type {
   EmployeeRow,
   LeaderEvaluation,
@@ -41,6 +39,35 @@ function buildDefaultEmployeeOpinionForm(employee: EmployeeRow): EmployeeOpinion
 
 function areLeaderFormsEqual(left: LeaderForm, right: LeaderForm) {
   return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function describeDeadline(end: string) {
+  const diff = new Date(end).getTime() - Date.now();
+  if (diff <= 0) {
+    return "已过截止时间";
+  }
+
+  const totalMinutes = Math.floor(diff / (1000 * 60));
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+  const minutes = totalMinutes % 60;
+
+  return days > 0 ? `${days}天 ${hours}小时` : `${hours}小时 ${minutes}分钟`;
+}
+
+function buildDistributionSummary(overview: NonNullable<WorkspacePayload["overview"]>) {
+  const mismatches = overview.distributionComplianceChecks.filter((item) => !item.compliant);
+  if (mismatches.length === 0) return "当前分布基本符合建议区间";
+  if (mismatches.length <= 2) return mismatches.map((item) => item.summary).join(" · ");
+  return `${mismatches.slice(0, 2).map((item) => item.summary).join(" · ")} · 另有 ${mismatches.length - 2} 项偏离`;
+}
+
+function buildDimensionGapSummary(overview: NonNullable<WorkspacePayload["overview"]>) {
+  if (overview.initialDimensionChecks.missingCount === 0) {
+    return "初评维度已完整覆盖";
+  }
+
+  return `${overview.initialDimensionChecks.missingCount} 人初评维度待补齐`;
 }
 
 function buildLeaderFormSnapshot(leaders: LeaderRow[]): Record<string, LeaderForm> {
@@ -216,7 +243,6 @@ function CalibrationContent() {
 
   const selectedLeader = workspace.leaderReview.leaders.find((leader) => leader.id === selectedLeaderId) || workspace.leaderReview.leaders[0] || null;
   const activeCompanyDistribution = workspace.leaderReview.companyDistributions[activeCompanyScope];
-  const scoreBandBuckets = buildScoreBandBuckets(workspace.employeeReview.employees);
   const leaderSubmissionSummary = buildLeaderSubmissionSummary(workspace.leaderReview.leaders);
   const selectedEmployee =
     workspace.employeeReview.employees.find((employee) => employee.id === selectedEmployeeId) ||
@@ -263,34 +289,26 @@ function CalibrationContent() {
         description={`${workspace.cycle.name} · 校准时间 ${new Date(workspace.cycle.calibrationStart).toLocaleDateString()} - ${new Date(workspace.cycle.calibrationEnd).toLocaleDateString()}`}
       />
 
-      <Tabs defaultValue="battlefield">
+      <Tabs defaultValue="employees">
         <TabsList>
-          <TabsTrigger value="battlefield">原则</TabsTrigger>
-          <TabsTrigger value="employees">非主管员工终评</TabsTrigger>
+          <TabsTrigger value="employees">员工层绩效校准</TabsTrigger>
           <TabsTrigger value="leaders">主管层双人终评</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="battlefield" className="space-y-4" data-score-band-count={scoreBandBuckets.length}>
-          <PrinciplesTab
-            cycle={workspace.cycle}
-            config={workspace.config}
-            overview={workspace.overview}
-            companyDistribution={workspace.leaderReview.companyDistributions.all}
-            scoreBandBuckets={scoreBandBuckets}
-          />
-        </TabsContent>
-
         <TabsContent value="employees" className="space-y-4" data-priority-pending-count={pendingPriorityCount}>
           <EmployeeCockpit
-            guideDescription="第一步看公司分布，第二步看团队分布，第三步再让承霖、邱翔逐一校准普通员工。参考星级由初评加权分换算。"
+            summaryStrip={{
+              deadline: describeDeadline(workspace.cycle.calibrationEnd),
+              distribution: buildDistributionSummary(workspace.overview),
+              dimensionGap: buildDimensionGapSummary(workspace.overview),
+            }}
             companyCount={workspace.employeeReview.overview.companyCount}
             initialEvalSubmissionRate={workspace.employeeReview.overview.initialEvalSubmissionRate}
             officialCompletionRate={workspace.employeeReview.overview.officialCompletionRate}
             pendingOfficialCount={workspace.employeeReview.overview.pendingOfficialCount}
-            companyDistribution={workspace.employeeReview.companyDistribution}
-            employeeDistribution={workspace.employeeReview.employeeDistribution}
+            companyDistribution={workspace.leaderReview.companyDistributions.all}
+            distributionChecks={workspace.overview.distributionComplianceChecks}
             departmentDistributions={workspace.employeeReview.departmentDistributions}
-            scoreBandBuckets={scoreBandBuckets}
             allEmployees={workspace.employeeReview.employees}
             selectedEmployeeId={selectedEmployee?.id ?? null}
             onSelectEmployee={setSelectedEmployeeId}
@@ -318,9 +336,8 @@ function CalibrationContent() {
           data-leader-submitted-total={leaderSubmissionSummary.reduce((total, item) => total + item.submittedCount, 0)}
         >
           <LeaderCockpit
-            guideDescription="这一页先看主管层双人终评总览，再逐个查看主管的双人结果和问卷。"
             progressTitle="双人提交进度"
-            progressDescription="先看承霖、邱翔两位填写人的整体提交进度，再决定哪些主管已经可以形成结果。"
+            progressDescription="按后台配置读取当前待双人提交名单。"
             leaderCount={workspace.leaderReview.overview.leaderCount}
             confirmedCount={workspace.leaderReview.overview.confirmedCount}
             leaderDistribution={workspace.leaderReview.leaderDistribution}
