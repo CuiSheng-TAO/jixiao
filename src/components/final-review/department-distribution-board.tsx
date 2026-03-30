@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DistributionEntry } from "./types";
 
@@ -11,19 +12,6 @@ type DepartmentDistributionBoardProps = {
   }>;
 };
 
-const DEPARTMENT_PALETTE = [
-  "#f97373",
-  "#f59e0b",
-  "#34c759",
-  "#38bdf8",
-  "#8b5cf6",
-  "#ec4899",
-  "#14b8a6",
-  "#f97316",
-  "#84cc16",
-  "#6366f1",
-];
-
 const STAR_RULES = [
   { stars: 1, ratio: 0.05, summary: "建议上限 5%" },
   { stars: 2, ratio: 0.15, summary: "建议上限 15%" },
@@ -32,60 +20,90 @@ const STAR_RULES = [
   { stars: 5, ratio: 0.1, summary: "建议上限 10%" },
 ] as const;
 
+function buildEmptyDistribution(): DistributionEntry[] {
+  return STAR_RULES.map((rule) => ({
+    stars: rule.stars,
+    count: 0,
+    pct: 0,
+    exceeded: false,
+    delta: 0,
+    names: [],
+  }));
+}
+
 function compactNames(names: string[]) {
   if (names.length === 0) return "当前没有员工";
-  if (names.length <= 3) return names.join("、");
-  return `${names.slice(0, 3).join("、")} 等 ${names.length} 人`;
+  if (names.length <= 4) return names.join("、");
+  return `${names.slice(0, 4).join("、")} 等 ${names.length} 人`;
 }
 
 export function DepartmentDistributionBoard({ departments }: DepartmentDistributionBoardProps) {
-  const departmentColors = Object.fromEntries(
-    departments.map((item, index) => [item.department, DEPARTMENT_PALETTE[index % DEPARTMENT_PALETTE.length]]),
-  );
+  const [activeDepartmentKey, setActiveDepartmentKey] = useState<"all" | string>("all");
+
+  const allDepartmentDistribution = useMemo(() => {
+    const merged = buildEmptyDistribution();
+
+    for (const department of departments) {
+      for (const bucket of department.distribution) {
+        const target = merged.find((item) => item.stars === bucket.stars);
+        if (!target) continue;
+        target.count += bucket.count;
+        target.names = [...target.names, ...bucket.names];
+      }
+    }
+
+    return merged;
+  }, [departments]);
 
   const totalEmployees = departments.reduce((sum, item) => sum + item.total, 0);
-  const stars = STAR_RULES.map((item) => item.stars);
-  const segmentsByStar = stars.map((starsValue) =>
-    departments
-      .map((department) => {
-        const bucket = department.distribution.find((item) => item.stars === starsValue) ?? {
-          stars: starsValue,
+  const selectedDepartment = departments.find((item) => item.department === activeDepartmentKey) ?? null;
+  const selectedDistribution = selectedDepartment?.distribution ?? allDepartmentDistribution;
+  const selectedTotal = selectedDepartment?.total ?? totalEmployees;
+  const selectedScopeLabel = selectedDepartment?.department ?? "全公司";
+
+  const selectedSummaries = useMemo(
+    () =>
+      STAR_RULES.map((rule) => {
+        const actual = selectedDistribution.find((item) => item.stars === rule.stars) ?? {
+          stars: rule.stars,
           count: 0,
           pct: 0,
           exceeded: false,
           delta: 0,
           names: [],
         };
-
+        const suggestedCount = Math.round(selectedTotal * rule.ratio);
         return {
-          department: department.department,
-          count: bucket.count,
-          names: bucket.names,
+          ...actual,
+          suggestedCount,
+          summary: rule.summary,
+          deltaCount: actual.count - suggestedCount,
         };
-      })
-      .filter((item) => item.count > 0),
+      }),
+    [selectedDistribution, selectedTotal],
   );
 
-  const starSummaries = STAR_RULES.map((rule, index) => {
-    const actualCount = segmentsByStar[index].reduce((sum, item) => sum + item.count, 0);
-    const suggestedCount = Math.round(totalEmployees * rule.ratio);
-    const delta = actualCount - suggestedCount;
-
-    return {
-      ...rule,
-      actualCount,
-      suggestedCount,
-      delta,
-    };
-  });
+  const dominantBucket = selectedSummaries.reduce(
+    (best, current) => (current.count > best.count ? current : best),
+    selectedSummaries[0] ?? {
+      stars: 1,
+      count: 0,
+      pct: 0,
+      exceeded: false,
+      delta: 0,
+      names: [],
+      suggestedCount: 0,
+      summary: "",
+      deltaCount: 0,
+    },
+  );
 
   const tallestValue = Math.max(
     1,
-    ...starSummaries.map((item) => Math.max(item.actualCount, item.suggestedCount)),
+    ...selectedSummaries.map((item) => Math.max(item.count, item.suggestedCount)),
   );
-
-  const chartHeight = 260;
-  const polylinePoints = starSummaries
+  const chartHeight = 220;
+  const polylinePoints = selectedSummaries
     .map((item, index) => {
       const x = 10 + index * 20;
       const y = chartHeight - (item.suggestedCount / tallestValue) * chartHeight;
@@ -98,139 +116,182 @@ export function DepartmentDistributionBoard({ departments }: DepartmentDistribut
       <CardHeader>
         <CardTitle className="text-lg text-[var(--cockpit-foreground)]">第二步：按团队分布</CardTitle>
         <p className="text-sm leading-6 text-[var(--cockpit-muted-foreground)]">
-          用一张图同时看五个星级里各部门的人数构成。柱体按部门分色，折线是按当前总人数折算的建议人数线；把鼠标停在色块上，可以看到具体是谁。
+          默认先看全公司。点击部门卡片后，下方同一张图会切到该部门视角；这样能快速看全局，也不会把页面拉得很长。
         </p>
       </CardHeader>
-      <CardContent className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
-        <section className="rounded-[24px] border p-5">
-          <div className="flex items-center justify-between gap-3">
+      <CardContent className="space-y-5">
+        <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
+          <button
+            type="button"
+            onClick={() => setActiveDepartmentKey("all")}
+            className={
+              activeDepartmentKey === "all"
+                ? "min-w-[148px] rounded-[22px] border border-[color:#231f1a] bg-[color:#231f1a] px-4 py-3 text-left text-white shadow-sm"
+                : "min-w-[148px] rounded-[22px] border bg-white px-4 py-3 text-left text-[var(--cockpit-foreground)] shadow-none transition-colors hover:bg-[color:rgba(191,127,65,0.06)]"
+            }
+          >
+            <p className="text-sm font-semibold">全公司</p>
+            <p className={activeDepartmentKey === "all" ? "mt-1 text-xs text-white/80" : "mt-1 text-xs text-[var(--cockpit-muted-foreground)]"}>
+              {totalEmployees} 人
+            </p>
+          </button>
+
+          {departments.map((department) => {
+            const dominant = department.distribution.reduce(
+              (best, current) => (current.count > best.count ? current : best),
+              department.distribution[0] ?? {
+                stars: 1,
+                count: 0,
+                pct: 0,
+                exceeded: false,
+                delta: 0,
+                names: [],
+              },
+            );
+            const active = activeDepartmentKey === department.department;
+
+            return (
+              <button
+                key={department.department}
+                type="button"
+                onClick={() => setActiveDepartmentKey(department.department)}
+                className={
+                  active
+                    ? "min-w-[148px] rounded-[22px] border border-[color:#a56a2d] bg-[color:#f8ecdf] px-4 py-3 text-left shadow-sm"
+                    : "min-w-[148px] rounded-[22px] border bg-white px-4 py-3 text-left shadow-none transition-colors hover:bg-[color:rgba(191,127,65,0.06)]"
+                }
+              >
+                <p className="truncate text-sm font-semibold text-[var(--cockpit-foreground)]">{department.department}</p>
+                <p className="mt-1 text-xs text-[var(--cockpit-muted-foreground)]">{department.total} 人</p>
+                <p className="mt-2 text-xs text-[var(--cockpit-muted-foreground)]">
+                  主要集中在 {dominant.count > 0 ? `${dominant.stars}星` : "暂无分布"}
+                </p>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_280px]">
+          <section className="rounded-[24px] border p-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-[var(--cockpit-foreground)]">当前视角</p>
+                <h3 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--cockpit-foreground)]">{selectedScopeLabel}</h3>
+                <p className="mt-2 text-sm text-[var(--cockpit-muted-foreground)]">
+                  共 {selectedTotal} 人，当前最集中的档位是 {dominantBucket.count > 0 ? `${dominantBucket.stars}星` : "暂无"}
+                </p>
+              </div>
+
+              <div className="rounded-[18px] border bg-[color:rgba(191,127,65,0.05)] px-4 py-3 text-sm text-[var(--cockpit-muted-foreground)]">
+                悬停柱体可看具体名单
+              </div>
+            </div>
+
+            <div className="mt-5 rounded-[24px] border bg-[linear-gradient(180deg,rgba(249,244,237,0.92),rgba(255,255,255,0.98))] px-4 py-5">
+              <div className="relative">
+                <svg
+                  className="pointer-events-none absolute inset-x-0 top-9 h-[220px] w-full overflow-visible"
+                  viewBox={`0 0 100 ${chartHeight}`}
+                  preserveAspectRatio="none"
+                  aria-hidden="true"
+                >
+                  <polyline
+                    fill="none"
+                    points={polylinePoints}
+                    stroke="#b7791f"
+                    strokeDasharray="5 5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="1.8"
+                  />
+                  {selectedSummaries.map((item, index) => {
+                    const x = 10 + index * 20;
+                    const y = chartHeight - (item.suggestedCount / tallestValue) * chartHeight;
+                    return <circle key={`point:${item.stars}`} cx={x} cy={y} fill="#b7791f" r="2.4" />;
+                  })}
+                </svg>
+
+                <div className="grid gap-4 md:grid-cols-5">
+                  {selectedSummaries.map((item) => {
+                    const barHeight = Math.max((item.count / tallestValue) * chartHeight, item.count > 0 ? 28 : 0);
+                    const barTone =
+                      item.deltaCount > 0 ? "from-[color:#f37c74] to-[color:#ee6b64]" : item.deltaCount < 0 ? "from-[color:#d4a15c] to-[color:#c38742]" : "from-[color:#d9b58d] to-[color:#cb9a63]";
+
+                    return (
+                      <div key={`bar:${item.stars}`} className="flex flex-col">
+                        <div className="mb-3 flex items-baseline justify-between gap-2">
+                          <div>
+                            <p className="text-xs text-[var(--cockpit-muted-foreground)]">{item.stars}星</p>
+                            <p className="mt-1 text-xl font-semibold text-[var(--cockpit-foreground)]">{item.count} 人</p>
+                          </div>
+                          <span
+                            className={
+                              item.deltaCount === 0
+                                ? "text-xs text-[var(--cockpit-muted-foreground)]"
+                                : item.deltaCount > 0
+                                  ? "text-xs font-medium text-[color:#c2410c]"
+                                  : "text-xs font-medium text-[color:#b7791f]"
+                            }
+                          >
+                            {item.deltaCount === 0 ? "符合建议" : item.deltaCount > 0 ? `超出 ${item.deltaCount} 人` : `不足 ${Math.abs(item.deltaCount)} 人`}
+                          </span>
+                        </div>
+
+                        <div className="relative flex h-[220px] flex-col justify-end rounded-[22px] border bg-white/70 px-3 py-3">
+                          <div className="absolute inset-x-4 top-4 h-px bg-[color:rgba(191,127,65,0.12)]" />
+                          <div className="absolute inset-x-4 top-[37%] h-px bg-[color:rgba(191,127,65,0.12)]" />
+                          <div className="absolute inset-x-4 top-[70%] h-px bg-[color:rgba(191,127,65,0.12)]" />
+
+                          <div className="flex h-full items-end">
+                            {item.count === 0 ? (
+                              <div className="w-full rounded-[16px] bg-[color:rgba(191,127,65,0.08)] py-3 text-center text-xs text-[var(--cockpit-muted-foreground)]">
+                                当前没有员工
+                              </div>
+                            ) : (
+                              <div
+                                className={`w-full rounded-[18px] bg-gradient-to-b ${barTone} px-3 py-3 text-left text-white shadow-[0_16px_28px_rgba(168,93,37,0.18)]`}
+                                style={{ height: `${barHeight}px` }}
+                                title={`${item.stars}星 · ${item.count}人：${item.names.join("、")}`}
+                              >
+                                <div className="line-clamp-3 text-xs font-medium leading-5">{compactNames(item.names)}</div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="mt-3 text-xs leading-5 text-[var(--cockpit-muted-foreground)]">
+                          <span className="font-medium text-[var(--cockpit-foreground)]">建议：</span>
+                          {item.summary}，当前约 {item.suggestedCount} 人
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="space-y-3 rounded-[24px] border p-5">
             <div>
-              <p className="text-sm font-semibold text-[var(--cockpit-foreground)]">部门分布总览</p>
-              <p className="mt-1 text-xs text-[var(--cockpit-muted-foreground)]">
-                共 {totalEmployees} 人，先看每个星级里是谁在拉高或拉低整体分布。
+              <p className="text-sm font-semibold text-[var(--cockpit-foreground)]">读图提示</p>
+              <p className="mt-1 text-sm leading-6 text-[var(--cockpit-muted-foreground)]">
+                先看当前视角里哪几个星级明显高于或低于建议人数，再决定是否切到具体部门看原因。
               </p>
             </div>
-            <div className="rounded-full border px-3 py-1 text-xs text-[var(--cockpit-muted-foreground)]">
-              建议人数线
-            </div>
-          </div>
 
-          <div className="mt-5 rounded-[24px] border bg-[color:rgba(191,127,65,0.04)] px-4 py-5">
-            <div className="relative">
-              <svg
-                className="pointer-events-none absolute inset-x-0 top-8 h-[260px] w-full overflow-visible"
-                viewBox={`0 0 100 ${chartHeight}`}
-                preserveAspectRatio="none"
-                aria-hidden="true"
-              >
-                <polyline
-                  fill="none"
-                  points={polylinePoints}
-                  stroke="#b45309"
-                  strokeDasharray="4 4"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="1.8"
-                />
-                {starSummaries.map((item, index) => {
-                  const x = 10 + index * 20;
-                  const y = chartHeight - (item.suggestedCount / tallestValue) * chartHeight;
-                  return <circle key={`point:${item.stars}`} cx={x} cy={y} fill="#b45309" r="2.2" />;
-                })}
-              </svg>
-
-              <div className="grid gap-4 md:grid-cols-5">
-                {starSummaries.map((item, index) => (
-                  <div key={`star:${item.stars}`} className="flex flex-col">
-                    <div className="mb-3 flex items-end justify-between">
-                      <div>
-                        <p className="text-xs text-[var(--cockpit-muted-foreground)]">{item.stars}星</p>
-                        <p className="mt-1 text-lg font-semibold text-[var(--cockpit-foreground)]">{item.actualCount} 人</p>
-                      </div>
-                      <span
-                        className={
-                          item.delta === 0
-                            ? "text-xs text-[var(--cockpit-muted-foreground)]"
-                            : item.delta > 0
-                              ? "text-xs font-medium text-[color:#b45309]"
-                              : "text-xs font-medium text-[color:#2563eb]"
-                        }
-                      >
-                        {item.delta === 0 ? "符合建议" : item.delta > 0 ? `超出 ${item.delta} 人` : `不足 ${Math.abs(item.delta)} 人`}
-                      </span>
-                    </div>
-
-                    <div className="relative flex h-[260px] flex-col justify-end rounded-[20px] border bg-white/70 px-3 py-3">
-                      <div className="absolute inset-x-3 top-3 h-px bg-[color:rgba(191,127,65,0.12)]" />
-                      <div className="absolute inset-x-3 top-[35%] h-px bg-[color:rgba(191,127,65,0.12)]" />
-                      <div className="absolute inset-x-3 top-[68%] h-px bg-[color:rgba(191,127,65,0.12)]" />
-                      <div className="flex h-full flex-col justify-end gap-1">
-                        {segmentsByStar[index].length === 0 ? (
-                          <div className="flex h-full items-end">
-                            <div className="w-full rounded-[14px] bg-[color:rgba(191,127,65,0.08)] py-3 text-center text-xs text-[var(--cockpit-muted-foreground)]">
-                              当前没有员工
-                            </div>
-                          </div>
-                        ) : (
-                          segmentsByStar[index].map((segment) => (
-                            <div
-                              key={`${item.stars}:${segment.department}`}
-                              className="min-h-[8px] rounded-[12px] transition-transform hover:scale-[1.01]"
-                              style={{
-                                height: `${(segment.count / tallestValue) * chartHeight}px`,
-                                backgroundColor: departmentColors[segment.department],
-                              }}
-                              title={`${item.stars}星 · ${segment.department} · ${segment.count}人：${segment.names.join("、")}`}
-                            >
-                              <div className="truncate px-3 py-2 text-xs font-medium text-white/95">
-                                {compactNames(segment.names)}
-                              </div>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="mt-3 text-xs leading-5 text-[var(--cockpit-muted-foreground)]">
-                      <span className="font-medium text-[var(--cockpit-foreground)]">建议：</span>
-                      {item.summary}，当前约 {item.suggestedCount} 人
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="space-y-4 rounded-[24px] border p-5">
-          <div>
-            <p className="text-sm font-semibold text-[var(--cockpit-foreground)]">部门图例</p>
-            <p className="mt-1 text-xs leading-5 text-[var(--cockpit-muted-foreground)]">
-              每种颜色代表一个部门。右侧先看部门总人数，再结合柱体看这个部门主要集中在哪个星级。
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            {departments.map((item) => (
-              <div key={`legend:${item.department}`} className="flex items-start justify-between gap-3 rounded-2xl border px-3 py-3">
-                <div className="flex min-w-0 items-start gap-3">
-                  <span
-                    className="mt-1 h-3 w-3 shrink-0 rounded-full"
-                    style={{ backgroundColor: departmentColors[item.department] }}
-                    aria-hidden="true"
-                  />
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-[var(--cockpit-foreground)]">{item.department}</p>
-                    <p className="mt-1 text-xs text-[var(--cockpit-muted-foreground)]">
-                      {item.distribution.filter((bucket) => bucket.count > 0).map((bucket) => `${bucket.stars}星 ${bucket.count}人`).join(" · ") || "当前没有分布数据"}
-                    </p>
-                  </div>
+            {selectedSummaries.map((item) => (
+              <div key={`summary:${item.stars}`} className="rounded-[20px] border bg-[color:rgba(191,127,65,0.04)] px-4 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm font-medium text-[var(--cockpit-foreground)]">{item.stars}星</span>
+                  <span className="text-sm text-[var(--cockpit-muted-foreground)]">{item.count} 人</span>
                 </div>
-                <span className="shrink-0 text-sm font-medium text-[var(--cockpit-foreground)]">{item.total} 人</span>
+                <p className="mt-2 text-xs leading-5 text-[var(--cockpit-muted-foreground)]">
+                  {item.count === 0 ? "当前没有员工落在这个星级。" : compactNames(item.names)}
+                </p>
               </div>
             ))}
-          </div>
-        </section>
+          </section>
+        </div>
       </CardContent>
     </Card>
   );

@@ -636,19 +636,20 @@ test("principles tab keeps the initial-dimension gap list in a scrollable area",
   );
 });
 
-test("department distribution board collapses team distribution into one combined chart", () => {
+test("department distribution board uses department cards to switch one clean chart view", () => {
   const board = read("src/components/final-review/department-distribution-board.tsx");
 
   assert.equal(
-    board.includes("<svg") &&
+    board.includes('useState<"all" | string>("all")') &&
+      board.includes("全公司") &&
+      board.includes("setActiveDepartmentKey") &&
+      board.includes("当前视角") &&
+      board.includes("selectedDepartment") &&
       board.includes("polyline") &&
-      board.includes("departmentColors") &&
-      board.includes("segmentsByStar") &&
-      board.includes("部门图例") &&
-      !board.includes("xl:grid-cols-2") &&
-      !board.includes("<section key={item.department}"),
+      !board.includes("部门图例") &&
+      !board.includes("departmentColors"),
     true,
-    "the department distribution board should render one combined stacked chart with a suggestion line instead of a long grid of per-department cards",
+    "the department distribution board should switch one clean chart between all-company and per-department views instead of mixing every department into one noisy graphic",
   );
 });
 
