@@ -199,8 +199,8 @@ export function PrinciplesTab({
                     </p>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  {(overview.initialDimensionChecks.items.slice(0, 6)).map((item) => (
+                <div className="max-h-96 overflow-y-auto pr-1 space-y-2">
+                  {overview.initialDimensionChecks.items.map((item) => (
                     <div key={item.employeeId} className="rounded-[var(--radius-xl)] border px-4 py-3 text-sm">
                       <p className="font-medium text-[var(--cockpit-foreground)]">{item.employeeName} · {item.department}</p>
                       <p className="mt-1 leading-6 text-[var(--cockpit-muted-foreground)]">

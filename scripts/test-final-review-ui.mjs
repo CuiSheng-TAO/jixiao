@@ -621,6 +621,21 @@ test("principles tab packs role and risk guidance into one dense side panel", ()
   );
 });
 
+test("principles tab keeps the initial-dimension gap list in a scrollable area", () => {
+  const principles = read("src/components/final-review/principles-tab.tsx");
+
+  assert.equal(
+    principles.includes("max-h-96 overflow-y-auto pr-1"),
+    true,
+    "the initial-dimension gap list should use an internal scroll area so all pending people remain reachable without stretching the whole page",
+  );
+  assert.equal(
+    principles.includes("slice(0, 6)"),
+    false,
+    "the initial-dimension gap list should stop truncating the roster to the first six people once the section becomes scrollable",
+  );
+});
+
 test("leader cockpit mirrors the taller left rail layout used in the employee cockpit", () => {
   const cockpit = read("src/components/final-review/leader-cockpit.tsx");
 
