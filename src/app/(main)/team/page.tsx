@@ -40,6 +40,7 @@ type TeamEval = {
     rootComment: string;
     weightedScore: number | null;
     status: string;
+    canEditSubmitted?: boolean;
   } | null;
   selfEval: {
     status: string;
@@ -247,6 +248,8 @@ function TeamContent() {
       return;
     }
     const fd = formData[employeeId];
+    const targetEval = evals.find((item) => item.employee.id === employeeId);
+    const canEditImportedSubmitted = Boolean(targetEval?.evaluation?.canEditSubmitted);
     if (action === "submit" && (!fd.performanceStars || !fd.comprehensiveStars || !fd.learningStars || !fd.adaptabilityStars || !fd.candidStars || !fd.progressStars || !fd.altruismStars || !fd.rootStars)) {
       toast.error("请完成所有维度的星级评分");
       return;
@@ -255,7 +258,14 @@ function TeamContent() {
       toast.error("请填写所有维度的文字评语");
       return;
     }
-    if (action === "submit" && !confirm("确认提交？提交后无法修改。")) return;
+    if (
+      action === "submit"
+      && !confirm(
+        canEditImportedSubmitted
+          ? "确认提交补充评语？提交后系统仍会按已评估统计。"
+          : "确认提交？提交后无法修改。",
+      )
+    ) return;
 
     setSaving(true);
     try {
@@ -284,7 +294,8 @@ function TeamContent() {
 
   const selectedEval = evals.find((e) => e.employee.id === selected);
   const isSubmitted = selectedEval?.evaluation?.status === "SUBMITTED";
-  const isReadOnly = !!isSubmitted || (!teamMeta.canEdit && !preview);
+  const canEditSubmitted = Boolean(selectedEval?.evaluation?.canEditSubmitted);
+  const isReadOnly = (Boolean(isSubmitted) && !canEditSubmitted) || (!teamMeta.canEdit && !preview);
   const currentForm = selected ? formData[selected] : null;
   const liveWeightedScore = currentForm ? computeWeightedScore(currentForm) : null;
 
@@ -405,6 +416,14 @@ function TeamContent() {
                       <CardContent className="py-4 text-sm text-amber-900">
                         {teamMeta.lockedReason}
                         {teamMeta.cycleStatus ? `（当前周期阶段：${teamMeta.cycleStatus}）` : ""}
+                      </CardContent>
+                    </Card>
+                  ) : null}
+
+                  {canEditSubmitted ? (
+                    <Card className="border-blue-200 bg-blue-50/70">
+                      <CardContent className="py-4 text-sm text-blue-900">
+                        这条初评是之前的截图补录版本。系统仍按“已评估”统计，但张东杰可以先补齐评语，再重新提交一次覆盖掉占位内容。
                       </CardContent>
                     </Card>
                   ) : null}
@@ -676,8 +695,14 @@ function TeamContent() {
                       {/* Actions */}
                       {!isReadOnly && (
                         <div className="flex justify-end gap-2 border-t pt-4">
-                          <Button variant="outline" onClick={() => saveEval(selected!, "save")} disabled={preview || saving}>{saving ? "保存中..." : "保存"}</Button>
-                          <Button onClick={() => saveEval(selected!, "submit")} disabled={preview || saving}>提交评估</Button>
+                          {!canEditSubmitted ? (
+                            <Button variant="outline" onClick={() => saveEval(selected!, "save")} disabled={preview || saving}>
+                              {saving ? "保存中..." : "保存"}
+                            </Button>
+                          ) : null}
+                          <Button onClick={() => saveEval(selected!, "submit")} disabled={preview || saving}>
+                            {canEditSubmitted ? "补充评语并提交" : "提交评估"}
+                          </Button>
                         </div>
                       )}
                     </CardContent>

@@ -14,6 +14,10 @@ import {
   computeRoundedValuesStars,
   computeWeightedScoreFromDimensions,
 } from "@/lib/weighted-score";
+import {
+  hasPendingImportedSupervisorEvalComments,
+  isScreenshotImportedComment,
+} from "@/lib/supervisor-eval-import";
 
 export async function GET() {
   try {
@@ -185,6 +189,11 @@ export async function GET() {
           })),
         };
 
+        const canEditSubmitted =
+          user.name === "张东杰"
+          && myEval?.status === "SUBMITTED"
+          && hasPendingImportedSupervisorEvalComments(myEval);
+
         return {
           employee: {
             id: employee.id,
@@ -192,7 +201,12 @@ export async function GET() {
             department: employee.department,
             jobTitle: employee.jobTitle,
           },
-          evaluation: myEval,
+          evaluation: myEval
+            ? {
+                ...myEval,
+                canEditSubmitted,
+              }
+            : null,
           selfEval: selfEvalByUserId.get(employeeId)
             ? {
                 status: selfEvalByUserId.get(employeeId)!.status,
@@ -294,7 +308,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "你不是该员工当前有效初评人，也没有历史保留记录" }, { status: 403 });
     }
 
-    if (myExistingEval?.status === "SUBMITTED") {
+    const canEditImportedSubmission =
+      user.name === "张东杰"
+      && myExistingEval?.status === "SUBMITTED"
+      && hasPendingImportedSupervisorEvalComments(myExistingEval);
+
+    if (myExistingEval?.status === "SUBMITTED" && !canEditImportedSubmission) {
       return NextResponse.json({ error: "已提交，无法修改" }, { status: 400 });
     }
 
@@ -334,7 +353,15 @@ export async function POST(req: NextRequest) {
       if (!pc || !ac || !cc || !prc || !alc || !rc) {
         return NextResponse.json({ error: "请填写所有维度的文字评语" }, { status: 400 });
       }
+      if (
+        canEditImportedSubmission
+        && [pc, ac, cc, prc, alc, rc].some((comment) => isScreenshotImportedComment(comment))
+      ) {
+        return NextResponse.json({ error: "请先把导入占位评语补成真实内容，再重新提交" }, { status: 400 });
+      }
     }
+
+    const preserveSubmittedStatus = Boolean(canEditImportedSubmission && myExistingEval);
 
     const payload = {
       performanceStars,
@@ -355,8 +382,8 @@ export async function POST(req: NextRequest) {
       rootStars,
       rootComment: sanitizeText(body.rootComment),
       weightedScore,
-      status: isSubmit ? "SUBMITTED" : "DRAFT",
-      submittedAt: isSubmit ? new Date() : undefined,
+      status: preserveSubmittedStatus ? "SUBMITTED" : isSubmit ? "SUBMITTED" : "DRAFT",
+      submittedAt: preserveSubmittedStatus || isSubmit ? new Date() : undefined,
     };
 
     const evalResult = myExistingEval
