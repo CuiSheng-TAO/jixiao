@@ -12,6 +12,11 @@ type DepartmentDistributionBoardProps = {
 };
 
 export function DepartmentDistributionBoard({ departments }: DepartmentDistributionBoardProps) {
+  const maxCount = Math.max(
+    1,
+    ...departments.flatMap((department) => department.distribution.map((bucket) => bucket.count)),
+  );
+
   return (
     <Card className="rounded-[28px] border shadow-none">
       <CardHeader>
@@ -32,20 +37,34 @@ export function DepartmentDistributionBoard({ departments }: DepartmentDistribut
 
             <div className="mt-4 space-y-3">
               {item.distribution.map((bucket) => (
-                <div key={`${item.department}:${bucket.stars}`} className="grid grid-cols-[48px_minmax(0,1fr)_64px] items-center gap-3">
+                <div key={`${item.department}:${bucket.stars}`} className="grid min-h-[40px] grid-cols-[56px_minmax(0,1fr)] items-center gap-3">
                   <span className="text-sm text-[var(--cockpit-muted-foreground)]">{bucket.stars}星</span>
-                  <div className="h-3 overflow-hidden rounded-full bg-[color:rgba(191,127,65,0.08)]">
+                  <div className="relative">
+                    <div className="h-8 rounded-[14px] bg-[color:rgba(191,127,65,0.08)]" />
                     <div
-                      className={bucket.exceeded ? "h-full rounded-full bg-[color:#f87171]" : "h-full rounded-full bg-[color:#c88a4a]"}
-                      style={{ width: `${Math.max(bucket.pct, bucket.count > 0 ? 12 : 0)}%` }}
+                      className={
+                        bucket.exceeded
+                          ? "absolute inset-y-0 left-0 origin-left rounded-r-[999px] rounded-l-[10px] bg-[color:#f87171]"
+                          : "absolute inset-y-0 left-0 origin-left rounded-r-[999px] rounded-l-[10px] bg-[color:#c88a4a]"
+                      }
+                      style={{ width: `${Math.max((bucket.count / maxCount) * 100, bucket.count > 0 ? 16 : 0)}%` }}
                     />
+                    <div className="absolute inset-0 flex items-center justify-between px-3">
+                      <span className="text-[11px] text-[var(--cockpit-muted-foreground)]">
+                        {bucket.names.length > 0 ? bucket.names.join("、") : `当前没有员工落在 ${bucket.stars} 星`}
+                      </span>
+                      <span
+                        className={
+                          bucket.exceeded
+                            ? "text-sm font-medium text-[color:#b45309]"
+                            : "text-sm font-medium text-[var(--cockpit-foreground)]"
+                        }
+                        title={bucket.names.length > 0 ? bucket.names.join("、") : `当前没有员工落在 ${bucket.stars} 星`}
+                      >
+                        {bucket.count}人
+                      </span>
+                    </div>
                   </div>
-                  <span
-                    className={bucket.exceeded ? "text-sm font-medium text-[color:#b45309]" : "text-sm text-[var(--cockpit-foreground)]"}
-                    title={bucket.names.length > 0 ? bucket.names.join("、") : `当前没有员工落在 ${bucket.stars} 星`}
-                  >
-                    {bucket.count}人
-                  </span>
                 </div>
               ))}
             </div>

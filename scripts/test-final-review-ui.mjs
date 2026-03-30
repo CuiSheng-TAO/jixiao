@@ -636,6 +636,18 @@ test("principles tab keeps the initial-dimension gap list in a scrollable area",
   );
 });
 
+test("department distribution board renders horizontal bar-chart tracks instead of progress-meter pills", () => {
+  const board = read("src/components/final-review/department-distribution-board.tsx");
+
+  assert.equal(
+    board.includes("origin-left rounded-r-[999px] rounded-l-[10px]") &&
+      board.includes("min-h-[40px] grid-cols-[56px_minmax(0,1fr)]") &&
+      !board.includes("h-3 overflow-hidden rounded-full"),
+    true,
+    "the department distribution board should use clear horizontal bar-chart rows instead of progress-meter pills",
+  );
+});
+
 test("leader cockpit mirrors the taller left rail layout used in the employee cockpit", () => {
   const cockpit = read("src/components/final-review/leader-cockpit.tsx");
 
