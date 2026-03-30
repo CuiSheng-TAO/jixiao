@@ -165,6 +165,13 @@ test("calibration page source includes employee-tab redesign tokens", () => {
     true,
     "employee detail panel should warn that imported same-person review content is only a local draft until the reviewer saves it",
   );
+  assert.equal(
+    detailPanel.includes("showInteractiveLayout") &&
+      detailPanel.includes("检查视图为只读") &&
+      detailPanel.includes("不同意绩效初评"),
+    true,
+    "employee detail panel should keep the same calibration button layout visible in read-only inspection mode for designated reviewers",
+  );
 });
 
 test("calibration page source includes leader-tab redesign tokens", () => {

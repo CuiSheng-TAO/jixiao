@@ -165,6 +165,21 @@ test("final review helper keeps full supervisor summaries and normalizes self-ev
   );
 });
 
+test("final review helper lets designated reviewers inspect calibration details without granting write access", () => {
+  const source = read("src/lib/final-review.ts");
+
+  assert.equal(
+    source.includes('const OPINION_LAYOUT_VIEWER_NAMES = new Set(["向金涛", "禹聪琪"]);'),
+    true,
+    "final review helper should whitelist 向金涛 and 禹聪琪 for the read-only calibration inspection layout",
+  );
+  assert.equal(
+    source.includes('const canViewOpinionDetails = user.role === "ADMIN" || isCompanyCalibrator || OPINION_LAYOUT_VIEWER_NAMES.has(user.name);'),
+    true,
+    "final review helper should expose opinion-detail layout access to the designated inspectors without broadening write access",
+  );
+});
+
 test("final review workspace exposes same-person prior reviews as local prefills without overwriting saved opinions", () => {
   const source = read("src/lib/final-review.ts");
   const types = read("src/components/final-review/types.ts");

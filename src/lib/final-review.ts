@@ -768,6 +768,7 @@ function buildLeaderEvaluatorProgress(
 }
 
 const NAMED_PEER_REVIEW_VIEWER_NAMES = new Set(["吴承霖", "邱翔", "禹聪琪"]);
+const OPINION_LAYOUT_VIEWER_NAMES = new Set(["向金涛", "禹聪琪"]);
 
 export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
   const cycle = await getActiveCycle();
@@ -1024,7 +1025,7 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
   const employeeOpinionActorIds = [...new Set(config.finalizerUserIds)].slice(0, 2);
   const isCompanyCalibrator = employeeOpinionActorIds.includes(user.id);
   const canSubmitOpinion = isCompanyCalibrator;
-  const canViewOpinionDetails = user.role === "ADMIN" || isCompanyCalibrator;
+  const canViewOpinionDetails = user.role === "ADMIN" || isCompanyCalibrator || OPINION_LAYOUT_VIEWER_NAMES.has(user.name);
   const canViewLeaderEvaluationDetails =
     user.role === "ADMIN" || isCompanyCalibrator || config.leaderEvaluatorUserIds.includes(user.id);
 

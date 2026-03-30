@@ -112,6 +112,7 @@ function CalibratorCard({
   opinion,
   referenceStars,
   editable,
+  showInteractiveLayout,
   form,
   saving,
   onChange,
@@ -121,21 +122,30 @@ function CalibratorCard({
   opinion: EmployeeOpinion | null;
   referenceStars: number | null;
   editable: boolean;
+  showInteractiveLayout: boolean;
   form: EmployeeOpinionFormValue | null;
   saving: boolean;
   onChange: (patch: Partial<EmployeeOpinionFormValue>) => void;
   onSave: () => void;
 }) {
+  const selectedDecision = editable && form ? form.decision : opinion?.decision || "PENDING";
+  const selectedStars = editable && form
+    ? form.suggestedStars
+    : opinion?.decision === "AGREE"
+      ? referenceStars
+      : opinion?.suggestedStars ?? null;
+  const showReason = editable ? form?.reason || opinion?.reason || "" : opinion?.reason || "";
+  const inspectionMode = showInteractiveLayout && !editable;
+
   return (
     <div className="rounded-2xl border px-4 py-4">
       <p className="text-sm font-semibold text-[var(--cockpit-foreground)]">{label}</p>
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        <SummaryCard label="是否同意绩效初评" value={renderDecisionYesNo(opinion)} />
-        <SummaryCard label="校准等级" value={renderDecisionStars(opinion, referenceStars)} />
-      </div>
-
-      {editable && form ? (
+      {showInteractiveLayout ? (
         <div className="mt-4 space-y-3">
+          {inspectionMode ? (
+            <p className="text-xs text-[var(--cockpit-muted-foreground)]">检查视图为只读，可直接核对承霖、邱翔当前的按钮状态和校准等级。</p>
+          ) : null}
+
           {opinion?.prefillDecision && !opinion?.hasSavedOpinion ? (
             <div className="rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm leading-6 text-amber-900">
               已根据你之前的{opinion.prefillSourceLabel}预填草稿，确认保存后才会成为终评意见。
@@ -145,54 +155,77 @@ function CalibratorCard({
           <div className="grid gap-2 sm:grid-cols-2">
             <Button
               type="button"
-              variant={form.decision === "AGREE" ? "default" : "outline"}
+              variant={selectedDecision === "AGREE" ? "default" : "outline"}
+              disabled={!editable}
               onClick={() => onChange({ decision: "AGREE", suggestedStars: referenceStars })}
             >
               同意绩效初评
             </Button>
             <Button
               type="button"
-              variant={form.decision === "OVERRIDE" ? "default" : "outline"}
+              variant={selectedDecision === "OVERRIDE" ? "default" : "outline"}
+              disabled={!editable}
               onClick={() => onChange({ decision: "OVERRIDE" })}
             >
-              改为其他星级
+              不同意绩效初评
             </Button>
           </div>
 
-          <div className="grid gap-2 sm:grid-cols-5">
+          <div className="space-y-2">
+            <p className="text-xs text-[var(--cockpit-muted-foreground)]">校准等级</p>
+            <div className="grid gap-2 sm:grid-cols-5">
             {[1, 2, 3, 4, 5].map((stars) => (
               <Button
                 key={stars}
                 type="button"
-                variant={form.suggestedStars === stars ? "default" : "outline"}
-                disabled={form.decision !== "OVERRIDE"}
+                variant={selectedStars === stars ? "default" : "outline"}
+                disabled={!editable || selectedDecision !== "OVERRIDE"}
                 onClick={() => onChange({ suggestedStars: stars })}
               >
                 {stars}星
               </Button>
             ))}
+            </div>
           </div>
 
-          <Textarea
-            value={form.reason}
-            onChange={(event) => onChange({ reason: event.target.value })}
-            placeholder={form.decision === "OVERRIDE" ? "如果不同意初评，请填写校准理由" : "如有补充说明，可在此填写"}
-          />
+          {editable && form ? (
+            <>
+              <Textarea
+                value={form.reason}
+                onChange={(event) => onChange({ reason: event.target.value })}
+                placeholder={form.decision === "OVERRIDE" ? "如果不同意初评，请填写校准理由" : "如有补充说明，可在此填写"}
+              />
 
-          <div className="flex items-center justify-between gap-3">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => onChange({ decision: "PENDING", suggestedStars: referenceStars, reason: "" })}
-            >
-              重置为待处理
-            </Button>
-            <Button onClick={onSave} disabled={saving}>
-              {saving ? "保存中..." : "保存校准"}
-            </Button>
-          </div>
+              <div className="flex items-center justify-between gap-3">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => onChange({ decision: "PENDING", suggestedStars: referenceStars, reason: "" })}
+                >
+                  重置为待处理
+                </Button>
+                <Button onClick={onSave} disabled={saving}>
+                  {saving ? "保存中..." : "保存校准"}
+                </Button>
+              </div>
+            </>
+          ) : null}
+
+          {showReason ? (
+            <div className="rounded-2xl border px-4 py-3">
+              <p className="text-xs text-[var(--cockpit-muted-foreground)]">补充说明</p>
+              <p className="mt-2 text-sm leading-6 text-[var(--cockpit-foreground)]">{showReason}</p>
+            </div>
+          ) : null}
         </div>
-      ) : opinion?.reason ? (
+      ) : (
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <SummaryCard label="是否同意绩效初评" value={renderDecisionYesNo(opinion)} />
+          <SummaryCard label="校准等级" value={renderDecisionStars(opinion, referenceStars)} />
+        </div>
+      )}
+
+      {!showInteractiveLayout && opinion?.reason ? (
         <p className="mt-3 text-sm leading-6 text-[var(--cockpit-foreground)]">{opinion.reason}</p>
       ) : null}
     </div>
@@ -280,6 +313,7 @@ export function EmployeeDetailPanel({
               opinion={chenglinOpinion}
               referenceStars={employee.referenceStars}
               editable={Boolean(employee.canSubmitOpinion && chenglinOpinion?.isMine)}
+              showInteractiveLayout={employee.canViewOpinionDetails}
               form={employee.canSubmitOpinion && chenglinOpinion?.isMine ? opinionForm : null}
               saving={Boolean(employee.canSubmitOpinion && chenglinOpinion?.isMine && savingOpinion)}
               onChange={onOpinionChange}
@@ -290,6 +324,7 @@ export function EmployeeDetailPanel({
               opinion={qiuxiangOpinion}
               referenceStars={employee.referenceStars}
               editable={Boolean(employee.canSubmitOpinion && qiuxiangOpinion?.isMine)}
+              showInteractiveLayout={employee.canViewOpinionDetails}
               form={employee.canSubmitOpinion && qiuxiangOpinion?.isMine ? opinionForm : null}
               saving={Boolean(employee.canSubmitOpinion && qiuxiangOpinion?.isMine && savingOpinion)}
               onChange={onOpinionChange}
