@@ -53,9 +53,9 @@ test("final review helper centralizes config parsing, access checks, and referen
     "final review helper should expose the workspace access guard",
   );
   assert.equal(
-    source.includes("const [reviewUsers, directoryUsers] = await Promise.all(["),
+    source.includes("const directoryUsers = await prisma.user.findMany({"),
     true,
-    "final review helper should split review subjects from the directory used for config-name resolution",
+    "final review helper should resolve the workspace from the full directory user set",
   );
   assert.equal(
     source.includes("const config = getFinalReviewConfigValue(cycle.id, configRecord, directoryUsers);"),
@@ -66,6 +66,12 @@ test("final review helper centralizes config parsing, access checks, and referen
     source.includes("const usersById = new Map(directoryUsers.map((item) => [item.id, item]));"),
     true,
     "final review helper should resolve configured users from directoryUsers so admin reviewers render with names",
+  );
+  assert.equal(
+    source.includes("const subjectUsers = directoryUsers.filter(") &&
+      source.includes("employeeSubjectIds.has(item.id) || leaderSubjectIds.has(item.id)"),
+    true,
+    "workspace subjects should be resolved from the configured rosters without pre-filtering admins",
   );
   assert.equal(
     source.includes("performanceComment: true") &&
@@ -121,6 +127,12 @@ test("final review helper keeps full supervisor summaries and normalizes self-ev
     source.includes("computePeerReviewAverageFromReviews(reviews)"),
     true,
     "final review should compute 360 averages from the unified peer-review summary helper instead of the legacy three fields",
+  );
+  assert.equal(
+    source.includes("const pendingInitialReviewNames = initialReviewSubjectUsers") &&
+      source.includes("pendingInitialReviewNames,"),
+    true,
+    "workspace overview should expose the missing initial-review names across employee and leader subjects",
   );
   assert.equal(
     source.includes("peerReviewSummaryByEmployee") &&
@@ -351,6 +363,28 @@ test("workspace builder filters ordinary employees to the configured employee ro
     source.includes("evaluatorName: canViewLeaderEvaluationDetails ? usersById.get(evaluatorId)?.name || evaluatorId : `第${index + 1}位填写人`"),
     true,
     "leader progress summaries should stop sending configured reviewer names to unauthorized viewers",
+  );
+  assert.equal(
+    source.includes('where: { role: { not: "ADMIN" } }'),
+    false,
+    "workspace builder should not drop configured subjects just because their directory role is ADMIN",
+  );
+  assert.equal(
+    source.includes("const subjectUsers = directoryUsers.filter") &&
+      source.includes("employeeSubjectIds.has(item.id) || leaderSubjectIds.has(item.id)"),
+    true,
+    "workspace builder should derive employee and leader review rows from the configured subject ids",
+  );
+  assert.equal(
+    types.includes("pendingInitialReviewNames: string[];"),
+    true,
+    "employee overview should carry the concrete names still missing initial reviews",
+  );
+  assert.equal(
+    source.includes("pendingInitialReviewNames") &&
+      source.includes("[...employeeUsers, ...leaderUsers]"),
+    true,
+    "initial-review completion should be calculated across both employee and leader subjects so leader gaps still surface",
   );
 });
 

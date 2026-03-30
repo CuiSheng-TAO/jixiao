@@ -782,30 +782,18 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
     };
   }
 
-  const [reviewUsers, directoryUsers] = await Promise.all([
-    prisma.user.findMany({
-      where: { role: { not: "ADMIN" } },
-      select: {
-        id: true,
-        name: true,
-        department: true,
-        jobTitle: true,
-        role: true,
-        supervisorId: true,
-        supervisor: { select: { id: true, name: true } },
-      },
-      orderBy: [{ department: "asc" }, { name: "asc" }],
-    }),
-    prisma.user.findMany({
-      select: {
-        id: true,
-        name: true,
-        department: true,
-        role: true,
-      },
-      orderBy: [{ department: "asc" }, { name: "asc" }],
-    }),
-  ]);
+  const directoryUsers = await prisma.user.findMany({
+    select: {
+      id: true,
+      name: true,
+      department: true,
+      jobTitle: true,
+      role: true,
+      supervisorId: true,
+      supervisor: { select: { id: true, name: true } },
+    },
+    orderBy: [{ department: "asc" }, { name: "asc" }],
+  });
 
   const configRecord = await prisma.finalReviewConfig.findUnique({
     where: { cycleId: cycle.id },
@@ -916,7 +904,7 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
   };
 
   const assignments = buildSupervisorAssignmentMap(
-    reviewUsers.map((item) => ({
+    directoryUsers.map((item) => ({
       id: item.id,
       name: item.name,
       supervisorId: item.supervisorId,
@@ -1026,10 +1014,13 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
 
   const leaderSubjectIds = new Set(config.leaderSubjectUserIds);
   const employeeSubjectIds = new Set(config.employeeSubjectUserIds);
-  const employeeUsers = reviewUsers.filter((item) =>
+  const subjectUsers = directoryUsers.filter((item) =>
+    employeeSubjectIds.has(item.id) || leaderSubjectIds.has(item.id),
+  );
+  const employeeUsers = subjectUsers.filter((item) =>
     employeeSubjectIds.has(item.id) && !leaderSubjectIds.has(item.id),
   );
-  const leaderUsers = reviewUsers.filter((item) => leaderSubjectIds.has(item.id));
+  const leaderUsers = subjectUsers.filter((item) => leaderSubjectIds.has(item.id));
   const employeeOpinionActorIds = [...new Set(config.finalizerUserIds)].slice(0, 2);
   const isCompanyCalibrator = employeeOpinionActorIds.includes(user.id);
   const canSubmitOpinion = isCompanyCalibrator;
@@ -1305,26 +1296,27 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
     employeeRows.map((item) => ({ name: item.name, stars: item.officialStars ?? item.referenceStars })),
   );
 
-  const assignmentEmployeeIds = employeeUsers
-    .filter((item) => assignments.has(item.id))
-    .map((item) => item.id);
-  const pendingInitialReviewNames = assignmentEmployeeIds
-    .filter((employeeId) => {
-      const assignment = assignments.get(employeeId);
+  const initialReviewSubjectUsers = [...employeeUsers, ...leaderUsers].filter((item) => {
+    const assignment = assignments.get(item.id);
+    return Boolean(assignment && assignment.currentEvaluatorIds.length > 0);
+  });
+  const pendingInitialReviewNames = initialReviewSubjectUsers
+    .filter((item) => {
+      const assignment = assignments.get(item.id);
       const currentEvalIds = assignment?.currentEvaluatorIds || [];
-      return currentEvalIds.length > 0
-        && currentEvalIds.some((evaluatorId) => {
-          const existing = allSupervisorEvals.find((item) => item.employeeId === employeeId && item.evaluatorId === evaluatorId);
-          return existing?.status !== "SUBMITTED";
-        });
+      return !(currentEvalIds.length > 0
+        && currentEvalIds.every((evaluatorId) => {
+          const existing = allSupervisorEvals.find((evalItem) => evalItem.employeeId === item.id && evalItem.evaluatorId === evaluatorId);
+          return existing?.status === "SUBMITTED";
+        }));
     })
-    .map((employeeId) => usersById.get(employeeId)?.name || employeeId);
-  const submittedEmployeeCount = assignmentEmployeeIds.filter((employeeId) => {
-    const assignment = assignments.get(employeeId);
+    .map((item) => item.name);
+  const submittedInitialReviewCount = initialReviewSubjectUsers.filter((item) => {
+    const assignment = assignments.get(item.id);
     const currentEvalIds = assignment?.currentEvaluatorIds || [];
     return currentEvalIds.length > 0
       && currentEvalIds.every((evaluatorId) => {
-        const existing = allSupervisorEvals.find((item) => item.employeeId === employeeId && item.evaluatorId === evaluatorId);
+        const existing = allSupervisorEvals.find((evalItem) => evalItem.employeeId === item.id && evalItem.evaluatorId === evaluatorId);
         return existing?.status === "SUBMITTED";
       });
   }).length;
@@ -1415,7 +1407,9 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
     employeeReview: {
       overview: {
         companyCount: companyPeople.length,
-        initialEvalSubmissionRate: assignmentEmployeeIds.length > 0 ? Math.round((submittedEmployeeCount / assignmentEmployeeIds.length) * 100) : 0,
+        initialEvalSubmissionRate: initialReviewSubjectUsers.length > 0
+          ? Math.round((submittedInitialReviewCount / initialReviewSubjectUsers.length) * 100)
+          : 0,
         pendingInitialReviewNames,
         officialCompletionRate: companyPeople.length > 0
           ? Math.round((companyPeople.filter((item) => item.officialStars != null).length / companyPeople.length) * 100)

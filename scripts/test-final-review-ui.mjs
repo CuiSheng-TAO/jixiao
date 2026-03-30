@@ -472,6 +472,30 @@ test("employee cockpit risk labels use review signals instead of generic bookkee
   );
 });
 
+test("employee cockpit shows concrete initial-review gaps instead of only a percentage", () => {
+  const cockpit = read("src/components/final-review/employee-cockpit.tsx");
+  const types = read("src/components/final-review/types.ts");
+  const board = read("src/components/final-review/department-distribution-board.tsx");
+
+  assert.equal(
+    types.includes("pendingInitialReviewNames: string[];"),
+    true,
+    "workspace types should expose the specific names still missing initial reviews",
+  );
+  assert.equal(
+    cockpit.includes("pendingInitialReviewNames") &&
+      cockpit.includes("未提交：") &&
+      cockpit.includes("当前没有未提交初评的人。"),
+    true,
+    "employee cockpit should render the names missing initial reviews directly under the submission-rate card",
+  );
+  assert.equal(
+    board.includes("员工层名单（不含主管层）"),
+    true,
+    "employee roster card should keep clarifying that its count excludes leader subjects",
+  );
+});
+
 test("employee evidence panel shows direct initial-review details plus named 360 feedback", () => {
   const detailPanel = read("src/components/final-review/employee-detail-panel.tsx");
   const types = read("src/components/final-review/types.ts");
