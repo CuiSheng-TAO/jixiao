@@ -170,6 +170,14 @@ export type LeaderRow = {
   bothSubmitted: boolean;
 };
 
+export type CompanyDistributionOverview = {
+  distribution: DistributionEntry[];
+  totalParticipants: number;
+  includedCount: number;
+  calibratedCount: number;
+  progressPct: number;
+};
+
 export type WorkspacePayload = {
   cycle: {
     id: string;
@@ -257,10 +265,9 @@ export type WorkspacePayload = {
     };
     leaders: LeaderRow[];
     leaderDistribution: DistributionEntry[];
-    companyDistributions: {
-      all: DistributionEntry[];
-      leaderOnly: DistributionEntry[];
-      employeeOnly: DistributionEntry[];
+    companyDistributionOverviews: {
+      withRoot: CompanyDistributionOverview;
+      withoutRoot: CompanyDistributionOverview;
     };
   } | null;
 };

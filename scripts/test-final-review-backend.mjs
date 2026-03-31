@@ -608,6 +608,19 @@ test("workspace builder filters ordinary employees to the configured employee ro
     true,
     "initial-review completion should be calculated across both employee and leader subjects so leader gaps still surface",
   );
+  assert.equal(
+    source.includes("曹越") &&
+      source.includes("曹铭哲") &&
+      source.includes("宓鸿宇"),
+    true,
+    "workspace builder should explicitly carry the ROOT-exception roster used by the company distribution split",
+  );
+  assert.equal(
+    types.includes("withRoot") &&
+      types.includes("withoutRoot"),
+    true,
+    "leader review payload types should expose both ROOT-included and ROOT-excluded company distributions",
+  );
 });
 
 test("final review default roster helper lists the exact 54 names and maps them to ids", () => {

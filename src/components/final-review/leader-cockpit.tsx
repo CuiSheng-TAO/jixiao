@@ -2,14 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { CompanyDistributionOverviewCard } from "./company-distribution-overview-card";
 import { QueueTabs } from "./queue-tabs";
 import { RosterSearchList, type RosterSearchItem } from "./roster-search-list";
 import { StarDistributionChart } from "./star-distribution-chart";
-import type { DistributionEntry, LeaderRow } from "./types";
+import type { CompanyDistributionOverview, DistributionEntry, LeaderRow } from "./types";
 import { buildLeaderQueueGroups } from "./workspace-view";
-
-type CompanyScope = "all" | "leaderOnly" | "employeeOnly";
 
 type LeaderCockpitProps = {
   progressTitle: string;
@@ -17,9 +15,10 @@ type LeaderCockpitProps = {
   leaderCount: number;
   confirmedCount: number;
   leaderDistribution: DistributionEntry[];
-  companyDistribution: DistributionEntry[];
-  activeCompanyScope: CompanyScope;
-  onCompanyScopeChange: (scope: CompanyScope) => void;
+  companyDistributionOverviews: {
+    withRoot: CompanyDistributionOverview;
+    withoutRoot: CompanyDistributionOverview;
+  };
   evaluatorProgress: Array<{
     evaluatorId: string;
     evaluatorName: string;
@@ -37,9 +36,7 @@ export function LeaderCockpit({
   leaderCount,
   confirmedCount,
   leaderDistribution,
-  companyDistribution,
-  activeCompanyScope,
-  onCompanyScopeChange,
+  companyDistributionOverviews,
   evaluatorProgress,
   allLeaders,
   selectedLeaderId,
@@ -127,42 +124,50 @@ export function LeaderCockpit({
             distribution={leaderDistribution}
           />
 
-          <StarDistributionChart
-            title="全公司最终分布"
-            description="把主管层结果并回全公司后，再看整体星级分布是否还需要回收口径。"
-            distribution={companyDistribution}
+          <CompanyDistributionOverviewCard
+            title="公司整体绩效分布（含ROOT）"
+            description="含 ROOT 的整体结果用于看全公司最终落点，先确认整体口径再决定是否需要回收。"
+            overview={companyDistributionOverviews.withRoot}
           />
 
-          <section className="space-y-4 rounded-[24px] border p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold text-[var(--cockpit-foreground)]">{progressTitle}</p>
-                <p className="mt-1 text-xs leading-6 text-[var(--cockpit-muted-foreground)]">{progressDescription}</p>
-              </div>
-              <Badge variant="outline" className="w-fit">
-                双人已齐备 {readyCount} 人
-              </Badge>
-            </div>
+          <CompanyDistributionOverviewCard
+            title="公司整体绩效分布（不含ROOT）"
+            description="ROOT 独立评估，不含 ROOT 的整体结果才用于对照建议分布并做后续微调。"
+            overview={companyDistributionOverviews.withoutRoot}
+          />
+        </div>
 
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-              <div className="rounded-2xl border px-4 py-3">
-                <p className="text-xs text-[var(--cockpit-muted-foreground)]">主管层总人数</p>
-                <p className="mt-2 text-sm font-medium text-[var(--cockpit-foreground)]">{leaderCount} 人</p>
-              </div>
-              <div className="rounded-2xl border px-4 py-3">
-                <p className="text-xs text-[var(--cockpit-muted-foreground)]">已形成结果</p>
-                <p className="mt-2 text-sm font-medium text-[var(--cockpit-foreground)]">{confirmedCount} 人</p>
-              </div>
-              <div className="rounded-2xl border px-4 py-3">
-                <p className="text-xs text-[var(--cockpit-muted-foreground)]">待生成结果</p>
-                <p className="mt-2 text-sm font-medium text-[var(--cockpit-foreground)]">{pendingCount} 人</p>
-              </div>
-              <div className="rounded-2xl border px-4 py-3">
-                <p className="text-xs text-[var(--cockpit-muted-foreground)]">待双人提交</p>
-                <p className="mt-2 text-sm font-medium text-[var(--cockpit-foreground)]">{pendingDualCount} 人</p>
-              </div>
+        <section className="mt-4 space-y-4 rounded-[24px] border p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-[var(--cockpit-foreground)]">{progressTitle}</p>
+              <p className="mt-1 text-xs leading-6 text-[var(--cockpit-muted-foreground)]">{progressDescription}</p>
             </div>
+            <Badge variant="outline" className="w-fit">
+              双人已齐备 {readyCount} 人
+            </Badge>
+          </div>
 
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-2xl border px-4 py-3">
+              <p className="text-xs text-[var(--cockpit-muted-foreground)]">主管层总人数</p>
+              <p className="mt-2 text-sm font-medium text-[var(--cockpit-foreground)]">{leaderCount} 人</p>
+            </div>
+            <div className="rounded-2xl border px-4 py-3">
+              <p className="text-xs text-[var(--cockpit-muted-foreground)]">已形成结果</p>
+              <p className="mt-2 text-sm font-medium text-[var(--cockpit-foreground)]">{confirmedCount} 人</p>
+            </div>
+            <div className="rounded-2xl border px-4 py-3">
+              <p className="text-xs text-[var(--cockpit-muted-foreground)]">待生成结果</p>
+              <p className="mt-2 text-sm font-medium text-[var(--cockpit-foreground)]">{pendingCount} 人</p>
+            </div>
+            <div className="rounded-2xl border px-4 py-3">
+              <p className="text-xs text-[var(--cockpit-muted-foreground)]">待双人提交</p>
+              <p className="mt-2 text-sm font-medium text-[var(--cockpit-foreground)]">{pendingDualCount} 人</p>
+            </div>
+          </div>
+
+          <div className="grid gap-3 xl:grid-cols-2">
             <div className="space-y-2">
               {evaluatorProgress.map((item) => (
                 <div key={item.evaluatorId} className="flex items-center justify-between rounded-2xl border px-4 py-3 text-sm">
@@ -172,19 +177,14 @@ export function LeaderCockpit({
               ))}
             </div>
 
-            <div className="flex flex-wrap gap-2">
-              <Button variant={activeCompanyScope === "all" ? "default" : "outline"} onClick={() => onCompanyScopeChange("all")}>
-                全公司
-              </Button>
-              <Button variant={activeCompanyScope === "leaderOnly" ? "default" : "outline"} onClick={() => onCompanyScopeChange("leaderOnly")}>
-                仅主管层
-              </Button>
-              <Button variant={activeCompanyScope === "employeeOnly" ? "default" : "outline"} onClick={() => onCompanyScopeChange("employeeOnly")}>
-                仅非主管层
-              </Button>
+            <div className="rounded-2xl border px-4 py-3">
+              <p className="text-xs text-[var(--cockpit-muted-foreground)]">ROOT 例外说明</p>
+              <p className="mt-2 text-sm leading-6 text-[var(--cockpit-foreground)]">
+                曹越、曹铭哲、宓鸿宇属于 ROOT 独立评估对象。整体结果保留在含 ROOT 图里，但比例回收和分布尺子请优先看不含 ROOT 这张图。
+              </p>
             </div>
-          </section>
-        </div>
+          </div>
+        </section>
       </section>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(340px,0.38fr)_minmax(0,1fr)] xl:items-start">

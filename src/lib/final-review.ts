@@ -820,6 +820,27 @@ function buildLeaderEvaluatorProgress(
 
 const NAMED_PEER_REVIEW_VIEWER_NAMES = new Set(["吴承霖", "邱翔", "禹聪琪"]);
 const OPINION_LAYOUT_VIEWER_NAMES = new Set(["向金涛", "禹聪琪"]);
+const ROOT_EXCEPTION_NAMES = new Set(["曹越", "曹铭哲", "宓鸿宇"]);
+
+function buildCompanyDistributionOverview(
+  rows: Array<{
+    name: string;
+    stars: number | null;
+    calibrated: boolean;
+  }>,
+  totalParticipants: number,
+) {
+  const includedCount = rows.length;
+  const calibratedCount = rows.filter((row) => row.calibrated).length;
+
+  return {
+    distribution: buildDistribution(rows.map((row) => ({ name: row.name, stars: row.stars }))),
+    totalParticipants,
+    includedCount,
+    calibratedCount,
+    progressPct: includedCount > 0 ? Math.round((calibratedCount / includedCount) * 100) : 0,
+  };
+}
 
 export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
   const cycle = await getActiveCycle();
@@ -1357,18 +1378,29 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
     officialStars: item.officialStars,
     referenceStars: "referenceStars" in item ? item.referenceStars : null,
   }));
+  const companyDistributionRows = [
+    ...employeeRows.map((item) => ({
+      name: item.name,
+      stars: item.officialStars ?? item.referenceStars,
+      calibrated: item.officialStars != null,
+    })),
+    ...leaderRows.map((item) => ({
+      name: item.name,
+      stars: item.officialStars,
+      calibrated: item.officialStars != null,
+    })),
+  ];
+  const companyDistributionRowsWithoutRoot = companyDistributionRows.filter((item) => !ROOT_EXCEPTION_NAMES.has(item.name));
   const leaderDistribution = buildDistribution(
     leaderRows.map((item) => ({ name: item.name, stars: item.officialStars })),
   );
   const mergedDistribution = buildDistribution(
-    [
-      ...employeeRows.map((item) => ({ name: item.name, stars: item.officialStars ?? item.referenceStars })),
-      ...leaderRows.map((item) => ({ name: item.name, stars: item.officialStars })),
-    ],
+    companyDistributionRows.map((item) => ({ name: item.name, stars: item.stars })),
   );
-  const employeeOnlyDistribution = buildDistribution(
-    employeeRows.map((item) => ({ name: item.name, stars: item.officialStars ?? item.referenceStars })),
-  );
+  const companyDistributionOverviews = {
+    withRoot: buildCompanyDistributionOverview(companyDistributionRows, companyPeople.length),
+    withoutRoot: buildCompanyDistributionOverview(companyDistributionRowsWithoutRoot, companyPeople.length),
+  };
 
   const initialReviewSubjectUsers = [...employeeUsers, ...leaderUsers].filter((item) => {
     const assignment = assignments.get(item.id);
@@ -1514,11 +1546,7 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
       },
       leaders: leaderRows,
       leaderDistribution,
-      companyDistributions: {
-        all: mergedDistribution,
-        leaderOnly: leaderDistribution,
-        employeeOnly: employeeOnlyDistribution,
-      },
+      companyDistributionOverviews,
     },
   };
 }

@@ -178,6 +178,7 @@ test("calibration page source includes employee-tab redesign tokens", () => {
 test("calibration page source includes leader-tab redesign tokens", () => {
   const source = read("src/app/(main)/calibration/page.tsx");
   const cockpit = read("src/components/final-review/leader-cockpit.tsx");
+  const overviewCard = read("src/components/final-review/company-distribution-overview-card.tsx");
 
   assertSourceContains(source, "双人结果对照", "leader tab should include the comparison token \"双人结果对照\"");
   assert.equal(
@@ -187,7 +188,19 @@ test("calibration page source includes leader-tab redesign tokens", () => {
   );
   assertSourceContains(cockpit, "待双人提交", "leader tab should include the dual-submission waiting label");
   assertSourceContains(cockpit, "待生成结果", "leader tab should include the automatic-result waiting label");
-  assertSourceContains(cockpit, "全公司最终分布", "leader tab should keep the company-final-distribution chart visible");
+  assert.equal(
+    cockpit.includes("公司整体绩效分布（含ROOT）") &&
+      cockpit.includes("公司整体绩效分布（不含ROOT）"),
+    true,
+    "leader tab should split the company-level distribution into ROOT-included and ROOT-excluded charts",
+  );
+  assert.equal(
+    overviewCard.includes("本次参评人数") &&
+      overviewCard.includes("已完成校准") &&
+      overviewCard.includes("校准进度"),
+    true,
+    "leader tab company charts should surface the participation and calibration progress metrics",
+  );
 });
 
 test("calibration page delegates cockpit shaping to shared final-review helpers", () => {

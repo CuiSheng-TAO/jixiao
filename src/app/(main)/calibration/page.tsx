@@ -78,7 +78,6 @@ function CalibrationContent() {
   const [workspace, setWorkspace] = useState<WorkspacePayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [activeCompanyScope, setActiveCompanyScope] = useState<"all" | "leaderOnly" | "employeeOnly">("all");
   const [employeeForms, setEmployeeForms] = useState<Record<string, EmployeeOpinionForm>>({});
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
   const [leaderForms, setLeaderForms] = useState<Record<string, LeaderForm>>({});
@@ -245,7 +244,6 @@ function CalibrationContent() {
   }
 
   const selectedLeader = workspace.leaderReview.leaders.find((leader) => leader.id === selectedLeaderId) || workspace.leaderReview.leaders[0] || null;
-  const activeCompanyDistribution = workspace.leaderReview.companyDistributions[activeCompanyScope];
   const leaderSubmissionSummary = buildLeaderSubmissionSummary(workspace.leaderReview.leaders);
   const selectedEmployee =
     workspace.employeeReview.employees.find((employee) => employee.id === selectedEmployeeId) ||
@@ -303,7 +301,7 @@ function CalibrationContent() {
             companyCount={workspace.employeeReview.overview.companyCount}
             officialCompletionRate={workspace.employeeReview.overview.officialCompletionRate}
             pendingOfficialCount={workspace.employeeReview.overview.pendingOfficialCount}
-            companyDistribution={workspace.leaderReview.companyDistributions.all}
+            companyDistribution={workspace.employeeReview.companyDistribution}
             distributionChecks={workspace.overview.distributionComplianceChecks}
             departmentDistributions={workspace.employeeReview.departmentDistributions}
             allEmployees={workspace.employeeReview.employees}
@@ -338,9 +336,7 @@ function CalibrationContent() {
             leaderCount={workspace.leaderReview.overview.leaderCount}
             confirmedCount={workspace.leaderReview.overview.confirmedCount}
             leaderDistribution={workspace.leaderReview.leaderDistribution}
-            companyDistribution={activeCompanyDistribution}
-            activeCompanyScope={activeCompanyScope}
-            onCompanyScopeChange={setActiveCompanyScope}
+            companyDistributionOverviews={workspace.leaderReview.companyDistributionOverviews}
             evaluatorProgress={workspace.leaderReview.overview.evaluatorProgress}
             allLeaders={workspace.leaderReview.leaders}
             selectedLeaderId={selectedLeader?.id ?? null}
