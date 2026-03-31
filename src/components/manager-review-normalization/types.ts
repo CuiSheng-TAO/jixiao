@@ -60,3 +60,46 @@ export type ManagerReviewNormalizationWorkspaceResponse = {
   };
   rows: NormalizationLedgerRow[];
 };
+
+// Compatibility aliases for legacy manager-review-normalization components
+export type ManagerReviewNormalizationApplicationState = NormalizationApplicationState;
+
+export type ManagerReviewNormalizationSummary = {
+  currentSourceCount: number;
+  abnormalRaterCount: number;
+  shiftedPeopleCount: number;
+  skewedDepartmentCount: number;
+  workspaceState: NormalizationApplicationState["workspaceState"];
+};
+
+export type ManagerReviewNormalizationBucketSummary = {
+  bucketIndex: number;
+  bucketLabel: string;
+  count: number;
+  pct: number;
+  names: string[];
+};
+
+export type ManagerReviewNormalizationRaterBiasRow = {
+  raterId: string;
+  raterName: string;
+  raterDepartment: string | null;
+  sampleCount: number;
+  averageScore: number | null;
+  offset: number | null;
+  tendency: NormalizationTendency;
+  isAbnormal: boolean;
+};
+
+export type ManagerReviewNormalizationMovementRow = {
+  sourceRecordId: string;
+  subjectId: string;
+  subjectName: string | null;
+  subjectDepartment: string | null;
+  rawScore: number | null;
+  rawBucket: number | null;
+  reviewerNormalizedBucket: number | null;
+  departmentNormalizedBucket: number | null;
+  rankDelta: number | null;
+  movementLabel: "上调" | "下调" | "不变" | "待定";
+};
