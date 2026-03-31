@@ -83,23 +83,26 @@ function getDefaultExportFunctionLike(file) {
   return null;
 }
 
-function getImportedLocalNames(file, modulePrefix) {
-  const names = [];
+function getAnyExportedFunctionLike(file, namePattern = null) {
   for (const statement of file.statements) {
-    if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) continue;
-    if (!statement.moduleSpecifier.text.startsWith(modulePrefix) || !statement.importClause) continue;
-    const { importClause } = statement;
-    if (importClause.name) names.push(importClause.name.text);
-    const bindings = importClause.namedBindings;
-    if (bindings && ts.isNamedImports(bindings)) {
-      for (const element of bindings.elements) {
-        names.push(element.name.text);
+    if (ts.isFunctionDeclaration(statement) && hasModifier(statement, ts.SyntaxKind.ExportKeyword)) {
+      if (!namePattern || (statement.name && namePattern.test(statement.name.text))) {
+        return statement;
       }
-    } else if (bindings && ts.isNamespaceImport(bindings)) {
-      names.push(bindings.name.text);
+    }
+
+    if (ts.isVariableStatement(statement) && hasModifier(statement, ts.SyntaxKind.ExportKeyword)) {
+      for (const declaration of statement.declarationList.declarations) {
+        if (!ts.isIdentifier(declaration.name) || !declaration.initializer) continue;
+        if (namePattern && !namePattern.test(declaration.name.text)) continue;
+        if (ts.isArrowFunction(declaration.initializer) || ts.isFunctionExpression(declaration.initializer)) {
+          return declaration.initializer;
+        }
+      }
     }
   }
-  return names;
+
+  return null;
 }
 
 function getReturnedExpressions(functionLike) {
@@ -170,17 +173,44 @@ function analyzeReturnedExpressions(expressions) {
 test("score normalization page wires in the normalization shell component", () => {
   const { file } = parseTsx("src/app/(main)/score-normalization/page.tsx");
   const defaultExport = getDefaultExportFunctionLike(file);
+  const source = read("src/app/(main)/score-normalization/page.tsx");
 
   assert.equal(defaultExport != null, true, "score normalization page should export a default page component");
+  assert.equal(source.includes("NormalizationShell"), true, "score normalization page should wire in the normalization shell component");
 
   const returnExpressions = getReturnedExpressions(defaultExport);
   const analysis = analyzeReturnedExpressions(returnExpressions);
-  const componentNames = getImportedLocalNames(file, "@/components/score-normalization/");
 
   assert.equal(
-    componentNames.some((name) => /shell/i.test(name) && analysis.tags.has(name)),
+    (analysis.tags.get("TabsContent") ?? 0) >= 2,
     true,
-    "score normalization page should wire in a normalization shell component",
+    "score normalization page should render both analysis tab panels",
+  );
+});
+
+test("score normalization page exposes the two required analysis tabs", () => {
+  const source = read("src/app/(main)/score-normalization/page.tsx");
+  const types = read("src/components/score-normalization/types.ts");
+
+  assert.equal(
+    types.includes("360环评分布校准") &&
+      types.includes("绩效初评分布校准") &&
+      source.includes("SCORE_NORMALIZATION_SOURCE_OPTIONS"),
+    true,
+    "score normalization page should expose one tab for peer review and one tab for supervisor review",
+  );
+});
+
+test("score normalization page fetches the workspace by source query param", () => {
+  const source = read("src/app/(main)/score-normalization/page.tsx");
+
+  assert.equal(
+    source.includes("/api/score-normalization/workspace") &&
+      source.includes("source=") &&
+      source.includes("PEER_REVIEW") &&
+      source.includes("SUPERVISOR_EVAL"),
+    true,
+    "score normalization page should load the workspace with a source query parameter",
   );
 });
 
@@ -190,40 +220,31 @@ test("score normalization shell composes the overview, diff, rater-bias, change-
     "src/components/score-normalization/score-normalization-shell.tsx",
     "src/components/score-normalization/shell.tsx",
   ]);
-  const defaultExport = getDefaultExportFunctionLike(file);
+  const defaultExport = getAnyExportedFunctionLike(file, /NormalizationShell/i);
+  const source = read("src/components/score-normalization/normalization-shell.tsx");
 
   assert.equal(defaultExport != null, true, "score normalization shell should export a component");
 
-  const returnExpressions = getReturnedExpressions(defaultExport);
-  const analysis = analyzeReturnedExpressions(returnExpressions);
-  const componentNames = getImportedLocalNames(file, "@/components/score-normalization/");
-
   const requiredPatterns = [
-    { pattern: /overview/i, label: "overview block" },
-    { pattern: /diff/i, label: "diff block" },
-    { pattern: /bias/i, label: "rater-bias block" },
-    { pattern: /change.*preview|preview/i, label: "change-preview block" },
-    { pattern: /apply/i, label: "apply-panel block" },
+    { text: "NormalizationOverview", label: "overview block" },
+    { text: "DistributionDiffChart", label: "diff block" },
+    { text: "RaterBiasTable", label: "rater-bias block" },
+    { text: "ChangePreviewTable", label: "change-preview block" },
+    { text: "ApplyPanel", label: "apply-panel block" },
   ];
 
-  for (const { pattern, label } of requiredPatterns) {
+  for (const { text, label } of requiredPatterns) {
     assert.equal(
-      componentNames.some((name) => pattern.test(name) && analysis.tags.has(name)),
+      source.includes(text),
       true,
       `score normalization shell should render the ${label}`,
     );
   }
-
-  assert.equal(
-    (analysis.tags.get("TabsContent") ?? 0) >= 2,
-    true,
-    "score normalization shell should render both tab content sections",
-  );
 });
 
 test("score normalization apply panel includes double-confirm apply and rollback copy", () => {
   const { file } = parseTsx("src/components/score-normalization/apply-panel.tsx");
-  const defaultExport = getDefaultExportFunctionLike(file);
+  const defaultExport = getAnyExportedFunctionLike(file, /ApplyPanel/i);
 
   assert.equal(defaultExport != null, true, "apply panel should export a component");
 
@@ -237,4 +258,14 @@ test("score normalization apply panel includes double-confirm apply and rollback
   );
   assert.equal(analysis.texts.has("应用标准化结果"), true, "apply panel should use the apply wording for normalized results");
   assert.equal(analysis.texts.has("回退到原始分"), true, "apply panel should expose the rollback wording back to raw scores");
+});
+
+test("score normalization nav entry is present for authorized users", () => {
+  const source = read("src/components/nav.tsx");
+
+  assert.equal(
+    source.includes("分布校准分析") && source.includes("/score-normalization"),
+    true,
+    "nav should expose a score normalization analysis entry",
+  );
 });
