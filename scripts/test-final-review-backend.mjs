@@ -448,6 +448,20 @@ test("calibration payload can read the active normalized layer when present", ()
   );
 });
 
+test("calibration payload can read the active manager-review normalized map when present", () => {
+  const { file } = parseTs("src/lib/final-review.ts");
+  const workspacePayload = getExportedFunction(file, "buildFinalReviewWorkspacePayload");
+  const returnIdentifiers = workspacePayload ? collectReturnedIdentifierNames(workspacePayload) : new Set();
+
+  assert.equal(
+    workspacePayload != null &&
+      functionCallsExactName(workspacePayload, "getAppliedManagerReviewNormalizationMap") &&
+      returnIdentifiers.has("appliedManagerReviewNormalizationMap"),
+    true,
+    "final review payload should thread the active manager-review normalization map into the returned workspace payload",
+  );
+});
+
 test("final review payload prefers normalized supervisor results for employee calibration displays", () => {
   const source = read("src/lib/final-review.ts");
 
