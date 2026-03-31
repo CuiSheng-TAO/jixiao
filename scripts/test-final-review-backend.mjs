@@ -2,11 +2,54 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import * as ts from "typescript";
 
 const rootDir = path.resolve(import.meta.dirname, "..");
 
 function read(relativePath) {
   return fs.readFileSync(path.join(rootDir, relativePath), "utf8");
+}
+
+function parseTs(relativePath) {
+  const source = read(relativePath);
+  return {
+    source,
+    file: ts.createSourceFile(relativePath, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS),
+  };
+}
+
+function hasModifier(node, kind) {
+  return node.modifiers?.some((modifier) => modifier.kind === kind) ?? false;
+}
+
+function getExportedFunction(file, name) {
+  for (const statement of file.statements) {
+    if (
+      ts.isFunctionDeclaration(statement) &&
+      statement.name?.text === name &&
+      hasModifier(statement, ts.SyntaxKind.ExportKeyword)
+    ) {
+      return statement;
+    }
+  }
+  return null;
+}
+
+function hasCallExpression(node, calleeName) {
+  let found = false;
+  const visit = (node) => {
+    if (
+      ts.isCallExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      node.expression.text === calleeName
+    ) {
+      found = true;
+      return;
+    }
+    ts.forEachChild(node, visit);
+  };
+  ts.forEachChild(node, visit);
+  return found;
 }
 
 test("prisma schema defines final review configuration and audit models", () => {
@@ -321,10 +364,11 @@ test("final review routes expose config, workspace, opinion, leader review, and 
 });
 
 test("calibration payload can read the active normalized layer when present", () => {
-  const source = read("src/lib/final-review.ts");
+  const { file } = parseTs("src/lib/final-review.ts");
+  const workspacePayload = getExportedFunction(file, "buildFinalReviewWorkspacePayload");
 
   assert.equal(
-    source.includes("const appliedNormalizationMap = getAppliedNormalizationMap("),
+    workspacePayload != null && hasCallExpression(workspacePayload, "getAppliedNormalizationMap"),
     true,
     "final review payload should call the concrete normalization hook when active normalized data exists",
   );
