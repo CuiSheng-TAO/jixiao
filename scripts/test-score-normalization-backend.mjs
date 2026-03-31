@@ -477,12 +477,12 @@ test("apply route updates normalization application state through dedicated help
   const postHandler = getExportedFunction(file, "POST");
 
   assert.equal(postHandler != null, true, "apply route should export a POST handler");
-  const importedNames = new Set(getImportedLocalNames(file, "@/lib/score-normalization"));
-  assert.equal(importedNames.size > 0, true, "apply route should import a dedicated normalization helper");
+  const importedNames = new Set(getImportedLocalNames(file, "@/lib/score-normalization").filter((name) => /apply/i.test(name)));
+  assert.equal(importedNames.size > 0, true, "apply route should import a dedicated apply helper");
   assert.equal(
     hasCallToImportedHelper(postHandler, importedNames),
     true,
-    "apply route should call a normalization apply helper",
+    "apply route should call the dedicated apply helper",
   );
   assert.equal(
     hasPrismaScoreNormalizationMutationUsingImportedHelper(postHandler, importedNames),
@@ -496,12 +496,12 @@ test("revert route rolls normalization application state back through dedicated 
   const postHandler = getExportedFunction(file, "POST");
 
   assert.equal(postHandler != null, true, "revert route should export a POST handler");
-  const importedNames = new Set(getImportedLocalNames(file, "@/lib/score-normalization"));
-  assert.equal(importedNames.size > 0, true, "revert route should import a dedicated normalization helper");
+  const importedNames = new Set(getImportedLocalNames(file, "@/lib/score-normalization").filter((name) => /revert/i.test(name)));
+  assert.equal(importedNames.size > 0, true, "revert route should import a dedicated revert helper");
   assert.equal(
     hasCallToImportedHelper(postHandler, importedNames),
     true,
-    "revert route should call a normalization revert helper",
+    "revert route should call the dedicated revert helper",
   );
   assert.equal(
     hasPrismaScoreNormalizationMutationUsingImportedHelper(postHandler, importedNames),

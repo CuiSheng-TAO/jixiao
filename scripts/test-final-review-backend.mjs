@@ -41,36 +41,17 @@ function getCalleeName(expression) {
   return null;
 }
 
-function expressionContainsCallMatching(expression, matcher) {
-  const current = ts.isParenthesizedExpression(expression) ? expression.expression : expression;
-  if (!current) return false;
-  if (ts.isCallExpression(current)) {
-    const calleeName = getCalleeName(current.expression);
-    if (calleeName && matcher(calleeName)) return true;
-    return (
-      expressionContainsCallMatching(current.expression, matcher) ||
-      current.arguments.some((argument) => expressionContainsCallMatching(argument, matcher))
-    );
-  }
-  if (ts.isIdentifier(current) || ts.isPropertyAccessExpression(current)) {
-    return false;
-  }
+function functionCallsExactName(functionLike, calleeName) {
   let found = false;
-  const visit = (node) => {
+  walkFunctionBody(functionLike, (node) => {
     if (found) return;
-    if (ts.isFunctionDeclaration(node) || ts.isFunctionExpression(node) || ts.isArrowFunction(node)) {
-      return;
-    }
     if (ts.isCallExpression(node)) {
-      const calleeName = getCalleeName(node.expression);
-      if (calleeName && matcher(calleeName)) {
+      const currentName = getCalleeName(node.expression);
+      if (currentName === calleeName) {
         found = true;
-        return;
       }
     }
-    ts.forEachChild(node, visit);
-  };
-  ts.forEachChild(current, visit);
+  });
   return found;
 }
 
@@ -87,21 +68,6 @@ function walkFunctionBody(functionLike, visitor) {
   };
 
   ts.forEachChild(body, visit);
-}
-
-function collectNormalizationDerivedVariableNames(functionLike) {
-  const names = new Set();
-  walkFunctionBody(functionLike, (node) => {
-    if (
-      ts.isVariableDeclaration(node) &&
-      ts.isIdentifier(node.name) &&
-      node.initializer &&
-      expressionContainsCallMatching(node.initializer, (calleeName) => /normal/i.test(calleeName))
-    ) {
-      names.add(node.name.text);
-    }
-  });
-  return names;
 }
 
 function collectReturnedIdentifierNames(functionLike) {
@@ -155,34 +121,6 @@ function collectReturnedIdentifierNames(functionLike) {
     }
   });
   return names;
-}
-
-function collectReturnExpressions(functionLike) {
-  const expressions = [];
-
-  walkFunctionBody(functionLike, (node) => {
-    if (ts.isReturnStatement(node) && node.expression) {
-      expressions.push(node.expression);
-    }
-  });
-  return expressions;
-}
-
-function hasCallExpression(node, calleeName) {
-  let found = false;
-  const visit = (node) => {
-    if (
-      ts.isCallExpression(node) &&
-      ts.isIdentifier(node.expression) &&
-      node.expression.text === calleeName
-    ) {
-      found = true;
-      return;
-    }
-    ts.forEachChild(node, visit);
-  };
-  ts.forEachChild(node, visit);
-  return found;
 }
 
 test("prisma schema defines final review configuration and audit models", () => {
@@ -499,17 +437,14 @@ test("final review routes expose config, workspace, opinion, leader review, and 
 test("calibration payload can read the active normalized layer when present", () => {
   const { file } = parseTs("src/lib/final-review.ts");
   const workspacePayload = getExportedFunction(file, "buildFinalReviewWorkspacePayload");
-  const returnExpressions = workspacePayload ? collectReturnExpressions(workspacePayload) : [];
-  const returnedIdentifiers = workspacePayload ? collectReturnedIdentifierNames(workspacePayload) : new Set();
+  const returnIdentifiers = workspacePayload ? collectReturnedIdentifierNames(workspacePayload) : new Set();
 
   assert.equal(
     workspacePayload != null &&
-      (
-        returnExpressions.some((expression) => expressionContainsCallMatching(expression, (calleeName) => /normal/i.test(calleeName))) ||
-        [...collectNormalizationDerivedVariableNames(workspacePayload)].some((name) => returnedIdentifiers.has(name))
-      ),
+      functionCallsExactName(workspacePayload, "getAppliedNormalizationMap") &&
+      returnIdentifiers.has("appliedNormalizationMap"),
     true,
-    "final review payload should thread active normalization data into the returned workspace payload",
+    "final review payload should thread getAppliedNormalizationMap into the returned workspace payload",
   );
 });
 
