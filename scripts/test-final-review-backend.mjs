@@ -324,9 +324,9 @@ test("calibration payload can read the active normalized layer when present", ()
   const source = read("src/lib/final-review.ts");
 
   assert.equal(
-    source.includes("getAppliedNormalizationMap") || source.includes("appliedNormalization"),
+    source.includes("const appliedNormalizationMap = getAppliedNormalizationMap("),
     true,
-    "final review payload should be able to read the active normalized layer when it exists",
+    "final review payload should call the concrete normalization hook when active normalized data exists",
   );
 });
 

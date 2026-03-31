@@ -33,18 +33,11 @@ test("workspace route exposes raw and simulated distributions for one source wit
   const source = read("src/app/api/score-normalization/workspace/route.ts");
 
   assert.equal(
-    source.includes("rawDistribution"),
+    source.includes("NextResponse.json({") &&
+      source.includes("rawDistribution:") &&
+      source.includes("simulatedDistribution:") &&
+      source.includes("application:"),
     true,
-    "workspace route should return the raw distribution view",
-  );
-  assert.equal(
-    source.includes("simulatedDistribution"),
-    true,
-    "workspace route should return the simulated distribution view",
-  );
-  assert.equal(
-    source.includes("application"),
-    true,
-    "workspace route should include the application snapshot payload",
+    "workspace route should build a concrete JSON payload that carries raw, simulated, and application layers",
   );
 });

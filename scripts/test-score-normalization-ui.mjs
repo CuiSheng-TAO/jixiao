@@ -13,14 +13,16 @@ test("score normalization page exposes the two required analysis tabs", () => {
   const source = read("src/app/(main)/score-normalization/page.tsx");
 
   assert.equal(
-    source.includes("360环评分布校准"),
+    source.includes('from "@/components/score-normalization/apply-panel"') ||
+      source.includes('from "@/components/score-normalization/normalization-shell"'),
     true,
-    "score normalization page should expose the 360 review distribution calibration tab",
+    "score normalization page should wire in the apply panel or a normalization shell component",
   );
   assert.equal(
-    source.includes("绩效初评分布校准"),
+    source.includes("360环评分布校准") &&
+      source.includes("绩效初评分布校准"),
     true,
-    "score normalization page should expose the performance initial-review distribution calibration tab",
+    "score normalization page should expose both required analysis tab labels",
   );
 });
 
