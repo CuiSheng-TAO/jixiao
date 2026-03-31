@@ -201,6 +201,16 @@ test("score normalization page exposes the two required analysis tabs", () => {
   );
 });
 
+test("score normalization page imports useEffect for workspace loading", () => {
+  const source = read("src/app/(main)/score-normalization/page.tsx");
+
+  assert.equal(
+    source.includes("useEffect") && source.includes('from "react"'),
+    true,
+    "the page must import useEffect so the workspace fetch hook can compile",
+  );
+});
+
 test("score normalization page fetches the workspace by source query param", () => {
   const source = read("src/app/(main)/score-normalization/page.tsx");
 
@@ -211,6 +221,96 @@ test("score normalization page fetches the workspace by source query param", () 
       source.includes("SUPERVISOR_EVAL"),
     true,
     "score normalization page should load the workspace with a source query parameter",
+  );
+});
+
+test("score normalization page consumes the shared summary, rater-bias, movement, and application-state contract", () => {
+  const page = read("src/app/(main)/score-normalization/page.tsx");
+  const shell = read("src/components/score-normalization/normalization-shell.tsx");
+  const overview = read("src/components/score-normalization/normalization-overview.tsx");
+  const biasTable = read("src/components/score-normalization/rater-bias-table.tsx");
+  const movementTable = read("src/components/score-normalization/change-preview-table.tsx");
+  const applyPanel = read("src/components/score-normalization/apply-panel.tsx");
+  const route = read("src/app/api/score-normalization/workspace/route.ts");
+  const lib = read("src/lib/score-normalization.ts");
+
+  assert.equal(
+    page.includes("summary") &&
+      page.includes("raterBiasRows") &&
+      page.includes("movementRows") &&
+      page.includes("applicationState") &&
+      !page.includes("snapshot.entries"),
+    true,
+    "page should read the shared workspace summary contract instead of inferring everything from raw snapshot entries",
+  );
+  assert.equal(
+    shell.includes("summary") &&
+      shell.includes("raterBiasRows") &&
+      shell.includes("movementRows") &&
+      shell.includes("applicationState") &&
+      !shell.includes("snapshot.entries"),
+    true,
+    "shell should be driven by the shared workspace contract",
+  );
+  assert.equal(
+    overview.includes("currentSourceCount") &&
+      overview.includes("abnormalRaterCount") &&
+      overview.includes("shiftedPeopleCount") &&
+      overview.includes("skewedDepartmentCount") &&
+      overview.includes("workspaceState") &&
+      overview.includes("rollbackVisible") &&
+      !overview.includes("rawCount") &&
+      !overview.includes("simulatedCount"),
+    true,
+    "overview should surface the approved cockpit summary fields",
+  );
+  assert.equal(
+    biasTable.includes("raterBiasRows") &&
+      biasTable.includes("averageScore") &&
+      biasTable.includes("offset") &&
+      biasTable.includes("tendency") &&
+      biasTable.includes("raterName") &&
+      !biasTable.includes("rawDistribution") &&
+      !biasTable.includes("bucketLabel"),
+    true,
+    "bias table should use rater rows instead of relabeling distribution buckets",
+  );
+  assert.equal(
+    movementTable.includes("movementRows") &&
+      movementTable.includes("movementLabel") &&
+      movementTable.includes("rankDelta") &&
+      movementTable.includes("normalizedBucket") &&
+      !movementTable.includes("workspace.snapshot.entries"),
+    true,
+    "movement table should use dedicated movement rows instead of reading snapshot entries directly",
+  );
+  assert.equal(
+    applyPanel.includes("onApply") &&
+      applyPanel.includes("onRevert") &&
+      applyPanel.includes("acknowledged") &&
+      applyPanel.includes("应用标准化结果") &&
+      applyPanel.includes("回退到原始分") &&
+      !applyPanel.includes("当前页仅用于分析预览") &&
+      !applyPanel.includes("暂不接入实际操作"),
+    true,
+    "apply panel should be structured around callbacks and intent, not mock copy",
+  );
+  assert.equal(
+    route.includes("summary") &&
+      route.includes("raterBiasRows") &&
+      route.includes("movementRows") &&
+      route.includes("applicationState") &&
+      !route.includes("snapshot.entries"),
+    true,
+    "workspace route should expose the shared contract fields",
+  );
+  assert.equal(
+    lib.includes("buildScoreNormalizationWorkspaceSummary") &&
+      lib.includes("buildScoreNormalizationRaterBiasRows") &&
+      lib.includes("buildScoreNormalizationMovementRows") &&
+      lib.includes("buildScoreNormalizationApplicationState"),
+    true,
+    "score normalization helpers should compute the shared contract",
   );
 });
 

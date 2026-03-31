@@ -1,5 +1,21 @@
 export type ScoreNormalizationSource = "PEER_REVIEW" | "SUPERVISOR_EVAL";
 
+export type ScoreNormalizationStrategy = "RANK_BUCKET";
+
+export type ScoreNormalizationSubjectRecord = {
+  sourceRecordId: string;
+  subjectId: string;
+  subjectName: string | null;
+  subjectDepartment: string | null;
+  score: number | null;
+};
+
+export type ScoreNormalizationRaterRecord = ScoreNormalizationSubjectRecord & {
+  raterId: string;
+  raterName: string | null;
+  raterDepartment: string | null;
+};
+
 export type ScoreNormalizationBucketSummary = {
   bucketIndex: number;
   bucketLabel: string;
@@ -8,46 +24,57 @@ export type ScoreNormalizationBucketSummary = {
   names: string[];
 };
 
-export type ScoreNormalizationEntryShape = {
+export type ScoreNormalizationRaterBiasRow = {
+  raterId: string;
+  raterName: string;
+  raterDepartment: string | null;
+  sampleCount: number;
+  averageScore: number | null;
+  offset: number | null;
+  tendency: "偏高" | "偏低" | "正常";
+  isAbnormal: boolean;
+};
+
+export type ScoreNormalizationMovementRow = {
   sourceRecordId: string;
   subjectId: string;
   subjectName: string | null;
+  subjectDepartment: string | null;
   rawScore: number | null;
+  rawBucket: number | null;
+  normalizedBucket: number | null;
   rankIndex: number | null;
-  bucketIndex: number | null;
-  bucketLabel: string | null;
-  normalizedScore: number | null;
+  rankDelta: number | null;
+  movementLabel: "上调" | "下调" | "不变" | "待定";
 };
 
-export type ScoreNormalizationSnapshotShape = {
-  cycleId: string;
-  source: ScoreNormalizationSource;
-  strategy: string;
-  targetBucketCount: number;
-  rawRecordCount: number;
-  createdAt: string;
-  entries: ScoreNormalizationEntryShape[];
-  simulatedDistribution: ScoreNormalizationBucketSummary[];
+export type ScoreNormalizationWorkspaceSummary = {
+  currentSourceCount: number;
+  abnormalRaterCount: number;
+  shiftedPeopleCount: number;
+  skewedDepartmentCount: number;
+  workspaceState: "RAW" | "STANDARDIZED";
 };
 
-export type ScoreNormalizationApplicationShape = {
-  cycleId: string;
-  source: ScoreNormalizationSource;
-  snapshotId: string;
-  appliedAt: string;
+export type ScoreNormalizationApplicationState = {
+  workspaceState: "RAW" | "STANDARDIZED";
+  appliedAt: string | null;
   revertedAt: string | null;
-  status: "APPLIED" | "REVERTED";
+  snapshotId: string | null;
+  rollbackVisible: boolean;
 };
 
 export type ScoreNormalizationWorkspacePayload = {
   cycleId: string;
   source: ScoreNormalizationSource;
-  strategy: string;
+  strategy: ScoreNormalizationStrategy;
   targetBucketCount: number;
+  summary: ScoreNormalizationWorkspaceSummary;
   rawDistribution: ScoreNormalizationBucketSummary[];
   simulatedDistribution: ScoreNormalizationBucketSummary[];
-  application: ScoreNormalizationApplicationShape | null;
-  snapshot: ScoreNormalizationSnapshotShape;
+  raterBiasRows: ScoreNormalizationRaterBiasRow[];
+  movementRows: ScoreNormalizationMovementRow[];
+  applicationState: ScoreNormalizationApplicationState;
 };
 
 export type ScoreNormalizationWorkspaceResponse = ScoreNormalizationWorkspacePayload & {
@@ -55,6 +82,16 @@ export type ScoreNormalizationWorkspaceResponse = ScoreNormalizationWorkspacePay
     id: string;
     name: string;
   };
+};
+
+export type ScoreNormalizationApplyRequest = {
+  source?: ScoreNormalizationSource;
+  confirmed?: boolean;
+};
+
+export type ScoreNormalizationRevertRequest = {
+  source?: ScoreNormalizationSource;
+  confirmed?: boolean;
 };
 
 export type ScoreNormalizationSourceOption = {
@@ -104,4 +141,3 @@ export function formatScoreNormalizationDateTime(value: string | null | undefine
 export function resolveScoreNormalizationSource(value: string | null | undefined): ScoreNormalizationSource {
   return value === "SUPERVISOR_EVAL" ? "SUPERVISOR_EVAL" : "PEER_REVIEW";
 }
-

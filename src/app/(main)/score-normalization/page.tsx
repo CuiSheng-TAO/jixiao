@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { PageSkeleton } from "@/components/page-skeleton";
@@ -24,6 +24,8 @@ function SourceWorkspacePanel({
   const [workspace, setWorkspace] = useState<ScoreNormalizationWorkspaceResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [applying, setApplying] = useState(false);
+  const [reverting, setReverting] = useState(false);
   const requestIdRef = useRef(0);
 
   const loadWorkspace = useCallback(async () => {
@@ -49,6 +51,32 @@ function SourceWorkspacePanel({
       }
     }
   }, [source]);
+
+  const runAction = useCallback(
+    async (endpoint: "apply" | "revert") => {
+      const setter = endpoint === "apply" ? setApplying : setReverting;
+      setter(true);
+      setError("");
+
+      try {
+        const response = await fetch(`/api/score-normalization/${endpoint}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ source, confirmed: true }),
+        });
+        const data = (await response.json()) as { error?: string };
+        if (!response.ok) {
+          throw new Error(data.error || "操作失败");
+        }
+        await loadWorkspace();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "操作失败");
+      } finally {
+        setter(false);
+      }
+    },
+    [loadWorkspace, source],
+  );
 
   useEffect(() => {
     if (!active) return;
@@ -89,7 +117,22 @@ function SourceWorkspacePanel({
 
   if (!workspace) return null;
 
-  return <NormalizationShell workspace={workspace} />;
+  return (
+    <NormalizationShell
+      source={workspace.source}
+      cycleName={workspace.cycle.name}
+      summary={workspace.summary}
+      rawDistribution={workspace.rawDistribution}
+      simulatedDistribution={workspace.simulatedDistribution}
+      raterBiasRows={workspace.raterBiasRows}
+      movementRows={workspace.movementRows}
+      applicationState={workspace.applicationState}
+      onApply={() => runAction("apply")}
+      onRevert={() => runAction("revert")}
+      applying={applying}
+      reverting={reverting}
+    />
+  );
 }
 
 export default function ScoreNormalizationPage() {
@@ -114,17 +157,13 @@ export default function ScoreNormalizationPage() {
     <div className="space-y-6">
       <PageHeader
         title="分布校准分析"
-        description="先对照 360 环评和绩效初评的原始分、模拟分和变化明细，再决定是否需要进入后续动作。"
+        description="先对照原始分布、模拟标准化结果和偏差人群，再决定是否启用标准化口径或回退。"
       />
 
       <Tabs value={activeSource} onValueChange={(value) => updateSource(resolveScoreNormalizationSource(value))}>
         <TabsList variant="line" className="mb-4 gap-2 rounded-none bg-transparent p-0">
-          <TabsTrigger value="PEER_REVIEW">
-            {SCORE_NORMALIZATION_SOURCE_OPTIONS[0].label}
-          </TabsTrigger>
-          <TabsTrigger value="SUPERVISOR_EVAL">
-            {SCORE_NORMALIZATION_SOURCE_OPTIONS[1].label}
-          </TabsTrigger>
+          <TabsTrigger value="PEER_REVIEW">{SCORE_NORMALIZATION_SOURCE_OPTIONS[0].label}</TabsTrigger>
+          <TabsTrigger value="SUPERVISOR_EVAL">{SCORE_NORMALIZATION_SOURCE_OPTIONS[1].label}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="PEER_REVIEW" className="outline-none">

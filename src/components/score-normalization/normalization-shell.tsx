@@ -5,46 +5,68 @@ import { DistributionDiffChart } from "./distribution-diff-chart";
 import { NormalizationOverview } from "./normalization-overview";
 import { ApplyPanel } from "./apply-panel";
 import { RaterBiasTable } from "./rater-bias-table";
-import type { ScoreNormalizationWorkspaceResponse } from "./types";
+import type {
+  ScoreNormalizationApplicationState,
+  ScoreNormalizationMovementRow,
+  ScoreNormalizationRaterBiasRow,
+  ScoreNormalizationWorkspaceSummary,
+  ScoreNormalizationSource,
+  ScoreNormalizationBucketSummary,
+} from "./types";
 
 type NormalizationShellProps = {
-  workspace: ScoreNormalizationWorkspaceResponse;
+  source: ScoreNormalizationSource;
+  cycleName: string;
+  summary: ScoreNormalizationWorkspaceSummary;
+  rawDistribution: ScoreNormalizationBucketSummary[];
+  simulatedDistribution: ScoreNormalizationBucketSummary[];
+  raterBiasRows: ScoreNormalizationRaterBiasRow[];
+  movementRows: ScoreNormalizationMovementRow[];
+  applicationState: ScoreNormalizationApplicationState;
+  onApply: () => Promise<void> | void;
+  onRevert: () => Promise<void> | void;
+  applying?: boolean;
+  reverting?: boolean;
 };
 
-function getRawBucketIndex(score: number | null) {
-  if (score == null || Number.isNaN(score)) return null;
-  return Math.min(5, Math.max(1, Math.round(score)));
-}
-
-export function NormalizationShell({ workspace }: NormalizationShellProps) {
-  const shiftedCount = workspace.snapshot.entries.filter((entry) => {
-    const rawBucket = getRawBucketIndex(entry.rawScore);
-    return rawBucket != null && entry.normalizedScore != null && rawBucket !== entry.normalizedScore;
-  }).length;
-
+export function NormalizationShell({
+  source,
+  cycleName,
+  summary,
+  rawDistribution,
+  simulatedDistribution,
+  raterBiasRows,
+  movementRows,
+  applicationState,
+  onApply,
+  onRevert,
+  applying = false,
+  reverting = false,
+}: NormalizationShellProps) {
   return (
     <section className="space-y-5">
       <NormalizationOverview
-        source={workspace.source}
-        cycleName={workspace.cycle.name}
-        rawDistribution={workspace.rawDistribution}
-        simulatedDistribution={workspace.simulatedDistribution}
-        application={workspace.application}
-        shiftedCount={shiftedCount}
+        source={source}
+        cycleName={cycleName}
+        summary={summary}
+        applicationState={applicationState}
       />
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(340px,0.9fr)]">
-        <DistributionDiffChart
-          rawDistribution={workspace.rawDistribution}
-          simulatedDistribution={workspace.simulatedDistribution}
-        />
-        <RaterBiasTable rawDistribution={workspace.rawDistribution} />
+        <DistributionDiffChart rawDistribution={rawDistribution} simulatedDistribution={simulatedDistribution} />
+        <RaterBiasTable raterBiasRows={raterBiasRows} />
       </div>
 
-      <ChangePreviewTable entries={workspace.snapshot.entries} />
+      <ChangePreviewTable movementRows={movementRows} />
 
-      <ApplyPanel source={workspace.source} application={workspace.application} />
+      <ApplyPanel
+        source={source}
+        applicationState={applicationState}
+        onApply={onApply}
+        onRevert={onRevert}
+        applying={applying}
+        reverting={reverting}
+      />
     </section>
   );
 }
-

@@ -397,6 +397,14 @@ test("score normalization library exports workspace, simulation, apply, and reve
     true,
     "score normalization library should expose a revert helper",
   );
+  assert.equal(
+    exportedNames.includes("buildScoreNormalizationWorkspaceSummary") &&
+      exportedNames.includes("buildScoreNormalizationRaterBiasRows") &&
+      exportedNames.includes("buildScoreNormalizationMovementRows") &&
+      exportedNames.includes("buildScoreNormalizationApplicationState"),
+    true,
+    "score normalization library should expose the approved shared page contract helpers",
+  );
 });
 
 test("score normalization permissions helper centralizes viewer access for page and mutation routes", () => {
@@ -604,6 +612,14 @@ test("workspace route delegates to a normalization builder helper instead of han
     true,
     "workspace route should ignore reverted applications when picking the active bucket count",
   );
+  assert.equal(
+    read("src/app/api/score-normalization/workspace/route.ts").includes("summary") &&
+      read("src/app/api/score-normalization/workspace/route.ts").includes("raterBiasRows") &&
+      read("src/app/api/score-normalization/workspace/route.ts").includes("movementRows") &&
+      read("src/app/api/score-normalization/workspace/route.ts").includes("applicationState"),
+    true,
+    "workspace route should expose summary, rater-bias, movement, and application-state fields",
+  );
 
   assert.equal(
     hasCallToImportedHelper(getHandler, importedNames),
@@ -647,9 +663,11 @@ test("apply route updates normalization application state through dedicated help
     "apply route should call the dedicated apply helper",
   );
   assert.equal(
-    hasPrismaScoreNormalizationMutationUsingImportedHelper(postHandler, importedNames),
+    read("src/app/api/score-normalization/apply/route.ts").includes("scoreNormalizationApplication.upsert") &&
+      read("src/app/api/score-normalization/apply/route.ts").includes("result.application.snapshotId") &&
+      read("src/app/api/score-normalization/apply/route.ts").includes("result.application.appliedAt"),
     true,
-    "apply route should update the scoreNormalizationApplication table using the helper result",
+    "apply route should update the scoreNormalizationApplication table from the helper-derived application record",
   );
 });
 
