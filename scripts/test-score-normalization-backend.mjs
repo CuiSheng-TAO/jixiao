@@ -51,10 +51,10 @@ function loadTsModule(relativePath) {
       esModuleInterop: true,
     },
   }).outputText;
-  const module = { exports: {} };
+  const tsModule = { exports: {} };
   const evaluator = new Function("exports", "module", output);
-  evaluator(module.exports, module);
-  return module.exports;
+  evaluator(tsModule.exports, tsModule);
+  return tsModule.exports;
 }
 
 function stripPrismaComments(source) {
@@ -399,6 +399,35 @@ test("score normalization library exports workspace, simulation, apply, and reve
   );
 });
 
+test("score normalization permissions helper centralizes viewer access for page and mutation routes", () => {
+  const { file } = parseTs("src/lib/score-normalization-permissions.ts");
+  const exportedNames = getExportedCallableNames(file);
+
+  assert.equal(
+    exportedNames.includes("canAccessScoreNormalization"),
+    true,
+    "permissions helper should export the page-access guard",
+  );
+  assert.equal(
+    exportedNames.includes("canApplyScoreNormalization"),
+    true,
+    "permissions helper should export the mutation-access guard",
+  );
+  assert.equal(
+    read("src/lib/score-normalization-permissions.ts").includes("吴承霖") &&
+      read("src/lib/score-normalization-permissions.ts").includes("邱翔") &&
+      read("src/lib/score-normalization-permissions.ts").includes("禹聪琪"),
+    true,
+    "permissions helper should whitelist the three designated viewer names",
+  );
+  assert.equal(
+    read("src/lib/score-normalization-permissions.ts").includes('user.role === "ADMIN"') &&
+      read("src/lib/score-normalization-permissions.ts").includes("NORMALIZATION_VIEWER_NAMES"),
+    true,
+    "permissions helper should keep admin access and name-based access in one place",
+  );
+});
+
 test("score normalization source literals use the approved domain naming", () => {
   const { file } = parseTs("src/lib/score-normalization.ts");
   assert.deepEqual(
@@ -539,6 +568,18 @@ test("workspace route delegates to a normalization builder helper instead of han
   assert.equal(getHandler != null, true, "workspace route should export a GET handler");
   const importedNames = new Set(getImportedLocalNames(file, "@/lib/score-normalization"));
   assert.equal(importedNames.size > 0, true, "workspace route should import a dedicated normalization helper");
+  assert.equal(
+    read("src/app/api/score-normalization/workspace/route.ts").includes("canAccessScoreNormalization"),
+    true,
+    "workspace route should use the shared access helper before building the payload",
+  );
+  assert.equal(
+    read("src/app/api/score-normalization/workspace/route.ts").includes("cycle: { id: cycle.id, name: cycle.name }") &&
+      read("src/app/api/score-normalization/workspace/route.ts").includes("source,") &&
+      read("src/app/api/score-normalization/workspace/route.ts").includes("...payload"),
+    true,
+    "workspace route should return the cycle, source, and helper payload together",
+  );
 
   assert.equal(
     hasCallToImportedHelper(getHandler, importedNames),
