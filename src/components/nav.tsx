@@ -43,7 +43,7 @@ const navItems = [
   { href: "/peer-review", label: "360环评", icon: Users, roles: ["EMPLOYEE", "SUPERVISOR", "HRBP", "ADMIN"] },
   { href: "/team", label: "绩效初评", icon: UserCheck, roles: ["SUPERVISOR", "HRBP", "ADMIN"] },
   { href: "/calibration", label: "绩效校准", icon: BarChart3, roles: ["HRBP", "ADMIN"] },
-  { href: "/manager-review-normalization", label: "绩效初评分布校准", icon: SlidersHorizontal, roles: ["HRBP", "ADMIN"] },
+  { href: "/manager-review-normalization", label: "绩效打分分布校准", icon: SlidersHorizontal, roles: ["HRBP", "ADMIN"] },
   { href: "/meetings", label: "面谈记录", icon: MessageSquare, roles: ["SUPERVISOR", "HRBP", "ADMIN"], availableFrom: "2026-03-30T00:00:00" },
   { href: "/appeal", label: "绩效申诉", icon: MessageSquareWarning, roles: ["EMPLOYEE", "SUPERVISOR", "HRBP", "ADMIN"], availableFrom: "2026-03-30T00:00:00" },
   { href: "/admin", label: "系统管理", icon: Settings, roles: ["ADMIN"] },
@@ -73,7 +73,6 @@ export function Nav({ user }: NavProps) {
 
   return (
     <nav className="flex h-screen w-60 flex-col bg-card shadow-[1px_0_0_0_var(--border),4px_0_16px_rgba(0,0,0,0.03)]">
-      {/* Logo */}
       <div className="flex items-center gap-3 px-5 py-5">
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/80 shadow-sm">
           <BarChart3 className="h-4.5 w-4.5 text-white" />
@@ -84,7 +83,6 @@ export function Nav({ user }: NavProps) {
         </div>
       </div>
 
-      {/* Nav items */}
       <div className="flex-1 overflow-y-auto px-3 py-1">
         <div className="space-y-0.5">
           {visibleItems.map((item) => {
@@ -125,7 +123,6 @@ export function Nav({ user }: NavProps) {
         </div>
       </div>
 
-      {/* User info */}
       <div className="mx-3 border-t border-border/60 p-2 pb-3">
         <DropdownMenu>
           <DropdownMenuTrigger className="flex w-full items-center gap-2.5 rounded-lg p-2 transition-colors duration-[var(--transition-base)] hover:bg-muted">

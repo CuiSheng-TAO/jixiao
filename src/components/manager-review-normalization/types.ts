@@ -1,43 +1,8 @@
-export type ManagerReviewNormalizationBucketSummary = {
-  bucketIndex: number;
-  bucketLabel: string;
-  count: number;
-  pct: number;
-  notes?: string;
-};
+export type NormalizationRole = "初评人" | "环评人";
 
-export type ManagerReviewNormalizationSummary = {
-  currentSourceCount: number;
-  abnormalRaterCount: number;
-  shiftedPeopleCount: number;
-  skewedDepartmentCount: number;
-  workspaceState: "RAW" | "STANDARDIZED";
-};
+export type NormalizationTendency = "偏高" | "偏低" | "正常";
 
-export type ManagerReviewNormalizationRaterBiasRow = {
-  raterId: string;
-  raterName: string;
-  raterDepartment: string | null;
-  sampleCount: number;
-  averageScore: number | null;
-  offset: number | null;
-  tendency: "偏高" | "偏低" | "正常";
-  isAbnormal: boolean;
-};
-
-export type ManagerReviewNormalizationMovementRow = {
-  sourceRecordId: string;
-  subjectName: string;
-  subjectDepartment: string | null;
-  rawScore: number | null;
-  rawBucket: number | null;
-  reviewerNormalizedBucket: number | null;
-  departmentNormalizedBucket: number | null;
-  rankDelta: number | null;
-  movementLabel: "上调" | "下调" | "不变" | "待定";
-};
-
-export type ManagerReviewNormalizationApplicationState = {
+export type NormalizationApplicationState = {
   workspaceState: "RAW" | "STANDARDIZED";
   appliedAt: string | null;
   revertedAt: string | null;
@@ -45,20 +10,53 @@ export type ManagerReviewNormalizationApplicationState = {
   rollbackVisible: boolean;
 };
 
+export type NormalizationLedgerSummary = {
+  sampleCount: number;
+  averageScore: number | null;
+  offset: number | null;
+  tendency: NormalizationTendency;
+};
+
+export type NormalizationLedgerDetail = {
+  sourceRecordId: string;
+  targetId: string;
+  targetName: string;
+  targetDepartment: string | null;
+  overallScore: number | null;
+  performanceScore: number | null;
+  abilityScore: number | null;
+  valuesScore: number | null;
+  submittedAt: string | null;
+};
+
+export type NormalizationLedgerSection = {
+  summary: NormalizationLedgerSummary;
+  details: NormalizationLedgerDetail[];
+};
+
+export type NormalizationLedgerRow = {
+  userId: string;
+  name: string;
+  department: string | null;
+  segment: "主管" | "员工";
+  roles: Array<"初评人" | "环评人">;
+  managerReview: NormalizationLedgerSection;
+  peerReview: NormalizationLedgerSection;
+};
+
 export type ManagerReviewNormalizationWorkspaceResponse = {
   cycle: {
     id: string;
     name: string;
   };
-  cycleId: string;
-  source: "SUPERVISOR_EVAL";
-  strategy: "REVIEWER_THEN_DEPARTMENT_BUCKET";
-  targetBucketCount: number;
-  summary: ManagerReviewNormalizationSummary;
-  rawDistribution: ManagerReviewNormalizationBucketSummary[];
-  reviewerNormalizedDistribution: ManagerReviewNormalizationBucketSummary[];
-  departmentNormalizedDistribution: ManagerReviewNormalizationBucketSummary[];
-  raterBiasRows: ManagerReviewNormalizationRaterBiasRow[];
-  movementRows: ManagerReviewNormalizationMovementRow[];
-  applicationState: ManagerReviewNormalizationApplicationState;
+  rosterSummary: {
+    total: number;
+    leaderCount: number;
+    employeeCount: number;
+  };
+  applications: {
+    managerReview: NormalizationApplicationState;
+    peerReview: NormalizationApplicationState;
+  };
+  rows: NormalizationLedgerRow[];
 };

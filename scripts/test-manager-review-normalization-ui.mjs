@@ -18,19 +18,6 @@ function parseTsx(relativePath) {
   };
 }
 
-function readFirstExisting(relativePaths) {
-  for (const relativePath of relativePaths) {
-    const fullPath = path.join(rootDir, relativePath);
-    if (fs.existsSync(fullPath)) {
-      return {
-        relativePath,
-        source: read(relativePath),
-      };
-    }
-  }
-  return null;
-}
-
 function hasModifier(node, kind) {
   return node.modifiers?.some((modifier) => modifier.kind === kind) ?? false;
 }
@@ -52,28 +39,6 @@ function getDefaultExportFunctionLike(file) {
       }
     }
   }
-  return null;
-}
-
-function getAnyExportedFunctionLike(file, namePattern = null) {
-  for (const statement of file.statements) {
-    if (ts.isFunctionDeclaration(statement) && hasModifier(statement, ts.SyntaxKind.ExportKeyword)) {
-      if (!namePattern || (statement.name && namePattern.test(statement.name.text))) {
-        return statement;
-      }
-    }
-
-    if (ts.isVariableStatement(statement) && hasModifier(statement, ts.SyntaxKind.ExportKeyword)) {
-      for (const declaration of statement.declarationList.declarations) {
-        if (!ts.isIdentifier(declaration.name) || !declaration.initializer) continue;
-        if (namePattern && !namePattern.test(declaration.name.text)) continue;
-        if (ts.isArrowFunction(declaration.initializer) || ts.isFunctionExpression(declaration.initializer)) {
-          return declaration.initializer;
-        }
-      }
-    }
-  }
-
   return null;
 }
 
@@ -142,7 +107,7 @@ function analyzeReturnedExpressions(expressions) {
   return { texts, tags };
 }
 
-test("manager review normalization page is performance-review only and wires in the normalization shell", () => {
+test("manager review normalization page exposes the unified scoring normalization ledger", () => {
   const pagePath = path.join(rootDir, "src/app/(main)/manager-review-normalization/page.tsx");
   assert.equal(fs.existsSync(pagePath), true, "manager-review normalization page should exist");
   if (!fs.existsSync(pagePath)) return;
@@ -150,113 +115,93 @@ test("manager review normalization page is performance-review only and wires in 
   const { file, source } = parseTsx("src/app/(main)/manager-review-normalization/page.tsx");
   const defaultExport = getDefaultExportFunctionLike(file);
 
-  assert.equal(defaultExport != null, true, "manager-review normalization page should export a default page component");
+  assert.equal(defaultExport != null, true, "page should export a default component");
   assert.equal(
-    source.includes('from "@/components/manager-review-normalization/normalization-shell"') ||
-      source.includes('from "@/components/manager-review-normalization/manager-review-normalization-shell"'),
+    source.includes('from "@/components/manager-review-normalization/normalization-shell"'),
     true,
-    "manager-review normalization page should delegate composition to a dedicated shell component",
+    "page should delegate rendering to the dedicated normalization shell",
   );
   if (!defaultExport) return;
 
   const analysis = analyzeReturnedExpressions(getReturnedExpressions(defaultExport));
 
   assert.equal(
-    analysis.texts.has("绩效初评分布校准"),
+    analysis.texts.has("绩效打分分布校准"),
     true,
-    "manager-review page should expose the performance-review normalization workspace",
+    "page should present the unified scoring normalization ledger title",
   );
   assert.equal(
-    analysis.texts.has("360环评分布校准"),
-    false,
-    "manager-review page must not surface the 360 normalization label",
-  );
-  assert.equal(
-    analysis.tags.has("NormalizationShell") || analysis.tags.has("ManagerReviewNormalizationShell"),
+    analysis.tags.has("NormalizationShell"),
     true,
-    "manager-review page should render the normalization shell instead of inlining the workspace",
+    "page should render the unified normalization shell",
   );
   assert.equal(
     source.includes("/api/manager-review-normalization/workspace"),
     true,
-    "manager-review page should load real workspace data instead of mock data",
+    "page should load the unified 54-person workspace payload",
   );
   assert.equal(
-    source.includes("mock-workspace"),
+    source.includes("/api/manager-review-normalization/apply") &&
+      source.includes("/api/manager-review-normalization/revert"),
+    true,
+    "page should keep the manager-review apply and revert actions",
+  );
+  assert.equal(
+    source.includes("/api/score-normalization/apply") &&
+      source.includes("/api/score-normalization/revert"),
+    true,
+    "page should also wire peer-review normalization apply and revert actions",
+  );
+});
+
+test("normalization shell is a single 54-person ledger with expandable manager-review and peer-review detail sections", () => {
+  const shellPath = path.join(
+    rootDir,
+    "src/components/manager-review-normalization/normalization-shell.tsx",
+  );
+  assert.equal(fs.existsSync(shellPath), true, "normalization shell should exist");
+  if (!fs.existsSync(shellPath)) return;
+
+  const source = read("src/components/manager-review-normalization/normalization-shell.tsx");
+
+  assert.equal(
+    source.includes("评分人总台账"),
+    true,
+    "shell should label the main table as the scoring ledger",
+  );
+  assert.equal(
+    source.includes("主管（11人）") && source.includes("员工（43人）"),
+    true,
+    "shell should explain the 11 supervisors / 43 employees roster split",
+  );
+  assert.equal(
+    source.includes("初评打分明细") && source.includes("环评打分明细"),
+    true,
+    "expanded rows should split manager-review details from peer-review details",
+  );
+  assert.equal(
+    source.includes("展开详情") && source.includes("收起详情"),
+    true,
+    "each row should support an explicit expand/collapse control",
+  );
+  assert.equal(
+    source.includes("DistributionDiffChart") || source.includes("ChangePreviewTable"),
     false,
-    "manager-review page should no longer rely on a mock workspace payload",
+    "shell should no longer render the old chart-heavy manager-review-only blocks",
   );
 });
 
-test("manager review normalization shell composes the overview, diff, rater-bias, change-preview, and apply-panel blocks", () => {
-  const shellCandidate = readFirstExisting([
-    "src/components/manager-review-normalization/normalization-shell.tsx",
-    "src/components/manager-review-normalization/manager-review-normalization-shell.tsx",
-  ]);
-  assert.equal(shellCandidate != null, true, "manager-review normalization shell should exist");
-  if (!shellCandidate) return;
-
-  const { file, source } = parseTsx(shellCandidate.relativePath);
-  const defaultExport = getAnyExportedFunctionLike(file, /NormalizationShell/i);
-
-  assert.equal(defaultExport != null, true, "manager-review normalization shell should export a component");
-  assert.equal(
-    source.includes("NormalizationOverview") &&
-      source.includes("DistributionDiffChart") &&
-      source.includes("RaterBiasTable") &&
-      source.includes("ChangePreviewTable") &&
-      source.includes("ApplyPanel"),
-    true,
-    "manager-review normalization shell should wire in the shared workspace building blocks",
-  );
-  assert.equal(
-    source.includes("rawDistribution") &&
-      source.includes("reviewerNormalizedDistribution") &&
-      source.includes("departmentNormalizedDistribution") &&
-      source.includes("application"),
-    true,
-    "manager-review normalization shell should pass through the raw, reviewer-normalized, department-normalized, and application payload sections",
-  );
-});
-
-test("manager review normalization shell wiring includes real apply and revert actions", () => {
-  const shellCandidate = readFirstExisting([
-    "src/components/manager-review-normalization/normalization-shell.tsx",
-    "src/components/manager-review-normalization/manager-review-normalization-shell.tsx",
-  ]);
-  assert.equal(shellCandidate != null, true, "manager-review normalization shell should exist");
-  if (!shellCandidate) return;
-
-  const { source } = shellCandidate;
-  assert.equal(
-    source.includes("onApply") && source.includes("onRevert"),
-    true,
-    "manager-review normalization shell should accept apply and revert callbacks",
-  );
-  assert.equal(
-    source.includes("ApplyPanel"),
-    true,
-    "manager-review normalization shell should render the apply panel",
-  );
-});
-
-test("score-normalization route or navigation points users to the manager-review normalization page", () => {
-  const scoreNormalizationSource = read("src/app/(main)/score-normalization/page.tsx");
+test("navigation points to the unified scoring normalization ledger", () => {
   const navSource = read("src/components/nav.tsx");
 
-  const routeRedirectsOrUsesManagerReview =
-    scoreNormalizationSource.includes("/manager-review-normalization") ||
-    scoreNormalizationSource.includes('title="绩效初评分布校准"') ||
-    scoreNormalizationSource.includes("redirect(");
-
   assert.equal(
-    routeRedirectsOrUsesManagerReview,
+    navSource.includes('href: "/manager-review-normalization"'),
     true,
-    "score-normalization page should redirect to or render the manager-review normalization workspace",
+    "navigation should keep the normalization route visible",
   );
   assert.equal(
-    navSource.includes("/manager-review-normalization") || navSource.includes("/score-normalization"),
+    navSource.includes('label: "绩效打分分布校准"'),
     true,
-    "navigation should keep a visible entry point to the normalization page",
+    "navigation should rename the entry to the unified scoring normalization label",
   );
 });

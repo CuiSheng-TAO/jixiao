@@ -8,12 +8,25 @@ import { Button } from "@/components/ui/button";
 import { NormalizationShell } from "@/components/manager-review-normalization/normalization-shell";
 import type { ManagerReviewNormalizationWorkspaceResponse } from "@/components/manager-review-normalization/types";
 
+const ACTION_ENDPOINTS = {
+  SUPERVISOR_EVAL: {
+    apply: "/api/manager-review-normalization/apply",
+    revert: "/api/manager-review-normalization/revert",
+  },
+  PEER_REVIEW: {
+    apply: "/api/score-normalization/apply",
+    revert: "/api/score-normalization/revert",
+  },
+} as const;
+
+type ActionSource = keyof typeof ACTION_ENDPOINTS;
+type ActionType = "apply" | "revert";
+
 export default function ManagerReviewNormalizationPage() {
   const [workspace, setWorkspace] = useState<ManagerReviewNormalizationWorkspaceResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [applying, setApplying] = useState(false);
-  const [reverting, setReverting] = useState(false);
+  const [pendingAction, setPendingAction] = useState<`${ActionSource}:${ActionType}` | null>(null);
   const requestIdRef = useRef(0);
 
   const loadWorkspace = useCallback(async () => {
@@ -41,16 +54,19 @@ export default function ManagerReviewNormalizationPage() {
   }, []);
 
   const runAction = useCallback(
-    async (endpoint: "apply" | "revert") => {
-      const setter = endpoint === "apply" ? setApplying : setReverting;
-      setter(true);
+    async (source: ActionSource, action: ActionType) => {
+      const actionKey = `${source}:${action}` as const;
+      setPendingAction(actionKey);
       setError("");
 
       try {
-        const response = await fetch(`/api/manager-review-normalization/${endpoint}`, {
+        const response = await fetch(ACTION_ENDPOINTS[source][action], {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ confirmed: true }),
+          body: JSON.stringify({
+            confirmed: true,
+            ...(source === "PEER_REVIEW" ? { source: "PEER_REVIEW" } : {}),
+          }),
         });
         const data = (await response.json()) as { error?: string };
         if (!response.ok) {
@@ -60,7 +76,7 @@ export default function ManagerReviewNormalizationPage() {
       } catch (err) {
         setError(err instanceof Error ? err.message : "操作失败");
       } finally {
-        setter(false);
+        setPendingAction(null);
       }
     },
     [loadWorkspace],
@@ -78,8 +94,8 @@ export default function ManagerReviewNormalizationPage() {
     return (
       <div className="space-y-6">
         <PageHeader
-          title="绩效初评分布校准"
-          description="先看评分人尺度，再看部门内强制分布模拟和变化预览。"
+          title="绩效打分分布校准"
+          description="用一张 54 人总台账同时查看初评人和环评人的打分样本、均分、偏移，以及展开后的具体打分明细。"
         />
         <Card className="rounded-[28px] border-border/60 shadow-none">
           <CardContent className="space-y-3 py-12 text-center">
@@ -98,8 +114,8 @@ export default function ManagerReviewNormalizationPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="绩效初评分布校准"
-        description="先校正评分人尺度，再按部门模拟强制分布。原始初评记录保持不变。"
+        title="绩效打分分布校准"
+        description="统一查看 54 位评分人的初评与环评打分倾向。主管按初评人/环评人双身份展示，员工按环评人展示。"
       />
 
       {error ? (
@@ -110,17 +126,17 @@ export default function ManagerReviewNormalizationPage() {
 
       <NormalizationShell
         cycleName={workspace.cycle.name}
-        summary={workspace.summary}
-        rawDistribution={workspace.rawDistribution}
-        reviewerNormalizedDistribution={workspace.reviewerNormalizedDistribution}
-        departmentNormalizedDistribution={workspace.departmentNormalizedDistribution}
-        raterBiasRows={workspace.raterBiasRows}
-        movementRows={workspace.movementRows}
-        applicationState={workspace.applicationState}
-        onApply={() => runAction("apply")}
-        onRevert={() => runAction("revert")}
-        applying={applying}
-        reverting={reverting}
+        rosterSummary={workspace.rosterSummary}
+        applications={workspace.applications}
+        rows={workspace.rows}
+        onApplyManagerReview={() => runAction("SUPERVISOR_EVAL", "apply")}
+        onRevertManagerReview={() => runAction("SUPERVISOR_EVAL", "revert")}
+        onApplyPeerReview={() => runAction("PEER_REVIEW", "apply")}
+        onRevertPeerReview={() => runAction("PEER_REVIEW", "revert")}
+        applyingManagerReview={pendingAction === "SUPERVISOR_EVAL:apply"}
+        revertingManagerReview={pendingAction === "SUPERVISOR_EVAL:revert"}
+        applyingPeerReview={pendingAction === "PEER_REVIEW:apply"}
+        revertingPeerReview={pendingAction === "PEER_REVIEW:revert"}
       />
     </div>
   );
