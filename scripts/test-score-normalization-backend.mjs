@@ -309,6 +309,14 @@ function hasRelationReference(attrs, fieldName, referencedName) {
   );
 }
 
+function hasCompositeRelation(attrs, fieldNames, referencedNames) {
+  const normalized = attrs.replace(/\s+/g, " ");
+  return (
+    normalized.includes(`fields: [${fieldNames.join(", ")}]`) &&
+    normalized.includes(`references: [${referencedNames.join(", ")}]`)
+  );
+}
+
 function hasCallToImportedHelper(functionLike, importedNames) {
   const body = functionLike.body;
   if (!body || !ts.isBlock(body)) return false;
@@ -509,9 +517,13 @@ test("schema adds a separate normalization snapshot layer instead of overwriting
     "application rows should relate back to the normalized snapshot layer",
   );
   assert.equal(
-    hasRelationReference(getField(application, "snapshot").attrs, "snapshotId", "id"),
+    hasCompositeRelation(
+      getField(application, "snapshot").attrs,
+      ["snapshotId", "cycleId", "source"],
+      ["id", "cycleId", "source"],
+    ),
     true,
-    "application rows should use a foreign-key relation to the applied snapshot",
+    "application rows should use a cycle/source-bound foreign-key relation to the applied snapshot",
   );
   assert.equal(
     hasUniqueConstraint(application, ["cycleId", "source"]),

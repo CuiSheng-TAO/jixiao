@@ -34,11 +34,12 @@ CREATE TABLE "ScoreNormalizationApplication" (
   "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updatedAt" DATETIME NOT NULL,
   CONSTRAINT "ScoreNormalizationApplication_cycleId_fkey" FOREIGN KEY ("cycleId") REFERENCES "ReviewCycle" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT "ScoreNormalizationApplication_snapshotId_fkey" FOREIGN KEY ("snapshotId") REFERENCES "ScoreNormalizationSnapshot" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+  CONSTRAINT "ScoreNormalizationApplication_snapshotId_cycleId_source_fkey" FOREIGN KEY ("snapshotId", "cycleId", "source") REFERENCES "ScoreNormalizationSnapshot" ("id", "cycleId", "source") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
 CREATE INDEX "ScoreNormalizationSnapshot_cycleId_source_idx" ON "ScoreNormalizationSnapshot"("cycleId", "source");
 CREATE INDEX "ScoreNormalizationSnapshot_cycleId_createdAt_idx" ON "ScoreNormalizationSnapshot"("cycleId", "createdAt");
+CREATE UNIQUE INDEX "ScoreNormalizationSnapshot_id_cycleId_source_key" ON "ScoreNormalizationSnapshot"("id", "cycleId", "source");
 CREATE UNIQUE INDEX "ScoreNormalizationEntry_snapshotId_sourceRecordId_key" ON "ScoreNormalizationEntry"("snapshotId", "sourceRecordId");
 CREATE INDEX "ScoreNormalizationEntry_snapshotId_bucketIndex_idx" ON "ScoreNormalizationEntry"("snapshotId", "bucketIndex");
 CREATE UNIQUE INDEX "ScoreNormalizationApplication_cycleId_source_key" ON "ScoreNormalizationApplication"("cycleId", "source");

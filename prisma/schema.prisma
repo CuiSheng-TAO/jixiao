@@ -225,6 +225,7 @@ model ScoreNormalizationSnapshot {
   entries         ScoreNormalizationEntry[]
   applications    ScoreNormalizationApplication[]
 
+  @@unique([id, cycleId, source])
   @@index([cycleId, source])
   @@index([cycleId, createdAt])
 }
@@ -253,7 +254,7 @@ model ScoreNormalizationApplication {
   cycle         ReviewCycle @relation(fields: [cycleId], references: [id])
   source        String
   snapshotId    String
-  snapshot      ScoreNormalizationSnapshot @relation(fields: [snapshotId], references: [id])
+  snapshot      ScoreNormalizationSnapshot @relation(fields: [snapshotId, cycleId, source], references: [id, cycleId, source])
   appliedAt     DateTime @default(now())
   revertedAt    DateTime?
   createdAt     DateTime @default(now())
