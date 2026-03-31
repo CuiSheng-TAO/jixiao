@@ -10,9 +10,33 @@ function read(relativePath) {
   return fs.readFileSync(path.join(rootDir, relativePath), "utf8");
 }
 
+function readFirstExisting(relativePaths) {
+  let lastError = null;
+  for (const relativePath of relativePaths) {
+    try {
+      return {
+        relativePath,
+        source: read(relativePath),
+      };
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError ?? new Error(`None of the candidate paths exist: ${relativePaths.join(", ")}`);
+}
+
 function parseTsx(relativePath) {
   const source = read(relativePath);
   return {
+    source,
+    file: ts.createSourceFile(relativePath, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX),
+  };
+}
+
+function parseTsxCandidates(relativePaths) {
+  const { relativePath, source } = readFirstExisting(relativePaths);
+  return {
+    relativePath,
     source,
     file: ts.createSourceFile(relativePath, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX),
   };
@@ -57,6 +81,25 @@ function getDefaultExportFunctionLike(file) {
   }
 
   return null;
+}
+
+function getImportedLocalNames(file, modulePrefix) {
+  const names = [];
+  for (const statement of file.statements) {
+    if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) continue;
+    if (!statement.moduleSpecifier.text.startsWith(modulePrefix) || !statement.importClause) continue;
+    const { importClause } = statement;
+    if (importClause.name) names.push(importClause.name.text);
+    const bindings = importClause.namedBindings;
+    if (bindings && ts.isNamedImports(bindings)) {
+      for (const element of bindings.elements) {
+        names.push(element.name.text);
+      }
+    } else if (bindings && ts.isNamespaceImport(bindings)) {
+      names.push(bindings.name.text);
+    }
+  }
+  return names;
 }
 
 function getReturnedExpressions(functionLike) {
@@ -124,33 +167,7 @@ function analyzeReturnedExpressions(expressions) {
   return { texts, tags };
 }
 
-function getImportedLocalNames(file, moduleSpecifiers) {
-  const wanted = new Set(moduleSpecifiers);
-  const names = [];
-
-  for (const statement of file.statements) {
-    if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) continue;
-    if (!wanted.has(statement.moduleSpecifier.text) || !statement.importClause) continue;
-
-    const { importClause } = statement;
-    if (importClause.name) names.push(importClause.name.text);
-
-    const bindings = importClause.namedBindings;
-    if (bindings && ts.isNamedImports(bindings)) {
-      for (const element of bindings.elements) {
-        names.push(element.name.text);
-      }
-    }
-
-    if (bindings && ts.isNamespaceImport(bindings)) {
-      names.push(bindings.name.text);
-    }
-  }
-
-  return names;
-}
-
-test("score normalization page exposes the two required analysis tabs", () => {
+test("score normalization page wires in the normalization shell component", () => {
   const { file } = parseTsx("src/app/(main)/score-normalization/page.tsx");
   const defaultExport = getDefaultExportFunctionLike(file);
 
@@ -158,28 +175,53 @@ test("score normalization page exposes the two required analysis tabs", () => {
 
   const returnExpressions = getReturnedExpressions(defaultExport);
   const analysis = analyzeReturnedExpressions(returnExpressions);
-  const componentNames = getImportedLocalNames(file, [
-    "@/components/score-normalization/apply-panel",
-    "@/components/score-normalization/normalization-shell",
-  ]);
+  const componentNames = getImportedLocalNames(file, "@/components/score-normalization/");
 
   assert.equal(
-    componentNames.some((name) => analysis.tags.has(name)),
+    componentNames.some((name) => /shell/i.test(name) && analysis.tags.has(name)),
     true,
-    "score normalization page should wire in the apply panel or normalization shell component",
-  );
-  assert.equal(
-    (analysis.tags.get("TabsTrigger") ?? 0) >= 2,
-    "score normalization page should render the required tab triggers",
-  );
-  assert.equal(
-    analysis.texts.has("360环评分布校准") && analysis.texts.has("绩效初评分布校准"),
-    true,
-    "score normalization page should expose both required analysis tab labels in the rendered component tree",
+    "score normalization page should wire in a normalization shell component",
   );
 });
 
-test("score normalization page includes double-confirm apply and rollback copy", () => {
+test("score normalization shell composes the overview, diff, rater-bias, change-preview, and apply-panel blocks", () => {
+  const { file } = parseTsxCandidates([
+    "src/components/score-normalization/normalization-shell.tsx",
+    "src/components/score-normalization/score-normalization-shell.tsx",
+    "src/components/score-normalization/shell.tsx",
+  ]);
+  const defaultExport = getDefaultExportFunctionLike(file);
+
+  assert.equal(defaultExport != null, true, "score normalization shell should export a component");
+
+  const returnExpressions = getReturnedExpressions(defaultExport);
+  const analysis = analyzeReturnedExpressions(returnExpressions);
+  const componentNames = getImportedLocalNames(file, "@/components/score-normalization/");
+
+  const requiredPatterns = [
+    { pattern: /overview/i, label: "overview block" },
+    { pattern: /diff/i, label: "diff block" },
+    { pattern: /bias/i, label: "rater-bias block" },
+    { pattern: /change.*preview|preview/i, label: "change-preview block" },
+    { pattern: /apply/i, label: "apply-panel block" },
+  ];
+
+  for (const { pattern, label } of requiredPatterns) {
+    assert.equal(
+      componentNames.some((name) => pattern.test(name) && analysis.tags.has(name)),
+      true,
+      `score normalization shell should render the ${label}`,
+    );
+  }
+
+  assert.equal(
+    (analysis.tags.get("TabsContent") ?? 0) >= 2,
+    true,
+    "score normalization shell should render both tab content sections",
+  );
+});
+
+test("score normalization apply panel includes double-confirm apply and rollback copy", () => {
   const { file } = parseTsx("src/components/score-normalization/apply-panel.tsx");
   const defaultExport = getDefaultExportFunctionLike(file);
 

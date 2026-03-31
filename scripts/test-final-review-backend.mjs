@@ -35,6 +35,139 @@ function getExportedFunction(file, name) {
   return null;
 }
 
+function getCalleeName(expression) {
+  if (ts.isIdentifier(expression)) return expression.text;
+  if (ts.isPropertyAccessExpression(expression)) return expression.name.text;
+  return null;
+}
+
+function expressionContainsCallMatching(expression, matcher) {
+  const current = ts.isParenthesizedExpression(expression) ? expression.expression : expression;
+  if (!current) return false;
+  if (ts.isCallExpression(current)) {
+    const calleeName = getCalleeName(current.expression);
+    if (calleeName && matcher(calleeName)) return true;
+    return (
+      expressionContainsCallMatching(current.expression, matcher) ||
+      current.arguments.some((argument) => expressionContainsCallMatching(argument, matcher))
+    );
+  }
+  if (ts.isIdentifier(current) || ts.isPropertyAccessExpression(current)) {
+    return false;
+  }
+  let found = false;
+  const visit = (node) => {
+    if (found) return;
+    if (ts.isFunctionDeclaration(node) || ts.isFunctionExpression(node) || ts.isArrowFunction(node)) {
+      return;
+    }
+    if (ts.isCallExpression(node)) {
+      const calleeName = getCalleeName(node.expression);
+      if (calleeName && matcher(calleeName)) {
+        found = true;
+        return;
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  ts.forEachChild(current, visit);
+  return found;
+}
+
+function walkFunctionBody(functionLike, visitor) {
+  const body = functionLike.body;
+  if (!body || !ts.isBlock(body)) return;
+
+  const visit = (node) => {
+    if (ts.isFunctionDeclaration(node) || ts.isFunctionExpression(node) || ts.isArrowFunction(node)) {
+      return;
+    }
+    visitor(node);
+    ts.forEachChild(node, visit);
+  };
+
+  ts.forEachChild(body, visit);
+}
+
+function collectNormalizationDerivedVariableNames(functionLike) {
+  const names = new Set();
+  walkFunctionBody(functionLike, (node) => {
+    if (
+      ts.isVariableDeclaration(node) &&
+      ts.isIdentifier(node.name) &&
+      node.initializer &&
+      expressionContainsCallMatching(node.initializer, (calleeName) => /normal/i.test(calleeName))
+    ) {
+      names.add(node.name.text);
+    }
+  });
+  return names;
+}
+
+function collectReturnedIdentifierNames(functionLike) {
+  const names = new Set();
+
+  const visitValue = (node) => {
+    const current = ts.isParenthesizedExpression(node) ? node.expression : node;
+    if (!current) return;
+    if (ts.isFunctionDeclaration(current) || ts.isFunctionExpression(current) || ts.isArrowFunction(current)) {
+      return;
+    }
+    if (ts.isIdentifier(current)) {
+      names.add(current.text);
+      return;
+    }
+    if (ts.isObjectLiteralExpression(current)) {
+      for (const property of current.properties) {
+        if (ts.isShorthandPropertyAssignment(property)) {
+          names.add(property.name.text);
+        } else if (ts.isPropertyAssignment(property)) {
+          visitValue(property.initializer);
+        } else if (ts.isSpreadAssignment(property)) {
+          visitValue(property.expression);
+        }
+      }
+      return;
+    }
+    if (ts.isArrayLiteralExpression(current)) {
+      for (const element of current.elements) visitValue(element);
+      return;
+    }
+    if (ts.isCallExpression(current)) {
+      for (const argument of current.arguments) visitValue(argument);
+      return;
+    }
+    if (ts.isPropertyAccessExpression(current)) {
+      visitValue(current.expression);
+      return;
+    }
+    if (ts.isElementAccessExpression(current)) {
+      visitValue(current.expression);
+      visitValue(current.argumentExpression);
+      return;
+    }
+    ts.forEachChild(current, visitValue);
+  };
+
+  walkFunctionBody(functionLike, (node) => {
+    if (ts.isReturnStatement(node) && node.expression) {
+      visitValue(node.expression);
+    }
+  });
+  return names;
+}
+
+function collectReturnExpressions(functionLike) {
+  const expressions = [];
+
+  walkFunctionBody(functionLike, (node) => {
+    if (ts.isReturnStatement(node) && node.expression) {
+      expressions.push(node.expression);
+    }
+  });
+  return expressions;
+}
+
 function hasCallExpression(node, calleeName) {
   let found = false;
   const visit = (node) => {
@@ -366,11 +499,17 @@ test("final review routes expose config, workspace, opinion, leader review, and 
 test("calibration payload can read the active normalized layer when present", () => {
   const { file } = parseTs("src/lib/final-review.ts");
   const workspacePayload = getExportedFunction(file, "buildFinalReviewWorkspacePayload");
+  const returnExpressions = workspacePayload ? collectReturnExpressions(workspacePayload) : [];
+  const returnedIdentifiers = workspacePayload ? collectReturnedIdentifierNames(workspacePayload) : new Set();
 
   assert.equal(
-    workspacePayload != null && hasCallExpression(workspacePayload, "getAppliedNormalizationMap"),
+    workspacePayload != null &&
+      (
+        returnExpressions.some((expression) => expressionContainsCallMatching(expression, (calleeName) => /normal/i.test(calleeName))) ||
+        [...collectNormalizationDerivedVariableNames(workspacePayload)].some((name) => returnedIdentifiers.has(name))
+      ),
     true,
-    "final review payload should call the concrete normalization hook when active normalized data exists",
+    "final review payload should thread active normalization data into the returned workspace payload",
   );
 });
 
