@@ -172,6 +172,69 @@ async function main() {
   await db.execute("CREATE INDEX IF NOT EXISTS FinalReviewConfirmation_cycleId_confirmerId_scope_idx ON FinalReviewConfirmation(cycleId, confirmerId, scope)");
   console.log("ENSURE: FinalReviewConfirmation");
 
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS ScoreNormalizationSnapshot (
+      id TEXT PRIMARY KEY NOT NULL,
+      cycleId TEXT NOT NULL,
+      source TEXT NOT NULL,
+      strategy TEXT NOT NULL,
+      createdById TEXT NOT NULL,
+      createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      summaryJson TEXT NOT NULL,
+      rawDistributionJson TEXT NOT NULL,
+      simulatedDistributionJson TEXT NOT NULL,
+      FOREIGN KEY (cycleId) REFERENCES ReviewCycle(id) ON DELETE RESTRICT ON UPDATE CASCADE
+    )
+  `);
+  await db.execute("CREATE INDEX IF NOT EXISTS ScoreNormalizationSnapshot_cycleId_source_idx ON ScoreNormalizationSnapshot(cycleId, source)");
+  await db.execute("CREATE INDEX IF NOT EXISTS ScoreNormalizationSnapshot_cycleId_createdAt_idx ON ScoreNormalizationSnapshot(cycleId, createdAt)");
+  await db.execute("CREATE UNIQUE INDEX IF NOT EXISTS ScoreNormalizationSnapshot_id_cycleId_source_key ON ScoreNormalizationSnapshot(id, cycleId, source)");
+  console.log("ENSURE: ScoreNormalizationSnapshot");
+
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS ScoreNormalizationEntry (
+      id TEXT PRIMARY KEY NOT NULL,
+      snapshotId TEXT NOT NULL,
+      sourceRecordId TEXT NOT NULL,
+      subjectId TEXT NOT NULL,
+      subjectName TEXT NOT NULL,
+      department TEXT NOT NULL,
+      raterId TEXT NOT NULL,
+      raterName TEXT NOT NULL,
+      rawScore REAL NOT NULL,
+      normalizedScore REAL NOT NULL,
+      rawStars INTEGER NOT NULL,
+      normalizedStars INTEGER NOT NULL,
+      bucketIndex INTEGER NOT NULL,
+      rankPosition INTEGER NOT NULL,
+      percentile REAL NOT NULL,
+      createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (snapshotId) REFERENCES ScoreNormalizationSnapshot(id) ON DELETE RESTRICT ON UPDATE CASCADE
+    )
+  `);
+  await db.execute("CREATE UNIQUE INDEX IF NOT EXISTS ScoreNormalizationEntry_snapshotId_sourceRecordId_key ON ScoreNormalizationEntry(snapshotId, sourceRecordId)");
+  await db.execute("CREATE INDEX IF NOT EXISTS ScoreNormalizationEntry_snapshotId_bucketIndex_idx ON ScoreNormalizationEntry(snapshotId, bucketIndex)");
+  console.log("ENSURE: ScoreNormalizationEntry");
+
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS ScoreNormalizationApplication (
+      id TEXT PRIMARY KEY NOT NULL,
+      cycleId TEXT NOT NULL,
+      source TEXT NOT NULL,
+      snapshotId TEXT NOT NULL,
+      appliedById TEXT NOT NULL,
+      appliedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      revertedById TEXT,
+      revertedAt DATETIME,
+      note TEXT NOT NULL DEFAULT '',
+      FOREIGN KEY (cycleId) REFERENCES ReviewCycle(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+      FOREIGN KEY (snapshotId, cycleId, source) REFERENCES ScoreNormalizationSnapshot(id, cycleId, source) ON DELETE RESTRICT ON UPDATE CASCADE
+    )
+  `);
+  await db.execute("CREATE UNIQUE INDEX IF NOT EXISTS ScoreNormalizationApplication_cycleId_source_key ON ScoreNormalizationApplication(cycleId, source)");
+  await db.execute("CREATE INDEX IF NOT EXISTS ScoreNormalizationApplication_snapshotId_idx ON ScoreNormalizationApplication(snapshotId)");
+  console.log("ENSURE: ScoreNormalizationApplication");
+
   console.log("\nDone!");
 }
 
