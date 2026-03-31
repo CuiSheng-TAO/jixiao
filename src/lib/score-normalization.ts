@@ -1,4 +1,4 @@
-export type ScoreNormalizationSource = "360" | "performance";
+export type ScoreNormalizationSource = "PEER_REVIEW" | "SUPERVISOR_EVAL";
 
 export type ScoreNormalizationStrategy = "RANK_BUCKET";
 
@@ -75,14 +75,12 @@ function roundToOneDecimal(value: number) {
 }
 
 function normalizeBucketCount(requestedBucketCount: number | null | undefined) {
-  const rounded = Number.isFinite(requestedBucketCount ?? NaN)
-    ? Math.round(requestedBucketCount ?? 5)
-    : 5;
-  return Math.min(5, Math.max(1, rounded));
+  if (!Number.isFinite(requestedBucketCount ?? NaN)) return 5;
+  return Math.min(5, Math.max(1, Math.round(requestedBucketCount ?? 5)));
 }
 
 function bucketLabelForIndex(bucketIndex: number) {
-  return `第${bucketIndex}档`;
+  return ["一星", "二星", "三星", "四星", "五星"][bucketIndex - 1] ?? `${bucketIndex}星`;
 }
 
 function buildEmptyBucketSummaries(bucketCount: number) {
@@ -113,16 +111,43 @@ function getDisplayName(record: ScoreNormalizationRawRecord) {
   return record.subjectName?.trim() || record.subjectId;
 }
 
-export function buildTargetBucketCount(totalCount: number, requestedBucketCount = 5) {
-  const targetCount = normalizeBucketCount(requestedBucketCount);
-  if (totalCount <= 0) return targetCount;
-  return Math.min(targetCount, Math.max(1, totalCount));
+export function buildTargetBucketCount(_totalCount: number, requestedBucketCount = 5) {
+  return normalizeBucketCount(requestedBucketCount);
+}
+
+export type ScoreNormalizationTargetDistribution = {
+  oneStarCount: number;
+  twoStarCount: number;
+  threeStarCount: number;
+  fourStarCount: number;
+  fiveStarCount: number;
+};
+
+export function buildTargetDistributionCounts(totalCount: number): ScoreNormalizationTargetDistribution {
+  const normalizedTotal = Math.max(0, Math.floor(totalCount));
+  const fiveStarCount = Math.floor(normalizedTotal * 0.1);
+  const fourStarCount = Math.floor(normalizedTotal * 0.2);
+  const twoStarCount = Math.floor(normalizedTotal * 0.15);
+  const oneStarCount = Math.floor(normalizedTotal * 0.05);
+  const threeStarCount = Math.max(
+    0,
+    normalizedTotal - fiveStarCount - fourStarCount - twoStarCount - oneStarCount,
+  );
+
+  return {
+    oneStarCount,
+    twoStarCount,
+    threeStarCount,
+    fourStarCount,
+    fiveStarCount,
+  };
 }
 
 export function assignRankBuckets(
   rawRecords: ScoreNormalizationRawRecord[],
-  bucketCount = 5,
+  _bucketCount = 5,
 ): ScoreNormalizationEntryShape[] {
+  const distribution = buildTargetDistributionCounts(rawRecords.filter((record) => record.score != null && !Number.isNaN(record.score as number)).length);
   const scoredRecords = rawRecords
     .map((record, index) => ({ record, index }))
     .filter(({ record }) => record.score != null && !Number.isNaN(record.score as number))
@@ -132,8 +157,21 @@ export function assignRankBuckets(
       return left.record.id.localeCompare(right.record.id);
     });
 
+  const fiveBoundary = distribution.fiveStarCount;
+  const fourBoundary = fiveBoundary + distribution.fourStarCount;
+  const threeBoundary = fourBoundary + distribution.threeStarCount;
+  const twoBoundary = threeBoundary + distribution.twoStarCount;
+
   const assignedEntries = scoredRecords.map(({ record }, index) => {
-    const bucketIndex = Math.min(bucketCount, Math.floor((index * bucketCount) / scoredRecords.length) + 1);
+    const bucketIndex = index < fiveBoundary
+      ? 5
+      : index < fourBoundary
+        ? 4
+        : index < threeBoundary
+          ? 3
+          : index < twoBoundary
+            ? 2
+            : 1;
     return {
       sourceRecordId: record.id,
       subjectId: record.subjectId,
@@ -142,7 +180,7 @@ export function assignRankBuckets(
       rankIndex: index + 1,
       bucketIndex,
       bucketLabel: bucketLabelForIndex(bucketIndex),
-      normalizedScore: bucketCount - bucketIndex + 1,
+      normalizedScore: bucketIndex,
     };
   });
 
@@ -166,11 +204,11 @@ export function summarizeRawScoreDistribution(
   rawRecords: ScoreNormalizationRawRecord[],
   bucketCount = 5,
 ): ScoreNormalizationBucketSummary[] {
-  const buckets = buildEmptyBucketSummaries(bucketCount);
+  const buckets = buildEmptyBucketSummaries(normalizeBucketCount(bucketCount));
   let counted = 0;
 
   for (const record of rawRecords) {
-    const bucketIndex = normalizeRawScore(record.score, bucketCount);
+    const bucketIndex = normalizeRawScore(record.score, buckets.length);
     if (bucketIndex == null) continue;
     counted += 1;
     const bucket = buckets[bucketIndex - 1];
@@ -185,7 +223,7 @@ export function summarizeSimulatedDistribution(
   entries: ScoreNormalizationEntryShape[],
   bucketCount = 5,
 ): ScoreNormalizationBucketSummary[] {
-  const buckets = buildEmptyBucketSummaries(bucketCount);
+  const buckets = buildEmptyBucketSummaries(normalizeBucketCount(bucketCount));
   let counted = 0;
 
   for (const entry of entries) {

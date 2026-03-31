@@ -42,6 +42,21 @@ function parseTsCandidates(relativePaths) {
   };
 }
 
+function loadTsModule(relativePath) {
+  const source = read(relativePath);
+  const output = ts.transpileModule(source, {
+    compilerOptions: {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2020,
+      esModuleInterop: true,
+    },
+  }).outputText;
+  const module = { exports: {} };
+  const evaluator = new Function("exports", "module", output);
+  evaluator(module.exports, module);
+  return module.exports;
+}
+
 function stripPrismaComments(source) {
   return source
     .split(/\r?\n/)
@@ -114,6 +129,17 @@ function hasUniqueConstraint(model, fields) {
   return getModelAttributes(model).some((attribute) =>
     attribute.replace(/\s+/g, "").includes(`@@unique([${normalized}])`),
   );
+}
+
+function getTypeAliasUnionLiterals(file, name) {
+  for (const statement of file.statements) {
+    if (!ts.isTypeAliasDeclaration(statement) || statement.name.text !== name) continue;
+    if (!ts.isUnionTypeNode(statement.type)) return [];
+    return statement.type.types
+      .map((typeNode) => (ts.isLiteralTypeNode(typeNode) && ts.isStringLiteral(typeNode.literal) ? typeNode.literal.text : null))
+      .filter((value) => value != null);
+  }
+  return [];
 }
 
 function hasModifier(node, kind) {
@@ -362,6 +388,65 @@ test("score normalization library exports workspace, simulation, apply, and reve
     exportedNames.some((name) => /revert/i.test(name)),
     true,
     "score normalization library should expose a revert helper",
+  );
+});
+
+test("score normalization source literals use the approved domain naming", () => {
+  const { file } = parseTs("src/lib/score-normalization.ts");
+  assert.deepEqual(
+    getTypeAliasUnionLiterals(file, "ScoreNormalizationSource"),
+    ["PEER_REVIEW", "SUPERVISOR_EVAL"],
+  );
+});
+
+test("raw score distribution keeps the fixed 1 through 5 histogram", () => {
+  const lib = loadTsModule("src/lib/score-normalization.ts");
+  const histogram = lib.summarizeRawScoreDistribution(
+    [
+      { id: "raw-1", subjectId: "emp-1", score: 5 },
+      { id: "raw-2", subjectId: "emp-2", score: 3 },
+    ],
+    5,
+  );
+
+  assert.equal(histogram.length, 5, "raw histogram should always expose five buckets");
+  assert.deepEqual(
+    histogram.map((bucket) => bucket.count),
+    [0, 0, 1, 0, 1],
+    "raw histogram should keep the fixed 1-5 scale instead of collapsing small cohorts",
+  );
+});
+
+test("rank bucket assignment follows the approved target distribution", () => {
+  const lib = loadTsModule("src/lib/score-normalization.ts");
+  const rawRecords = Array.from({ length: 7 }, (_, index) => ({
+    id: `raw-${index + 1}`,
+    subjectId: `emp-${index + 1}`,
+    score: 7 - index,
+  }));
+
+  assert.deepEqual(
+    lib.buildTargetDistributionCounts(rawRecords.length),
+    {
+      oneStarCount: 0,
+      twoStarCount: 1,
+      threeStarCount: 5,
+      fourStarCount: 1,
+      fiveStarCount: 0,
+    },
+    "distribution counts should preserve the approved 5/4/3/2/1 limits with 3-star as the remainder",
+  );
+
+  const entries = lib.assignRankBuckets(rawRecords, 5);
+  assert.deepEqual(
+    entries.map((entry) => entry.bucketIndex),
+    [4, 3, 3, 3, 3, 3, 2],
+    "rank assignment should keep the middle cohort in 3-star and place the remainder into the bottom buckets",
+  );
+  assert.deepEqual(
+    entries.map((entry) => entry.normalizedScore),
+    [4, 3, 3, 3, 3, 3, 2],
+    "normalized scores should match the assigned star buckets",
   );
 });
 
