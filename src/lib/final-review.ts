@@ -821,6 +821,7 @@ function buildLeaderEvaluatorProgress(
 const NAMED_PEER_REVIEW_VIEWER_NAMES = new Set(["吴承霖", "邱翔", "禹聪琪"]);
 const OPINION_LAYOUT_VIEWER_NAMES = new Set(["向金涛", "禹聪琪"]);
 const ROOT_EXCEPTION_NAMES = new Set(["曹越", "曹铭哲", "宓鸿宇"]);
+const EMPLOYEE_DISTRIBUTION_EXCLUDED_NAMES = new Set(["曹越", "宓鸿宇"]);
 
 function buildCompanyDistributionOverview(
   rows: Array<{
@@ -1267,6 +1268,12 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
       opinions: opinionCards,
       distributionStars: currentStars,
     };
+  }).filter((row) => {
+    // 排除已离职人员（无绩效初评且无星级）
+    if (row.weightedScore == null && row.distributionStars == null) return false;
+    // 排除 ROOT 独立评估对象
+    if (EMPLOYEE_DISTRIBUTION_EXCLUDED_NAMES.has(row.name)) return false;
+    return true;
   });
 
   const departmentDistributions = [...new Set(employeeRows.map((item) => item.department).filter(Boolean))].map((department) => {
