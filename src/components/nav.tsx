@@ -67,7 +67,8 @@ export function Nav({ user }: NavProps) {
       const lockedBefore = !!(item.availableFrom && activeRole !== "ADMIN" && now < new Date(item.availableFrom));
       const lockedAfter = !!(av.availableUntil && activeRole !== "ADMIN" && now > new Date(av.availableUntil));
       const locked = lockedBefore || lockedAfter;
-      return { ...item, locked };
+      const label = item.href === "/meetings" && activeRole !== "EMPLOYEE" ? "绩效面谈" : item.label;
+      return { ...item, label, locked };
     });
 
   return (

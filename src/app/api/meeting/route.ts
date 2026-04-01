@@ -347,15 +347,29 @@ async function buildEmployeeData(
     include: { supervisor: { select: { id: true, name: true } } },
   });
 
+  // Only reveal results after supervisor completes the meeting for this employee
+  if (!meeting?.supervisorCompleted) {
+    return {
+      role: "EMPLOYEE",
+      cycleStatus: cycle.status,
+      cycleName: cycle.name,
+      officialStars: null,
+      summary: "",
+      employeeAck: false,
+      supervisorCompleted: false,
+      meetingId: null,
+    };
+  }
+
   return {
     role: "EMPLOYEE",
     cycleStatus: cycle.status,
     cycleName: cycle.name,
     officialStars: consensus.officialStars,
-    summary: meeting?.summary || "",
-    employeeAck: meeting?.employeeAck || false,
-    supervisorCompleted: meeting?.supervisorCompleted || false,
-    meetingId: meeting?.id || null,
+    summary: meeting.summary || "",
+    employeeAck: meeting.employeeAck || false,
+    supervisorCompleted: true,
+    meetingId: meeting.id,
   };
 }
 

@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { PageHeader } from "@/components/page-header";
-import { Eye } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Eye, Search } from "lucide-react";
 import { toast } from "sonner";
 
 // ========== Types ==========
@@ -486,7 +487,7 @@ function EmployeeInterviewCard({
 // ========== Interview Guide ==========
 
 function InterviewGuide() {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
 
   return (
     <Card>
@@ -696,7 +697,7 @@ function EmployeeView({ data }: { data: EmployeeData & { adminPreview?: boolean;
         <PageHeader title="绩效确定" description={data.cycleName || ""} />
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
-            你的绩效结果尚在处理中，请稍后再来查看。
+            你的主管尚未完成绩效面谈，请耐心等待。
           </CardContent>
         </Card>
       </div>
@@ -769,6 +770,27 @@ function AdminPerspectiveToggle({
   onBackToSupervisor: () => void;
   previewingEmployee: string | null;
 }) {
+  const [allEmployees, setAllEmployees] = useState<{ id: string; name: string; department: string }[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/admin/meeting-dashboard")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.employees) {
+          setAllEmployees(data.employees.map((e: { id: string; name: string; department: string }) => ({
+            id: e.id, name: e.name, department: e.department,
+          })));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const filteredEmployees = searchQuery.trim()
+    ? allEmployees.filter((e) => e.name.includes(searchQuery.trim()))
+    : [];
+
   return (
     <Card className="border-blue-200 bg-blue-50/30">
       <CardContent className="py-3">
@@ -795,6 +817,38 @@ function AdminPerspectiveToggle({
               </Button>
             ))}
           </div>
+        </div>
+        <div className="mt-3 relative">
+          <div className="flex items-center gap-2">
+            <Search className="h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="输入员工姓名搜索..."
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true); }}
+              onFocus={() => setShowDropdown(true)}
+              onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+              className="h-8 w-48 text-sm"
+            />
+          </div>
+          {showDropdown && filteredEmployees.length > 0 && (
+            <div className="absolute left-6 top-9 z-50 max-h-48 w-56 overflow-auto rounded-md border bg-popover shadow-md">
+              {filteredEmployees.map((emp) => (
+                <button
+                  key={emp.id}
+                  className="flex w-full items-center gap-2 px-3 py-1.5 text-sm hover:bg-accent text-left"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => {
+                    onPreviewEmployee(emp.id);
+                    setSearchQuery("");
+                    setShowDropdown(false);
+                  }}
+                >
+                  <span>{emp.name}</span>
+                  <span className="text-xs text-muted-foreground">{emp.department}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -875,7 +929,7 @@ function MeetingsContent() {
 
     return (
       <div className="space-y-4">
-        {isAdmin && supData.items.length > 0 && (
+        {isAdmin && (
           <AdminPerspectiveToggle
             items={supData.items}
             onPreviewEmployee={handlePreviewEmployee}
