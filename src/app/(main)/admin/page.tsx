@@ -132,6 +132,24 @@ const defaultReferenceStarRanges: ReferenceStarRange[] = [
 ];
 
 const statusFlow = ["DRAFT", "SELF_EVAL", "PEER_REVIEW", "SUPERVISOR_EVAL", "CALIBRATION", "MEETING", "APPEAL", "ARCHIVED"];
+
+type MeetingDashboardEmployee = {
+  id: string;
+  name: string;
+  department: string;
+  supervisorName: string;
+  interviewerNames: string[];
+  interviewerIds: string[];
+  meetingStatus: "pending" | "completed" | "acked";
+  summary: string;
+  isOverridden: boolean;
+};
+
+type MeetingDashboardData = {
+  cycleName: string;
+  employees: MeetingDashboardEmployee[];
+  allSupervisors: Array<{ id: string; name: string }>;
+};
 const statusLabels: Record<string, string> = {
   DRAFT: "未开始",
   SELF_EVAL: "个人自评",
@@ -180,6 +198,78 @@ function getOverlapLabelsByUserId(groups: FinalReviewRosterGroup[], currentField
   return overlapLabelsByUserId;
 }
 
+function MeetingInterviewerSelect({
+  employee,
+  allSupervisors,
+  onUpdate,
+}: {
+  employee: MeetingDashboardEmployee;
+  allSupervisors: Array<{ id: string; name: string }>;
+  onUpdate: (employeeName: string, interviewerNames: string[]) => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [selected, setSelected] = useState<string[]>(employee.interviewerNames);
+
+  if (!editing) {
+    return (
+      <div className="flex items-center gap-1.5">
+        <span className="text-sm">{employee.interviewerNames.join("、") || "—"}</span>
+        {employee.isOverridden && (
+          <span className="text-[10px] text-amber-600">(已覆盖)</span>
+        )}
+        <button
+          type="button"
+          className="text-xs text-blue-600 hover:underline ml-1"
+          onClick={() => setEditing(true)}
+        >
+          修改
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <select
+        multiple
+        className="w-full rounded border px-2 py-1 text-sm"
+        value={selected}
+        onChange={(e) => {
+          const vals = Array.from(e.target.selectedOptions, (o) => o.value);
+          setSelected(vals);
+        }}
+      >
+        {allSupervisors.map((s) => (
+          <option key={s.id} value={s.name}>{s.name}</option>
+        ))}
+      </select>
+      <div className="flex gap-1">
+        <button
+          type="button"
+          className="rounded bg-primary px-2 py-0.5 text-xs text-white"
+          onClick={async () => {
+            if (selected.length === 0) return;
+            await onUpdate(employee.name, selected);
+            setEditing(false);
+          }}
+        >
+          保存
+        </button>
+        <button
+          type="button"
+          className="rounded border px-2 py-0.5 text-xs"
+          onClick={() => {
+            setSelected(employee.interviewerNames);
+            setEditing(false);
+          }}
+        >
+          取消
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function AdminContent() {
   const { preview, previewRole, getData } = usePreview();
   const [cycles, setCycles] = useState<Cycle[]>([]);
@@ -199,6 +289,8 @@ function AdminContent() {
   const [finalReviewConfig, setFinalReviewConfig] = useState<FinalReviewConfigForm | null>(null);
   const [finalReviewLoading, setFinalReviewLoading] = useState(false);
   const [finalReviewSaving, setFinalReviewSaving] = useState(false);
+  const [meetingDashboard, setMeetingDashboard] = useState<MeetingDashboardData | null>(null);
+  const [meetingLoading, setMeetingLoading] = useState(false);
   const [newCycle, setNewCycle] = useState({
     name: "2025年下半年绩效考核",
     selfEvalStart: "2026-03-17",
@@ -408,6 +500,37 @@ function AdminContent() {
     }
   };
 
+  const loadMeetingDashboard = async () => {
+    if (preview) return;
+    setMeetingLoading(true);
+    try {
+      const res = await fetch("/api/admin/meeting-dashboard");
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      setMeetingDashboard(data);
+    } catch (e) {
+      toast.error("加载面谈数据失败: " + (e instanceof Error ? e.message : "未知错误"));
+    } finally {
+      setMeetingLoading(false);
+    }
+  };
+
+  const updateInterviewer = async (employeeName: string, interviewerNames: string[]) => {
+    try {
+      const res = await fetch("/api/admin/meeting-dashboard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ employeeName, interviewerNames }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      toast.success(`已更新 ${employeeName} 的面谈人`);
+      await loadMeetingDashboard();
+    } catch (e) {
+      toast.error("更新失败: " + (e instanceof Error ? e.message : "未知错误"));
+    }
+  };
+
   const downloadVerifyExport = async () => {
     if (preview) return;
     setVerifyExporting(true);
@@ -527,6 +650,11 @@ function AdminContent() {
               loadVerifyData();
             }
           }}>数据核验</TabsTrigger>
+          <TabsTrigger value="meeting" onClick={() => {
+            if (!meetingDashboard && !meetingLoading) {
+              loadMeetingDashboard();
+            }
+          }}>绩效面谈</TabsTrigger>
         </TabsList>
 
         <TabsContent value="cycle" className="space-y-4">
@@ -1112,6 +1240,69 @@ function AdminContent() {
                             ) : (
                               <span className="text-green-600">已完成</span>
                             )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </TabsContent>
+
+        <TabsContent value="meeting" className="space-y-4">
+          {meetingLoading ? (
+            <Card><CardContent className="py-8 text-center text-muted-foreground">加载中...</CardContent></Card>
+          ) : !meetingDashboard ? (
+            <Card><CardContent className="py-8 text-center text-muted-foreground">点击上方标签加载面谈数据</CardContent></Card>
+          ) : (
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle>绩效面谈总览</CardTitle>
+                  <CardDescription>
+                    {meetingDashboard.cycleName} · 共 {meetingDashboard.employees.length} 人 ·
+                    已完成 {meetingDashboard.employees.filter((e) => e.meetingStatus !== "pending").length} 人 ·
+                    员工已确认 {meetingDashboard.employees.filter((e) => e.meetingStatus === "acked").length} 人
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>姓名</TableHead>
+                        <TableHead>部门</TableHead>
+                        <TableHead>直属上级</TableHead>
+                        <TableHead>面谈人</TableHead>
+                        <TableHead>状态</TableHead>
+                        <TableHead>综述</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {meetingDashboard.employees.map((emp) => (
+                        <TableRow key={emp.id}>
+                          <TableCell className="font-medium">{emp.name}</TableCell>
+                          <TableCell>{emp.department}</TableCell>
+                          <TableCell>{emp.supervisorName}</TableCell>
+                          <TableCell>
+                            <MeetingInterviewerSelect
+                              employee={emp}
+                              allSupervisors={meetingDashboard.allSupervisors}
+                              onUpdate={updateInterviewer}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            {emp.meetingStatus === "acked" ? (
+                              <Badge variant="success">员工已确认</Badge>
+                            ) : emp.meetingStatus === "completed" ? (
+                              <Badge className="bg-blue-50 text-blue-700 border-blue-200">已完成</Badge>
+                            ) : (
+                              <Badge variant="secondary">待面谈</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="max-w-[200px] truncate text-xs text-muted-foreground">
+                            {emp.summary || "—"}
                           </TableCell>
                         </TableRow>
                       ))}

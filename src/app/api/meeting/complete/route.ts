@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionUser, getActiveCycle } from "@/lib/session";
-import { buildMeetingInterviewerMap } from "@/lib/meeting-assignments";
+import { buildMeetingInterviewerMap, type DbInterviewerOverrides } from "@/lib/meeting-assignments";
+
+function parseDbOverrides(raw: string | undefined | null): DbInterviewerOverrides {
+  if (!raw) return {};
+  try { return JSON.parse(raw); } catch { return {}; }
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -30,7 +35,11 @@ export async function POST(req: NextRequest) {
       const allUsers = await prisma.user.findMany({
         select: { id: true, name: true, supervisorId: true, supervisor: { select: { id: true, name: true } } },
       });
-      const interviewerMap = buildMeetingInterviewerMap(allUsers);
+      const mc = await prisma.finalReviewConfig.findUnique({
+        where: { cycleId: cycle.id },
+        select: { meetingInterviewerOverrides: true },
+      });
+      const interviewerMap = buildMeetingInterviewerMap(allUsers, parseDbOverrides(mc?.meetingInterviewerOverrides));
       const interviewerIds = interviewerMap.get(employeeId) || [];
       if (!interviewerIds.includes(user.id)) {
         return NextResponse.json({ error: "你不是该员工的绩效面谈人" }, { status: 403 });

@@ -369,7 +369,12 @@ export async function POST(req: NextRequest) {
       const allUsers = await prisma.user.findMany({
         select: { id: true, name: true, supervisorId: true, supervisor: { select: { id: true, name: true } } },
       });
-      const interviewerMap = buildMeetingInterviewerMap(allUsers);
+      const cycle = await getActiveCycle();
+      const mc = cycle ? await prisma.finalReviewConfig.findUnique({
+        where: { cycleId: cycle.id },
+        select: { meetingInterviewerOverrides: true },
+      }) : null;
+      const interviewerMap = buildMeetingInterviewerMap(allUsers, parseDbOverrides(mc?.meetingInterviewerOverrides));
       const interviewerIds = interviewerMap.get(body.employeeId) || [];
       if (!interviewerIds.includes(user.id)) {
         return NextResponse.json({ error: "你不是该员工的绩效面谈人" }, { status: 403 });
