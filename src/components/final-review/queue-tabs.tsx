@@ -16,7 +16,7 @@ type QueueTabsProps = {
 
 export function QueueTabs({ items, activeKey, onChange }: QueueTabsProps) {
   return (
-    <div className="grid gap-2 sm:grid-cols-3">
+    <div className="grid gap-2 sm:grid-cols-2">
       {items.map((item) => {
         const active = item.key === activeKey;
 

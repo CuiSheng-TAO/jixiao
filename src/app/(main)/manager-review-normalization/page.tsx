@@ -94,7 +94,7 @@ export default function ManagerReviewNormalizationPage() {
     return (
       <div className="space-y-6">
         <PageHeader
-          title="绩效打分分布校准"
+          title="环评及初评正态分布"
           description="用一张 54 人总台账同时查看初评人和环评人的打分样本、均分、偏移，以及展开后的具体打分明细。"
         />
         <Card className="rounded-[28px] border-border/60 shadow-none">
@@ -114,7 +114,7 @@ export default function ManagerReviewNormalizationPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="绩效打分分布校准"
+        title="环评及初评正态分布"
         description="统一查看 54 位评分人的初评与环评打分倾向。主管按初评人/环评人双身份展示，员工按环评人展示。"
       />
 

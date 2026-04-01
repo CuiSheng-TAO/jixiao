@@ -247,6 +247,9 @@ function PeerReviewSection({ summary }: { summary: InterviewItem["peerReviewSumm
 
 function EvalCalibrationSection({ item }: { item: InterviewItem }) {
   const { supervisorEval, calibration } = item;
+  const [showOpinions, setShowOpinions] = useState(false);
+  const allCalibrated = calibration.opinions.length > 0
+    && calibration.opinions.every((o) => o.decision !== "PENDING");
 
   return (
     <Card>
@@ -267,15 +270,30 @@ function EvalCalibrationSection({ item }: { item: InterviewItem }) {
           />
         </div>
 
-        {/* Calibration change display */}
-        {calibration.calibrated && calibration.opinions.length > 0 && (
+        {/* Calibration status + expandable opinions */}
+        {calibration.opinions.length > 0 && (
           <div className="space-y-3">
-            <p className="text-sm font-medium text-amber-700">校准发生了变化</p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {calibration.opinions.map((opinion) => (
-                <CalibrationCard key={opinion.reviewerId} opinion={opinion} />
-              ))}
+            <div className="flex items-center gap-2">
+              {allCalibrated && (
+                <span className="inline-flex items-center rounded-md bg-yellow-50 px-2.5 py-1 text-xs font-medium text-yellow-800 ring-1 ring-inset ring-yellow-600/20">
+                  已完成公司级绩效终评校准
+                </span>
+              )}
+              <button
+                type="button"
+                className="text-xs text-blue-600 hover:underline"
+                onClick={() => setShowOpinions(!showOpinions)}
+              >
+                {showOpinions ? "收起校准详情" : "查看校准详情"}
+              </button>
             </div>
+            {showOpinions && (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {calibration.opinions.map((opinion) => (
+                  <CalibrationCard key={opinion.reviewerId} opinion={opinion} />
+                ))}
+              </div>
+            )}
           </div>
         )}
 
