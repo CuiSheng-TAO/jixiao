@@ -132,6 +132,7 @@ function resolveLeaderForms(leader: LeaderRow, leaderForms: Record<string, Leade
   return {
     qiuxiangForm: (qiuxiangKey ? leaderForms[qiuxiangKey] : null) ?? qiuxiangEval?.form,
     chenglinForm: (chenglinKey ? leaderForms[chenglinKey] : null) ?? chenglinEval?.form,
+    chenglinStoredWeightedScore: chenglinEval?.weightedScore ?? null,
   };
 }
 
@@ -239,8 +240,8 @@ export function ArchiveTables({ employees, leaders, leaderForms }: ArchiveTables
             </TableHeader>
             <TableBody>
               {filteredLeaders.map((leader) => {
-                const { qiuxiangForm, chenglinForm } = resolveLeaderForms(leader, leaderForms);
-                const chenglinScore = getChenglinWeightedScore(chenglinForm);
+                const { qiuxiangForm, chenglinForm, chenglinStoredWeightedScore } = resolveLeaderForms(leader, leaderForms);
+                const chenglinScore = chenglinStoredWeightedScore ?? getChenglinWeightedScore(chenglinForm);
                 const finalStars = chenglinScore != null ? Math.floor(chenglinScore) : null;
                 return (
                   <TableRow key={leader.id}>

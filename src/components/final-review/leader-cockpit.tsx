@@ -129,6 +129,7 @@ export function LeaderCockpit({
         </Button>
 
         {chartsExpanded ? (
+          <>
           <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_320px] xl:items-start">
             <StarDistributionChart
               title="主管层等级全览"
@@ -148,26 +149,25 @@ export function LeaderCockpit({
               overview={companyDistributionOverviews.withoutRoot}
             />
           </div>
-        ) : null}
 
-        <div className="mt-4 space-y-3 rounded-[24px] border p-4">
-          <p className="text-sm font-semibold text-[var(--cockpit-foreground)]">当前偏离摘要</p>
-          {distributionChecks.map((item) => (
-            <div key={`distribution-check:${item.stars}`} className="rounded-2xl border px-4 py-3">
-              <div className="flex items-center justify-between gap-3 text-sm">
-                <span className="font-medium text-[var(--cockpit-foreground)]">{item.label}</span>
-                <span className={item.compliant ? "text-[var(--cockpit-muted-foreground)]" : item.stars === 3 ? "text-[color:#b7791f]" : "text-[color:#c2410c]"}>
-                  {item.compliant ? "符合建议" : item.summary}
-                </span>
+          <div className="mt-4 space-y-3 rounded-[24px] border p-4">
+            <p className="text-sm font-semibold text-[var(--cockpit-foreground)]">当前偏离摘要</p>
+            {distributionChecks.map((item) => (
+              <div key={`distribution-check:${item.stars}`} className="rounded-2xl border px-4 py-3">
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <span className="font-medium text-[var(--cockpit-foreground)]">{item.label}</span>
+                  <span className={item.compliant ? "text-[var(--cockpit-muted-foreground)]" : item.stars === 3 ? "text-[color:#b7791f]" : "text-[color:#c2410c]"}>
+                    {item.compliant ? "符合建议" : item.summary}
+                  </span>
+                </div>
+                <p className="mt-2 text-xs leading-5 text-[var(--cockpit-muted-foreground)]">
+                  当前 {item.actualCount} 人 · {item.actualPct}% · {item.target}
+                </p>
               </div>
-              <p className="mt-2 text-xs leading-5 text-[var(--cockpit-muted-foreground)]">
-                当前 {item.actualCount} 人 · {item.actualPct}% · {item.target}
-              </p>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
 
-        <section className="mt-4 space-y-4 rounded-[24px] border p-4">
+          <section className="mt-4 space-y-4 rounded-[24px] border p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-semibold text-[var(--cockpit-foreground)]">{progressTitle}</p>
@@ -215,6 +215,8 @@ export function LeaderCockpit({
             </div>
           </div>
         </section>
+          </>
+        ) : null}
       </section>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(340px,0.38fr)_minmax(0,1fr)] xl:items-start">
