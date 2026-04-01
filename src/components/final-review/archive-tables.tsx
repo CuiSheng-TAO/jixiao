@@ -37,9 +37,12 @@ function formatOpinionCell(opinion: ReturnType<typeof findOpinionByName>, refere
 function resolveEmployeeFinalStars(emp: EmployeeRow): number | null {
   const chenglin = findOpinionByName(emp.opinions, "承霖");
   if (chenglin && chenglin.decision !== "PENDING") {
-    return chenglin.suggestedStars ?? emp.referenceStars;
+    if (chenglin.decision === "AGREE") {
+      return chenglin.suggestedStars ?? emp.referenceStars;
+    }
+    return chenglin.suggestedStars;
   }
-  return emp.officialStars;
+  return emp.officialStars ?? emp.referenceStars;
 }
 
 function formatLeaderEvalGrade(form: LeaderForm) {
