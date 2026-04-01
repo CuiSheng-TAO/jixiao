@@ -82,7 +82,7 @@ export function CompanyDistributionOverviewCard({
             <p className="text-xs text-[var(--cockpit-muted-foreground)]">当前图统计口径</p>
             <p className="mt-2 text-sm font-medium text-[var(--cockpit-foreground)]">{overview.includedCount} 人</p>
             {excludedCount > 0 ? (
-              <p className="mt-1 text-xs text-[var(--cockpit-muted-foreground)]">已剔除 ROOT {excludedCount} 人</p>
+              <p className="mt-1 text-xs text-[var(--cockpit-muted-foreground)]">已剔除 ROOT 3 人 + 已离职 3 人</p>
             ) : null}
           </div>
           <div className="rounded-2xl border px-3 py-3">

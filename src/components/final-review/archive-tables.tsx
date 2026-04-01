@@ -19,8 +19,38 @@ import {
 
 const ROOT_NAMES = new Set(["曹铭哲", "曹越", "宓鸿宇"]);
 
+function ExpandableCell({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false);
+  if (!text || text === "—") return <span>—</span>;
+  const lines = text.split("\n");
+  const needsCollapse = lines.length > 2 || text.length > 60;
+  if (!needsCollapse) return <span className="whitespace-pre-wrap">{text}</span>;
+  return (
+    <span className="whitespace-pre-wrap">
+      {expanded ? text : lines.slice(0, 2).join("\n").slice(0, 60) + "…"}
+      <button
+        type="button"
+        className="ml-1 text-xs text-blue-600 hover:underline"
+        onClick={() => setExpanded(!expanded)}
+      >
+        {expanded ? "收起" : "展开"}
+      </button>
+    </span>
+  );
+}
+
 function stars(value: number | null) {
   return value != null ? `${value}星` : "—";
+}
+
+function formatDimensionStars(emp: EmployeeRow) {
+  const detail = emp.initialReviewDetails?.[0];
+  if (!detail) return { performance: "—", ability: "—", values: "—" };
+  return {
+    performance: detail.performanceStars != null ? `${detail.performanceStars}星` : "—",
+    ability: detail.abilityStars != null ? `${detail.abilityStars}星` : "—",
+    values: detail.valuesStars != null ? `${detail.valuesStars}星` : "—",
+  };
 }
 
 function findOpinionByName(opinions: EmployeeRow["opinions"], keyword: string) {

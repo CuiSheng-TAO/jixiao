@@ -27,7 +27,7 @@ export function EmployeeCockpit({
   onSelectEmployee,
   detailPanel,
 }: EmployeeCockpitProps) {
-  const [activeQueueKey, setActiveQueueKey] = useState<"pending" | "disagreement" | "all">("pending");
+  const [activeQueueKey, setActiveQueueKey] = useState<"pending" | "disagreement" | "all">("disagreement");
   const [queuePanelHeight, setQueuePanelHeight] = useState<number | null>(null);
   const detailPanelRef = useRef<HTMLDivElement | null>(null);
   const panelStyle: CSSProperties = {
@@ -68,7 +68,6 @@ export function EmployeeCockpit({
     ? [selectedEmployee, ...baseQueueRows]
     : baseQueueRows;
   const queueItems = [
-    { key: "pending", label: "待双人校准", count: queueGroups.pending.length },
     { key: "disagreement", label: "发生校准", count: queueGroups.disagreement.length },
     { key: "all", label: "全部员工", count: queueGroups.all.length },
   ];

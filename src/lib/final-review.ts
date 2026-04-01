@@ -1134,6 +1134,15 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
     const handledCount = consensus.handledCount;
     const officialStars = consensus.officialStars;
     const currentStars = officialStars ?? displayReferenceStars;
+
+    const chenglinOpinion = employeeOpinions.find((item) => {
+      const reviewer = usersById.get(item.reviewerId);
+      return reviewer?.name.includes("承霖");
+    });
+    const chenglinFinalStars = chenglinOpinion && chenglinOpinion.decision !== "PENDING"
+      ? (chenglinOpinion.suggestedStars ?? displayReferenceStars)
+      : null;
+    const archiveDistributionStars = chenglinFinalStars ?? currentStars;
     const overrideOpinionCount = employeeOpinions.filter((item) => item.decision === "OVERRIDE").length;
     const pendingOpinionCount = consensus.pendingCount;
     const scoreSpread = normalizedSupervisor
@@ -1267,7 +1276,7 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
       opinionSummary: buildOpinionSummary(opinionCards.map((opinion) => ({ decision: opinion.decision }))),
       anomalyTags,
       opinions: opinionCards,
-      distributionStars: currentStars,
+      distributionStars: archiveDistributionStars,
     };
   }).filter((row) => {
     // 排除已离职人员
@@ -1390,7 +1399,7 @@ export async function buildFinalReviewWorkspacePayload(user: SessionUser) {
   const companyDistributionRows = [
     ...employeeRows.map((item) => ({
       name: item.name,
-      stars: item.officialStars ?? item.referenceStars,
+      stars: item.distributionStars,
       calibrated: item.officialStars != null,
     })),
     ...leaderRows.map((item) => ({
