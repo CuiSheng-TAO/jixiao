@@ -101,6 +101,7 @@ type SupervisorData = {
   cycleStatus: string;
   cycleName: string;
   items: InterviewItem[];
+  myEmployeeData?: EmployeeData;
 };
 
 type EmployeeData = {
@@ -645,6 +646,16 @@ function SupervisorView({ data }: { data: SupervisorData }) {
             />
           ))}
         </div>
+      )}
+
+      {/* My own performance confirmation */}
+      {data.myEmployeeData && data.myEmployeeData.officialStars != null && (
+        <>
+          <div className="border-t pt-6">
+            <h2 className="text-lg font-semibold mb-4">我的绩效确认</h2>
+          </div>
+          <EmployeeView data={data.myEmployeeData} />
+        </>
       )}
     </div>
   );

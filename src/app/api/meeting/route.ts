@@ -304,12 +304,16 @@ async function buildSupervisorData(
     };
   });
 
+  // Get this supervisor's own employee data (they are also evaluated)
+  const myEmployeeData = await buildEmployeeData(user, cycle);
+
   return {
     role: "SUPERVISOR",
     userRole: user.role,
     cycleStatus: cycle.status,
     cycleName: cycle.name,
     items,
+    myEmployeeData,
   };
 }
 
