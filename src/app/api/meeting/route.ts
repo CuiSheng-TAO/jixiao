@@ -194,15 +194,27 @@ async function buildSupervisorData(
     const displayWeightedScore = normalizedSupervisor?.normalizedScore ?? weightedScore;
     const displayReferenceStars = normalizedSupervisor?.normalizedStars ?? referenceStars;
 
-    // Official stars from calibration consensus
+    // Official stars from calibration — match archive-tables.tsx logic:
+    // Chenglin's opinion takes priority, then consensus, then referenceStars
     const employeeOpinions = (opinionsByEmployee.get(employee.id) || []).filter(
       (o) => employeeOpinionActorIds.includes(o.reviewerId),
     );
     const consensus = resolveEmployeeConsensus(employeeOpinionActorIds, employeeOpinions);
-    const officialStars = consensus.officialStars;
-    const calibrated = officialStars != null && displayReferenceStars != null && officialStars !== displayReferenceStars;
-    // When calibrators disagree, fall back to reference stars (same as calibration page)
-    const resolvedStars = officialStars ?? (consensus.disagreed ? displayReferenceStars : null);
+
+    // Find 承霖's opinion (same as archive-tables resolveEmployeeFinalStars)
+    const chenglinOpinion = employeeOpinions.find((o) => {
+      const reviewer = usersById.get(o.reviewerId);
+      return reviewer?.name?.includes("承霖");
+    });
+    let resolvedStars: number | null = null;
+    if (chenglinOpinion && chenglinOpinion.decision !== "PENDING") {
+      resolvedStars = chenglinOpinion.decision === "AGREE"
+        ? (chenglinOpinion.suggestedStars ?? displayReferenceStars)
+        : chenglinOpinion.suggestedStars;
+    } else {
+      resolvedStars = consensus.officialStars ?? displayReferenceStars;
+    }
+    const calibrated = resolvedStars != null && displayReferenceStars != null && resolvedStars !== displayReferenceStars;
 
     // Build calibration opinions for display
     const calibrationOpinions = employeeOpinionActorIds.map((reviewerId) => {
@@ -348,6 +360,21 @@ async function buildEmployeeData(
   const filteredOpinions = opinions.filter((o) => employeeOpinionActorIds.includes(o.reviewerId));
   const consensus = resolveEmployeeConsensus(employeeOpinionActorIds, filteredOpinions);
 
+  // Resolve final stars — match archive-tables logic (承霖's opinion takes priority)
+  const usersById = new Map(allUsers.map((u) => [u.id, u]));
+  const chenglinOp = filteredOpinions.find((o) => {
+    const reviewer = usersById.get(o.reviewerId);
+    return reviewer?.name?.includes("承霖");
+  });
+  let employeeFinalStars: number | null = null;
+  if (chenglinOp && chenglinOp.decision !== "PENDING") {
+    employeeFinalStars = chenglinOp.decision === "AGREE"
+      ? (chenglinOp.suggestedStars ?? null)
+      : chenglinOp.suggestedStars;
+  } else {
+    employeeFinalStars = consensus.officialStars;
+  }
+
   // Get meeting data
   const meeting = await prisma.meeting.findUnique({
     where: { cycleId_employeeId: { cycleId: cycle.id, employeeId: user.id } },
@@ -372,7 +399,7 @@ async function buildEmployeeData(
     role: "EMPLOYEE",
     cycleStatus: cycle.status,
     cycleName: cycle.name,
-    officialStars: consensus.officialStars,
+    officialStars: employeeFinalStars,
     summary: meeting.summary || "",
     employeeAck: meeting.employeeAck || false,
     supervisorCompleted: true,
