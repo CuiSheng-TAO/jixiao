@@ -145,7 +145,7 @@ async function buildSupervisorData(
       orderBy: { updatedAt: "desc" },
     }),
     prisma.meeting.findMany({
-      where: { cycleId: cycle.id, supervisorId: user.id },
+      where: { cycleId: cycle.id, employeeId: { in: subordinateIds } },
       include: { employee: { select: { id: true, name: true, department: true } } },
     }),
     getAppliedNormalizationMap(cycle.id, "SUPERVISOR_EVAL"),
