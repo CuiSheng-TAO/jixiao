@@ -244,7 +244,7 @@ export function ArchiveTables({ employees, leaders, leaderForms }: ArchiveTables
               {filteredLeaders.map((leader) => {
                 const { qiuxiangForm, chenglinForm, chenglinStoredWeightedScore } = resolveLeaderForms(leader, leaderForms);
                 const override = LEADER_FINAL_OVERRIDE[leader.name];
-                const chenglinScore = override?.score ?? chenglinStoredWeightedScore ?? getChenglinWeightedScore(chenglinForm);
+                const chenglinScore = override?.score ?? getChenglinWeightedScore(chenglinForm) ?? chenglinStoredWeightedScore;
                 const finalStars = override?.stars ?? (chenglinScore != null ? Math.floor(chenglinScore) : null);
                 return (
                   <TableRow key={leader.id}>
@@ -334,7 +334,7 @@ export function ArchiveTables({ employees, leaders, leaderForms }: ArchiveTables
                 {filteredRootLeaders.map((leader) => {
                   const { qiuxiangForm, chenglinForm, chenglinStoredWeightedScore } = resolveLeaderForms(leader, leaderForms);
                   const override = LEADER_FINAL_OVERRIDE[leader.name];
-                  const chenglinScore = override?.score ?? chenglinStoredWeightedScore ?? getChenglinWeightedScore(chenglinForm);
+                  const chenglinScore = override?.score ?? getChenglinWeightedScore(chenglinForm) ?? chenglinStoredWeightedScore;
                   const finalStars = override?.stars ?? (chenglinScore != null ? Math.floor(chenglinScore) : null);
                   return (
                     <TableRow key={leader.id}>
