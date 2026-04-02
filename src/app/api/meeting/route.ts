@@ -201,6 +201,8 @@ async function buildSupervisorData(
     const consensus = resolveEmployeeConsensus(employeeOpinionActorIds, employeeOpinions);
     const officialStars = consensus.officialStars;
     const calibrated = officialStars != null && displayReferenceStars != null && officialStars !== displayReferenceStars;
+    // When calibrators disagree, fall back to reference stars (same as calibration page)
+    const resolvedStars = officialStars ?? (consensus.disagreed ? displayReferenceStars : null);
 
     // Build calibration opinions for display
     const calibrationOpinions = employeeOpinionActorIds.map((reviewerId) => {
@@ -286,8 +288,9 @@ async function buildSupervisorData(
       calibration: {
         displayWeightedScore,
         displayReferenceStars,
-        officialStars,
+        officialStars: resolvedStars,
         calibrated,
+        disagreed: consensus.disagreed,
         opinions: calibrationOpinions,
       },
       meeting: meeting ? {
