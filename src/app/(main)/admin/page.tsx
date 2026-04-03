@@ -1298,6 +1298,7 @@ function AdminContent() {
                             {emp.finalStars != null ? `${emp.finalStars} 星` : "—"}
                           </TableCell>
                           <TableCell>
+                            {emp.meetingStatus === "acked" ? (
                               <Badge variant="success">员工已确认</Badge>
                             ) : emp.meetingStatus === "completed" ? (
                               <Badge className="bg-blue-50 text-blue-700 border-blue-200">已完成</Badge>
