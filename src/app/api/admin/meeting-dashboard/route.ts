@@ -10,7 +10,7 @@ import { getFinalReviewConfigValue, mapScoreToReferenceStars } from "@/lib/final
 import { resolveEmployeeConsensus } from "@/lib/final-review-logic";
 import { buildSupervisorAssignmentMap } from "@/lib/supervisor-assignments";
 import { getAppliedNormalizationMap } from "@/lib/applied-normalization";
-import { resolveFinalStars } from "@/lib/resolve-final-stars";
+import { resolveFinalStars, resolveLeaderFinalStars } from "@/lib/resolve-final-stars";
 
 function getDbOverrides(config: { meetingInterviewerOverrides: string } | null): DbInterviewerOverrides {
   if (!config?.meetingInterviewerOverrides) return {};
@@ -33,7 +33,7 @@ export async function GET() {
       return NextResponse.json({ error: "No active cycle" }, { status: 400 });
     }
 
-    const [allUsers, meetings, supervisorEvals, opinions] = await Promise.all([
+    const [allUsers, meetings, supervisorEvals, opinions, leaderFinalReviews] = await Promise.all([
       prisma.user.findMany({
         select: {
           id: true, name: true, department: true, role: true,
@@ -50,6 +50,10 @@ export async function GET() {
       }),
       prisma.finalReviewOpinion.findMany({
         where: { cycleId: cycle.id },
+      }),
+      prisma.leaderFinalReview.findMany({
+        where: { cycleId: cycle.id, status: "SUBMITTED" },
+        select: { employeeId: true, evaluatorId: true, weightedScore: true, evaluator: { select: { name: true } } },
       }),
     ]);
 
@@ -132,7 +136,18 @@ export async function GET() {
           decision: o.decision,
           suggestedStars: o.suggestedStars,
         }));
-        const finalStars = resolveFinalStars(opinionsWithNames, referenceStars, consensus.officialStars);
+        const isLeader = u.role === "SUPERVISOR" || u.role === "HRBP";
+        let finalStars: number | null;
+        if (isLeader) {
+          const chenglinReview = leaderFinalReviews.find(
+            (r) => r.employeeId === u.id && r.evaluator.name.includes("承霖"),
+          );
+          finalStars = resolveLeaderFinalStars(
+            chenglinReview?.weightedScore != null ? Number(chenglinReview.weightedScore) : null,
+          );
+        } else {
+          finalStars = resolveFinalStars(opinionsWithNames, referenceStars, consensus.officialStars);
+        }
 
         return {
           id: u.id,

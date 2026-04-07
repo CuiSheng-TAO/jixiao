@@ -25,3 +25,15 @@ export function resolveFinalStars(
   }
   return consensusOfficialStars ?? referenceStars;
 }
+
+/**
+ * Resolve a leader/supervisor's final stars.
+ * Must match archive-tables.tsx leader section exactly:
+ *   Math.floor(承霖's LeaderFinalReview weighted score)
+ */
+export function resolveLeaderFinalStars(
+  chenglinWeightedScore: number | null,
+): number | null {
+  if (chenglinWeightedScore == null) return null;
+  return Math.floor(chenglinWeightedScore);
+}

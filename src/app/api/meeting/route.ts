@@ -16,7 +16,7 @@ import { getAppliedNormalizationMap } from "@/lib/applied-normalization";
 import { buildSupervisorAssignmentMap } from "@/lib/supervisor-assignments";
 import { computeWeightedScoreFromDimensions } from "@/lib/weighted-score";
 import { buildMeetingInterviewerMap, getAssignedEmployeeIds, type DbInterviewerOverrides } from "@/lib/meeting-assignments";
-import { resolveFinalStars } from "@/lib/resolve-final-stars";
+import { resolveFinalStars, resolveLeaderFinalStars } from "@/lib/resolve-final-stars";
 
 function roundToOneDecimal(value: number | null): number | null {
   if (value == null) return null;
@@ -116,6 +116,7 @@ async function buildSupervisorData(
     opinions,
     meetings,
     appliedSupervisorNormalization,
+    leaderFinalReviews,
   ] = await Promise.all([
     prisma.supervisorEval.findMany({
       where: { cycleId: cycle.id, employeeId: { in: subordinateIds } },
@@ -150,6 +151,10 @@ async function buildSupervisorData(
       include: { employee: { select: { id: true, name: true, department: true } } },
     }),
     getAppliedNormalizationMap(cycle.id, "SUPERVISOR_EVAL"),
+    prisma.leaderFinalReview.findMany({
+      where: { cycleId: cycle.id, employeeId: { in: subordinateIds }, status: "SUBMITTED" },
+      select: { employeeId: true, evaluatorId: true, weightedScore: true, evaluator: { select: { name: true } } },
+    }),
   ]);
 
   // Build assignment map
@@ -205,7 +210,22 @@ async function buildSupervisorData(
       decision: o.decision,
       suggestedStars: o.suggestedStars,
     }));
-    const resolvedStars = resolveFinalStars(opinionsWithNames, displayReferenceStars, consensus.officialStars);
+
+    // Leaders (SUPERVISOR role) use Math.floor of 承霖's LeaderFinalReview score
+    // to match the calibration archive table exactly
+    const employeeUser = usersById.get(employee.id);
+    const isLeader = employeeUser?.role === "SUPERVISOR" || employeeUser?.role === "HRBP";
+    let resolvedStars: number | null;
+    if (isLeader) {
+      const chenglinReview = leaderFinalReviews.find(
+        (r) => r.employeeId === employee.id && r.evaluator.name.includes("承霖"),
+      );
+      resolvedStars = resolveLeaderFinalStars(
+        chenglinReview?.weightedScore != null ? Number(chenglinReview.weightedScore) : null,
+      );
+    } else {
+      resolvedStars = resolveFinalStars(opinionsWithNames, displayReferenceStars, consensus.officialStars);
+    }
     const calibrated = resolvedStars != null && displayReferenceStars != null && resolvedStars !== displayReferenceStars;
 
     // Build calibration opinions for display
@@ -374,14 +394,27 @@ async function buildEmployeeData(
   const filteredOpinions = opinions.filter((o) => employeeOpinionActorIds.includes(o.reviewerId));
   const consensus = resolveEmployeeConsensus(employeeOpinionActorIds, filteredOpinions);
 
-  // Use shared resolveFinalStars (same as archive-tables)
+  // Use shared resolveFinalStars / resolveLeaderFinalStars (same as archive-tables)
   const usersById = new Map(allUsers.map((u) => [u.id, u]));
   const opinionsWithNames = filteredOpinions.map((o) => ({
     reviewerName: usersById.get(o.reviewerId)?.name || "",
     decision: o.decision,
     suggestedStars: o.suggestedStars,
   }));
-  const employeeFinalStars = resolveFinalStars(opinionsWithNames, referenceStars, consensus.officialStars);
+  const isLeader = user.role === "SUPERVISOR" || user.role === "HRBP";
+  let employeeFinalStars: number | null;
+  if (isLeader) {
+    const chenglinReviews = await prisma.leaderFinalReview.findMany({
+      where: { cycleId: cycle.id, employeeId: user.id, status: "SUBMITTED" },
+      select: { evaluatorId: true, weightedScore: true, evaluator: { select: { name: true } } },
+    });
+    const chenglinReview = chenglinReviews.find((r) => r.evaluator.name.includes("承霖"));
+    employeeFinalStars = resolveLeaderFinalStars(
+      chenglinReview?.weightedScore != null ? Number(chenglinReview.weightedScore) : null,
+    );
+  } else {
+    employeeFinalStars = resolveFinalStars(opinionsWithNames, referenceStars, consensus.officialStars);
+  }
 
   // Get meeting data
   const meeting = await prisma.meeting.findUnique({
