@@ -211,21 +211,18 @@ async function buildSupervisorData(
       suggestedStars: o.suggestedStars,
     }));
 
-    // Leaders (SUPERVISOR role) use Math.floor of 承霖's LeaderFinalReview score
-    // to match the calibration archive table exactly
+    // 主管层(SUPERVISOR/HRBP)若有承霖的LeaderFinalReview，按校准留档表的Math.floor逻辑算
+    // 否则回退到员工层逻辑（保持原有显示，避免无数据的主管星级丢失）
     const employeeUser = usersById.get(employee.id);
     const isLeader = employeeUser?.role === "SUPERVISOR" || employeeUser?.role === "HRBP";
-    let resolvedStars: number | null;
-    if (isLeader) {
-      const chenglinReview = leaderFinalReviews.find(
-        (r) => r.employeeId === employee.id && (usersById.get(r.evaluatorId)?.name ?? "").includes("承霖"),
-      );
-      resolvedStars = resolveLeaderFinalStars(
-        chenglinReview?.weightedScore != null ? Number(chenglinReview.weightedScore) : null,
-      );
-    } else {
-      resolvedStars = resolveFinalStars(opinionsWithNames, displayReferenceStars, consensus.officialStars);
-    }
+    const chenglinReview = isLeader
+      ? leaderFinalReviews.find(
+          (r) => r.employeeId === employee.id && (usersById.get(r.evaluatorId)?.name ?? "").includes("承霖"),
+        )
+      : undefined;
+    const resolvedStars = chenglinReview?.weightedScore != null
+      ? resolveLeaderFinalStars(Number(chenglinReview.weightedScore))
+      : resolveFinalStars(opinionsWithNames, displayReferenceStars, consensus.officialStars);
     const calibrated = resolvedStars != null && displayReferenceStars != null && resolvedStars !== displayReferenceStars;
 
     // Build calibration opinions for display
@@ -401,20 +398,20 @@ async function buildEmployeeData(
     decision: o.decision,
     suggestedStars: o.suggestedStars,
   }));
+  // 主管层(SUPERVISOR/HRBP)若有承霖的LeaderFinalReview，按校准留档表的Math.floor逻辑算
+  // 否则回退到员工层逻辑（保持原有显示，避免无数据的主管星级丢失）
   const isLeader = user.role === "SUPERVISOR" || user.role === "HRBP";
-  let employeeFinalStars: number | null;
+  let chenglinReview: { weightedScore: unknown } | undefined;
   if (isLeader) {
     const chenglinReviews = await prisma.leaderFinalReview.findMany({
       where: { cycleId: cycle.id, employeeId: user.id, status: "SUBMITTED" },
       select: { evaluatorId: true, weightedScore: true },
     });
-    const chenglinReview = chenglinReviews.find((r) => (usersById.get(r.evaluatorId)?.name ?? "").includes("承霖"));
-    employeeFinalStars = resolveLeaderFinalStars(
-      chenglinReview?.weightedScore != null ? Number(chenglinReview.weightedScore) : null,
-    );
-  } else {
-    employeeFinalStars = resolveFinalStars(opinionsWithNames, referenceStars, consensus.officialStars);
+    chenglinReview = chenglinReviews.find((r) => (usersById.get(r.evaluatorId)?.name ?? "").includes("承霖"));
   }
+  const employeeFinalStars = chenglinReview?.weightedScore != null
+    ? resolveLeaderFinalStars(Number(chenglinReview.weightedScore))
+    : resolveFinalStars(opinionsWithNames, referenceStars, consensus.officialStars);
 
   // Get meeting data
   const meeting = await prisma.meeting.findUnique({

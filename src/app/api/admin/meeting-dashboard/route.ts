@@ -136,18 +136,17 @@ export async function GET() {
           decision: o.decision,
           suggestedStars: o.suggestedStars,
         }));
+        // 主管层(SUPERVISOR/HRBP)若有承霖的LeaderFinalReview，按校准留档表的Math.floor逻辑算
+        // 否则回退到员工层逻辑（保持原有显示，避免无数据的主管星级丢失）
         const isLeader = u.role === "SUPERVISOR" || u.role === "HRBP";
-        let finalStars: number | null;
-        if (isLeader) {
-          const chenglinReview = leaderFinalReviews.find(
-            (r) => r.employeeId === u.id && (usersById.get(r.evaluatorId)?.name ?? "").includes("承霖"),
-          );
-          finalStars = resolveLeaderFinalStars(
-            chenglinReview?.weightedScore != null ? Number(chenglinReview.weightedScore) : null,
-          );
-        } else {
-          finalStars = resolveFinalStars(opinionsWithNames, referenceStars, consensus.officialStars);
-        }
+        const chenglinReview = isLeader
+          ? leaderFinalReviews.find(
+              (r) => r.employeeId === u.id && (usersById.get(r.evaluatorId)?.name ?? "").includes("承霖"),
+            )
+          : undefined;
+        const finalStars = chenglinReview?.weightedScore != null
+          ? resolveLeaderFinalStars(Number(chenglinReview.weightedScore))
+          : resolveFinalStars(opinionsWithNames, referenceStars, consensus.officialStars);
 
         return {
           id: u.id,
