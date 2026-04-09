@@ -20,6 +20,7 @@ const MEETING_EMPLOYEE_NAMES = new Set([
   "赵奇卓", "窦雪茹", "徐宗泽", "禹聪琪", "李娟娟", "叶荣金",
   "李晓霞",
   "曹越", "宓鸿宇",
+  "郑文文",
 ]);
 
 // employeeName -> interviewerNames[]
@@ -39,6 +40,7 @@ const INTERVIEWER_OVERRIDES: Record<string, string[]> = {
   "陈琼": ["禹聪琪"],
   "赵奇卓": ["邱翔"],
   "禹聪琪": ["邱翔", "吴承霖"],
+  "郑文文": ["邱翔"],
 };
 
 export type MeetingUser = {
